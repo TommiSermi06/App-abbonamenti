@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+
+  <!-- viewport-fit=cover: la pagina usa tutto lo schermo dell'iPhone,
+       poi nel CSS lasciamo spazio al notch e alla barra in basso -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+
+  <!-- Questi meta servono per l'app installata nella schermata Home -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Abbonamenti">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="theme-color" content="#F2F2F7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+  <meta name="description" content="Tieni sotto controllo i tuoi abbonamenti e i prossimi rinnovi.">
+
+  <link rel="apple-touch-icon" href="icon-180.png">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="manifest" href="manifest.json">
+
+  <title>Abbonamenti</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="app">
+
+    <!-- ===== Barra in alto: pulsante "+" e titolo grande ===== -->
+    <header class="barra">
+      <div class="barra-azioni">
+        <button type="button" id="btn-aggiungi" class="btn-icona" aria-label="Aggiungi abbonamento">
+          <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
+            <path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+      <h1 class="titolo-grande">Abbonamenti</h1>
+    </header>
+
+    <!-- ===== Totali al mese e all'anno ===== -->
+    <section class="card totali" aria-label="Totali">
+      <div class="totale">
+        <span class="etichetta">Al mese</span>
+        <span id="totale-mese" class="numero-grande">—</span>
+      </div>
+      <div class="totale">
+        <span class="etichetta">All'anno</span>
+        <span id="totale-anno" class="numero-grande">—</span>
+      </div>
+    </section>
+
+    <!-- ===== Il prossimo rinnovo, in evidenza ===== -->
+    <h2 class="titolo-sezione">Prossimo rinnovo</h2>
+    <section id="prossimo" class="card prossimo" aria-live="polite"></section>
+
+    <!-- ===== Lista degli abbonamenti (riempita da app.js) ===== -->
+    <h2 class="titolo-sezione">I tuoi abbonamenti</h2>
+    <ul id="lista" class="lista card"></ul>
+    <p id="lista-vuota" class="nota" hidden>Nessun abbonamento. Tocca + per aggiungerne uno.</p>
+
+    <!-- ===== Backup ===== -->
+    <h2 class="titolo-sezione">Backup</h2>
+    <div class="lista card">
+      <button type="button" id="btn-esporta" class="riga riga-azione">Esporta backup</button>
+      <button type="button" id="btn-importa" class="riga riga-azione">Importa backup</button>
+    </div>
+    <p class="nota">Il backup è un file .json con tutti i tuoi abbonamenti. Importarlo sostituisce i dati attuali.</p>
+    <!-- Campo per scegliere il file: è nascosto, lo apre il pulsante "Importa backup" -->
+    <input type="file" id="file-importa" accept=".json,application/json" hidden>
+  </main>
+
+  <!-- ===== Foglio che sale dal basso con il modulo ===== -->
+  <div id="velo" class="velo"></div>
+  <section id="foglio" class="foglio" role="dialog" aria-modal="true" aria-labelledby="foglio-titolo" tabindex="-1">
+    <header class="foglio-barra">
+      <button type="button" id="btn-annulla" class="btn-testo">Annulla</button>
+      <h2 id="foglio-titolo" class="foglio-titolo">Nuovo abbonamento</h2>
+      <button type="submit" form="modulo" class="btn-testo grassetto">Salva</button>
+    </header>
+
+    <form id="modulo" novalidate>
+      <!-- Controllo segmentato: mensile o annuale -->
+      <div class="segmentato" role="radiogroup" aria-label="Frequenza">
+        <label><input type="radio" name="frequenza" value="mensile" checked><span>Mensile</span></label>
+        <label><input type="radio" name="frequenza" value="annuale"><span>Annuale</span></label>
+      </div>
+
+      <div class="lista card">
+        <label class="riga campo">
+          <span>Nome</span>
+          <input id="campo-nome" type="text" maxlength="40" placeholder="Es. Netflix" autocomplete="off" enterkeyhint="next">
+        </label>
+        <label class="riga campo">
+          <span>Costo (€)</span>
+          <input id="campo-costo" type="text" inputmode="decimal" placeholder="0,00" autocomplete="off">
+        </label>
+        <label class="riga campo">
+          <span>Giorno del rinnovo</span>
+          <input id="campo-giorno" type="text" inputmode="numeric" maxlength="2" placeholder="1–31" autocomplete="off">
+        </label>
+        <!-- Il mese serve solo agli abbonamenti annuali -->
+        <label class="riga campo" id="riga-mese" hidden>
+          <span>Mese del rinnovo</span>
+          <select id="campo-mese">
+            <option value="1">gennaio</option>
+            <option value="2">febbraio</option>
+            <option value="3">marzo</option>
+            <option value="4">aprile</option>
+            <option value="5">maggio</option>
+            <option value="6">giugno</option>
+            <option value="7">luglio</option>
+            <option value="8">agosto</option>
+            <option value="9">settembre</option>
+            <option value="10">ottobre</option>
+            <option value="11">novembre</option>
+            <option value="12">dicembre</option>
+          </select>
+        </label>
+      </div>
+
+      <p id="errore" class="errore" role="alert"></p>
+
+      <div class="lista card" id="blocco-elimina" hidden>
+        <button type="button" id="btn-elimina" class="riga riga-elimina">Elimina abbonamento</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- Freccia ">" delle righe: app.js la copia da qui -->
+  <template id="tpl-freccia">
+    <svg class="freccia" viewBox="0 0 8 14" width="8" height="14" aria-hidden="true">
+      <path d="M1.5 1.5 6.5 7l-5 5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </template>
+
+  <!-- Prima storage.js (i dati), poi app.js (che li usa) -->
+  <script src="storage.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
