@@ -18,27 +18,36 @@
    Nel resto del file usiamo solo var(--nome): così per la modalità
    scura basta cambiare i valori in un unico punto. */
 :root {
-  --sfondo: #F2F2F7;
-  --sfondo-card: #FFFFFF;
-  --testo: #000000;
-  --testo-secondario: rgba(60, 60, 67, 0.6);
-  --testo-terziario: rgba(60, 60, 67, 0.3);
-  --separatore: rgba(60, 60, 67, 0.29);
-  --blu: #007AFF;
-  --verde: #34C759;
-  --arancione: #FF9500;
-  --rosso: #FF3B30;
+  /* --- Palette dell'app ---
+     Colore principale: AVORIO   → sfondi della pagina e delle card
+     Colore secondario: BLU      → pulsanti, link, numeri importanti, scelte attive
+     Particolari:       AZZURRINO → linee, frecce, contorni e piccoli sfondi */
+  --sfondo: #F8F3E6;            /* avorio: sfondo della pagina */
+  --sfondo-card: #FFFDF6;       /* avorio chiarissimo: card e righe */
+  --testo: #1E1C18;             /* quasi nero, caldo, che sta bene sull'avorio */
+  --testo-secondario: rgba(64, 58, 46, 0.62);
+  --blu: #1F4FA8;               /* blu: colore secondario */
+  --azzurro: #7DB8E8;           /* azzurrino: particolari */
+  --azzurro-tenue: rgba(125, 184, 232, 0.22);
+  --testo-terziario: #8FC1EA;   /* frecce ">" e testo di esempio nei campi (azzurrino) */
+  --separatore: rgba(125, 184, 232, 0.55); /* linee tra le righe (azzurrino) */
+  --su-blu: #FFFFFF;            /* testo sopra il blu pieno */
 
-  /* Colori di supporto */
-  --riempimento: rgba(118, 118, 128, 0.12);   /* sfondo grigio di pillole e segmentato */
-  --segmento-scelto: #FFFFFF;                   /* opzione scelta nel controllo segmentato */
+  /* --- Colori dei giorni mancanti: NON cambiarli ---
+     grigio (più di 7 giorni), arancione (da 7 a 4), rosso (3 o meno) */
+  --grigio-badge: rgba(118, 118, 128, 0.12);
+  --grigio-badge-testo: rgba(60, 60, 67, 0.6);
+  --arancione: #FF9500;
   --arancione-tenue: rgba(255, 149, 0, 0.15);
+  --rosso: #FF3B30;             /* usato anche per "Elimina" e per gli errori */
   --rosso-tenue: rgba(255, 59, 48, 0.14);
   --rosso-bagliore: rgba(255, 59, 48, 0.55);
-  --velo: rgba(0, 0, 0, 0.35);                  /* oscura la pagina quando il foglio è aperto */
-  --sfondo-foglio: #F2F2F7;
-  --card-foglio: #FFFFFF;
-  --su-colore: #FFFFFF;                         /* testo sopra un colore pieno */
+  --su-colore: #FFFFFF;         /* testo sopra il rosso pieno ("Oggi!") */
+
+  /* --- Colori di supporto --- */
+  --velo: rgba(20, 32, 56, 0.35);  /* oscura la pagina quando il foglio è aperto */
+  --sfondo-foglio: #F8F3E6;
+  --card-foglio: #FFFDF6;
 
   /* Movimento: durata e curva morbida stile Apple */
   --durata: 0.3s;
@@ -49,28 +58,34 @@
   color-scheme: light dark;
 }
 
-/* Modalità scura: si attiva da sola se l'iPhone è in modalità scura */
+/* Modalità scura: si attiva da sola se l'iPhone è in modalità scura.
+   L'avorio qui diventa il colore del TESTO, su uno sfondo scuro e caldo;
+   blu e azzurrino diventano più chiari per leggersi bene al buio. */
 @media (prefers-color-scheme: dark) {
   :root {
-    --sfondo: #000000;
-    --sfondo-card: #1C1C1E;
-    --testo: #FFFFFF;
-    --testo-secondario: rgba(235, 235, 245, 0.6);
-    --testo-terziario: rgba(235, 235, 245, 0.3);
-    --separatore: rgba(84, 84, 88, 0.6);
-    --blu: #0A84FF;
-    --verde: #30D158;
-    --arancione: #FF9F0A;
-    --rosso: #FF453A;
+    --sfondo: #12110E;
+    --sfondo-card: #1F1D18;
+    --testo: #F6F0DF;             /* avorio */
+    --testo-secondario: rgba(246, 240, 223, 0.6);
+    --blu: #7EA6F2;
+    --azzurro: #9DD0F7;
+    --azzurro-tenue: rgba(157, 208, 247, 0.16);
+    --testo-terziario: rgba(157, 208, 247, 0.6);
+    --separatore: rgba(157, 208, 247, 0.22);
+    --su-blu: #12110E;            /* sul blu chiaro si legge meglio il testo scuro */
 
-    --riempimento: rgba(118, 118, 128, 0.24);
-    --segmento-scelto: #636366;
+    /* Giorni mancanti: stessi colori di prima in modalità scura */
+    --grigio-badge: rgba(118, 118, 128, 0.24);
+    --grigio-badge-testo: rgba(235, 235, 245, 0.6);
+    --arancione: #FF9F0A;
     --arancione-tenue: rgba(255, 159, 10, 0.2);
+    --rosso: #FF453A;
     --rosso-tenue: rgba(255, 69, 58, 0.2);
     --rosso-bagliore: rgba(255, 69, 58, 0.6);
+
     --velo: rgba(0, 0, 0, 0.6);
-    --sfondo-foglio: #1C1C1E;
-    --card-foglio: #2C2C2E;
+    --sfondo-foglio: #1F1D18;
+    --card-foglio: #2A2721;
   }
 }
 
@@ -164,7 +179,8 @@ button {
   font-weight: 400;
   text-transform: uppercase;
   letter-spacing: 0.02em;
-  color: var(--testo-secondario);
+  color: var(--blu);
+  opacity: 0.85;
 }
 
 /* Testo piccolo sotto le sezioni */
@@ -181,6 +197,9 @@ button {
   background: var(--sfondo-card);
   border-radius: 12px;
   overflow: hidden;
+  /* Bordo sottilissimo azzurrino: stacca la card dallo sfondo avorio.
+     (box-shadow "inset" non cambia le misure della card) */
+  box-shadow: inset 0 0 0 0.5px var(--separatore);
 }
 
 .lista {
@@ -292,6 +311,7 @@ button:active {
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.01em;
   white-space: nowrap;
+  color: var(--blu);
 }
 
 .prossimo {
@@ -341,8 +361,8 @@ button:active {
 
 /* Più di 7 giorni: grigio, tranquillo */
 .stato-lontano {
-  background: var(--riempimento);
-  color: var(--testo-secondario);
+  background: var(--grigio-badge);
+  color: var(--grigio-badge-testo);
 }
 
 /* Da 7 a 4 giorni: arancione */
@@ -449,13 +469,13 @@ button:active {
   justify-self: end;
 }
 
-/* Controllo segmentato: pillola grigia con l'opzione scelta in bianco */
+/* Controllo segmentato: pillola azzurrina con l'opzione scelta in blu */
 .segmentato {
   display: grid;
   grid-template-columns: 1fr 1fr;
   margin: 8px 16px 20px;
   padding: 2px;
-  background: var(--riempimento);
+  background: var(--azzurro-tenue);
   border-radius: 9px;
 }
 
@@ -478,7 +498,8 @@ button:active {
 }
 
 .segmentato input:checked + span {
-  background: var(--segmento-scelto);
+  background: var(--blu);
+  color: var(--su-blu);
   font-weight: 600;
   box-shadow: 0 3px 8px rgba(0, 0, 0, 0.12), 0 3px 1px rgba(0, 0, 0, 0.04);
 }
@@ -506,6 +527,7 @@ button:active {
   font: inherit;
   font-size: 17px; /* almeno 16px: così l'iPhone non fa zoom sul campo */
   color: var(--testo);
+  caret-color: var(--blu); /* il cursore lampeggiante è blu */
   text-align: right;
   text-align-last: right;
   padding: 0;

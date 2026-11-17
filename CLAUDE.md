@@ -23,6 +23,12 @@ Il proprietario del progetto **sta imparando a programmare**:
 - Font di sistema `-apple-system`; titolo grande 34px, testo 17px.
 - Colori SOLO tramite le variabili CSS in cima a `style.css`, con modalità scura automatica
   (`prefers-color-scheme`). Non scrivere colori sparsi.
+- **Palette** (scelta dal proprietario):
+  - colore principale **avorio** → sfondi di pagina e card (in modalità scura l'avorio diventa il colore del testo);
+  - colore secondario **blu** → pulsanti, link, totali, titoletti delle sezioni, opzione scelta;
+  - particolari **azzurrino** → linee di separazione, bordi delle card, frecce, sfondo del controllo segmentato.
+  - **NON cambiare** i colori dei giorni mancanti (grigio, arancione e rosso di sistema iOS):
+    variabili `--grigio-badge*`, `--arancione*`, `--rosso*`.
 - Liste raggruppate: card con angoli 12px, margini laterali 16px, righe alte almeno 44px.
 - Animazioni morbide 0.25–0.35s; rispettare sempre `prefers-reduced-motion`.
 - Aree sicure dell'iPhone con `env(safe-area-inset-*)`.
