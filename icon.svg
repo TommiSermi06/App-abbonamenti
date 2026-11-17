@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Icona dell'app: un calendario bianco con il simbolo dell'euro su sfondo blu -->
+  <defs>
+    <linearGradient id="sfondo" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2E95FF"/>
+      <stop offset="1" stop-color="#0062D6"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="url(#sfondo)"/>
+  <rect x="112" y="128" width="288" height="272" rx="52" fill="#FFFFFF"/>
+  <path d="M112 180a52 52 0 0 1 52-52h184a52 52 0 0 1 52 52v14H112z" fill="#FF3B30"/>
+  <rect x="180" y="100" width="28" height="64" rx="14" fill="#FFFFFF"/>
+  <rect x="304" y="100" width="28" height="64" rx="14" fill="#FFFFFF"/>
+  <path d="M308 252a62 62 0 1 0 0 92M196 284h78M196 314h66" fill="none" stroke="#007AFF" stroke-width="24" stroke-linecap="round"/>
+</svg>
