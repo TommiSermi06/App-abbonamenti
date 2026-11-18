@@ -50,6 +50,7 @@ const el = {
   sezioneCategorie: $('sezione-categorie'),
   perCategoria: $('per-categoria'),
   campoCategoria: $('campo-categoria'),
+  campoStato: $('campo-stato'),
   sezioneMesi: $('sezione-mesi'),
   graficoGriglia: $('grafico-griglia'),
   graficoColonne: $('grafico-colonne'),
@@ -179,7 +180,8 @@ function disegna() {
     .sort((a, b) => a.info.giorni - b.info.giorni || a.abb.nome.localeCompare(b.abb.nome, 'it'));
 
   disegnaTotali();
-  disegnaProssimo(conInfo[0]);
+  // Il prossimo rinnovo è il primo tra quelli ATTIVI
+  disegnaProssimo(conInfo.find(({ abb }) => abb.stato === 'attivo'));
   disegnaFiltri();
   disegnaGruppi(conInfo);
   disegnaPerCategoria();
@@ -187,10 +189,18 @@ function disegna() {
   primoDisegno = false;
 }
 
-// Le categorie che hanno almeno un abbonamento, nell'ordine di categorie.js
-function categorieUsate() {
-  return CATEGORIE.filter((cat) => abbonamenti.some((abb) => abb.categoria === cat.id));
+// Solo gli abbonamenti attivi: sono gli unici che contano in totali, grafico e calendario
+function attivi() {
+  return abbonamenti.filter((abb) => abb.stato === 'attivo');
 }
+
+// Le categorie che hanno almeno un abbonamento della lista, nell'ordine di categorie.js
+function categorieUsate(lista = abbonamenti) {
+  return CATEGORIE.filter((cat) => lista.some((abb) => abb.categoria === cat.id));
+}
+
+// Come scrivere lo stato di un abbonamento non attivo
+const NOMI_STATI = { pausa: 'In pausa', disdetto: 'Disdetto' };
 
 // Quanto si spende al mese per un gruppo di abbonamenti
 function totaleAlMese(lista) {
@@ -198,7 +208,7 @@ function totaleAlMese(lista) {
 }
 
 function disegnaTotali() {
-  const alMese = totaleAlMese(abbonamenti);
+  const alMese = totaleAlMese(attivi());
   el.totaleMese.textContent = formatoEuro.format(alMese);
   el.totaleAnno.textContent = formatoEuro.format(alMese * 12);
 }
@@ -253,10 +263,16 @@ function disegnaGruppi(conInfo) {
     ? conInfo
     : conInfo.filter(({ abb }) => abb.categoria === filtro);
 
+  // Separiamo gli attivi dagli altri (in pausa o disdetti)
+  const visibiliAttivi = visibili.filter(({ abb }) => abb.stato === 'attivo');
+  const visibiliNonAttivi = visibili
+    .filter(({ abb }) => abb.stato !== 'attivo')
+    .sort((a, b) => a.abb.nome.localeCompare(b.abb.nome, 'it')); // in ordine alfabetico
+
   let posizione = 0; // serve per far comparire le righe una dopo l'altra
   for (const cat of CATEGORIE) {
     // conInfo è già ordinato per rinnovo, quindi anche ogni gruppo lo è
-    const delGruppo = visibili.filter(({ abb }) => abb.categoria === cat.id);
+    const delGruppo = visibiliAttivi.filter(({ abb }) => abb.categoria === cat.id);
     if (delGruppo.length === 0) continue; // niente gruppi vuoti
 
     const titolo = crea('h3', 'titolo-gruppo', `${cat.emoji} ${cat.nome}`);
@@ -266,6 +282,20 @@ function disegnaGruppi(conInfo) {
       posizione += 1;
     }
     el.gruppi.append(titolo, lista);
+  }
+
+  // In fondo, un gruppo a parte per quelli in pausa o disdetti
+  if (visibiliNonAttivi.length > 0) {
+    const titolo = crea('h3', 'titolo-gruppo', '💤 Non attivi');
+    const lista = crea('ul', 'lista card');
+    for (const { abb, info } of visibiliNonAttivi) {
+      lista.append(creaRigaAbbonamento(abb, info, posizione));
+      posizione += 1;
+    }
+    // Quanto risparmi al mese grazie a questi abbonamenti
+    const risparmio = totaleAlMese(visibiliNonAttivi.map(({ abb }) => abb));
+    const nota = crea('p', 'nota', `Non contano nei totali: risparmi ${formatoEuro.format(risparmio)} al mese.`);
+    el.gruppi.append(titolo, lista, nota);
   }
 
   idDaAnimare = null;
@@ -295,21 +325,31 @@ function creaRigaAbbonamento(abb, info, posizione) {
   // Copiamo la freccia ">" dal <template> dell'HTML
   const freccia = el.tplFreccia.content.cloneNode(true);
 
-  pulsante.append(testi, creaBadge(info.giorni, info.stato, false), freccia);
+  // Attivo: etichetta dei giorni mancanti. In pausa o disdetto: etichetta con lo stato
+  let etichetta;
+  if (abb.stato === 'attivo') {
+    etichetta = creaBadge(info.giorni, info.stato, false);
+  } else {
+    riga.classList.add('inattiva'); // la riga diventa più tenue
+    etichetta = crea('span', 'badge stato-inattivo', NOMI_STATI[abb.stato]);
+  }
+
+  pulsante.append(testi, etichetta, freccia);
   riga.append(pulsante);
   return riga;
 }
 
 // --- Spesa al mese per ogni categoria, con una barra della proporzione ---
 function disegnaPerCategoria() {
-  const totale = totaleAlMese(abbonamenti);
+  const listaAttivi = attivi();
+  const totale = totaleAlMese(listaAttivi);
   el.perCategoria.replaceChildren();
-  el.sezioneCategorie.hidden = abbonamenti.length === 0;
+  el.sezioneCategorie.hidden = listaAttivi.length === 0;
   if (totale === 0) return;
 
   // Calcoliamo il totale di ogni categoria e mettiamo prima quelle che costano di più
-  const righe = categorieUsate()
-    .map((cat) => ({ cat, alMese: totaleAlMese(abbonamenti.filter((abb) => abb.categoria === cat.id)) }))
+  const righe = categorieUsate(listaAttivi)
+    .map((cat) => ({ cat, alMese: totaleAlMese(listaAttivi.filter((abb) => abb.categoria === cat.id)) }))
     .sort((a, b) => b.alMese - a.alMese);
 
   for (const { cat, alMese } of righe) {
@@ -343,7 +383,7 @@ function disegnaPerCategoria() {
 // I pagamenti di un mese (mese da 0 = gennaio a 11 = dicembre), in ordine di giorno
 function pagamentiDelMese(anno, mese) {
   const pagamenti = [];
-  for (const abb of abbonamenti) {
+  for (const abb of attivi()) { // chi è in pausa o disdetto non paga
     const pagaQuestoMese = abb.frequenza === 'mensile' || abb.mese - 1 === mese;
     if (pagaQuestoMese) pagamenti.push({ abb, data: dataSicura(anno, mese, abb.giorno) });
   }
@@ -379,7 +419,7 @@ function disegnaGraficoMesi() {
   mesiCalcolati = calcolaProssimi12Mesi();
   const massimoMese = Math.max(...mesiCalcolati.map((m) => m.totale));
 
-  el.sezioneMesi.hidden = abbonamenti.length === 0;
+  el.sezioneMesi.hidden = attivi().length === 0;
   el.graficoGriglia.replaceChildren();
   el.graficoColonne.replaceChildren();
   if (massimoMese === 0) return;
@@ -506,6 +546,7 @@ function apriFoglio(abb) {
   el.campoCategoria.value = abb ? abb.categoria
     : filtro !== 'tutte' ? filtro
     : CATEGORIA_PREDEFINITA;
+  el.campoStato.value = abb ? abb.stato : 'attivo'; // un nuovo abbonamento è attivo
   impostaFrequenza(abb ? abb.frequenza : 'mensile');
   el.bloccoElimina.hidden = !abb;
   el.errore.textContent = '';
@@ -537,6 +578,7 @@ function leggiModulo() {
   const frequenza = frequenzaScelta();
   const mese = Number(el.campoMese.value);
   const categoria = el.campoCategoria.value;
+  const stato = el.campoStato.value;
 
   if (!nome) return { errore: 'Scrivi il nome dell\'abbonamento.', campo: el.campoNome };
   if (!Number.isFinite(costo) || costo <= 0) {
@@ -546,7 +588,7 @@ function leggiModulo() {
     return { errore: 'Il giorno del rinnovo va da 1 a 31.', campo: el.campoGiorno };
   }
 
-  return { dati: { nome, costo, frequenza, giorno, mese: frequenza === 'annuale' ? mese : null, categoria } };
+  return { dati: { nome, costo, frequenza, giorno, mese: frequenza === 'annuale' ? mese : null, categoria, stato } };
 }
 
 async function salva(evento) {

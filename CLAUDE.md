@@ -51,11 +51,12 @@ Il proprietario del progetto **sta imparando a programmare**:
 ```js
 { id: "…", nome: "Spotify", costo: 16.99, frequenza: "mensile" | "annuale",
   giorno: 1-31, mese: 1-12 (solo annuali, altrimenti null),
-  categoria: "streaming" | "musica" | … (id di categorie.js) }
+  categoria: "streaming" | "musica" | … (id di categorie.js),
+  stato: "attivo" | "pausa" | "disdetto" }
 ```
 Chiave nel localStorage: `abbonamenti:v1` (invariata: i dati della versione 1 restano compatibili).
-Backup: file JSON `{ app, versione: 2, esportatoIl, abbonamenti: [...] }`.
-I backup della versione 1 si importano ancora.
+Backup: file JSON `{ app, versione: 3, esportatoIl, abbonamenti: [...] }`.
+I backup delle versioni precedenti si importano ancora (stato mancante → `attivo`, categoria mancante → `altro`).
 
 ## Categorie (versione 2)
 - Elenco **fisso** in `categorie.js` (scelta del proprietario): non c'è una schermata per crearle.
@@ -65,6 +66,13 @@ I backup della versione 1 si importano ancora.
 - Filtro a pillole ("Tutte" + categorie usate). Se la categoria filtrata resta vuota, o salvi
   un abbonamento di un'altra categoria, il filtro torna a "Tutte".
 - "Spesa per categoria": importo al mese (annuali / 12), percentuale e barra, dalla più costosa.
+
+## Abbonamenti in pausa o disdetti
+- Campo `stato` nel modulo. Solo gli abbonamenti **attivi** (funzione `attivi()` in `app.js`) contano in:
+  totali, prossimo rinnovo, spesa per categoria, grafico mese per mese e file del calendario.
+- Quelli in pausa o disdetti restano nella lista in un gruppo "💤 Non attivi" in fondo (rispettando il filtro),
+  in ordine alfabetico, con riga tenue, etichetta con bordo ("In pausa"/"Disdetto") e nota del risparmio al mese.
+  Non usare grigio pieno, arancione o rosso per loro: sono riservati ai giorni mancanti.
 
 ## Regole di calcolo
 - Totale al mese = somma dei mensili + (annuali / 12). Totale all'anno = totale al mese × 12.

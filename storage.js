@@ -18,7 +18,8 @@
      frequenza: "mensile",   // "mensile" oppure "annuale"
      giorno: 2,              // giorno del mese in cui si rinnova (1-31)
      mese: null,             // solo per gli annuali: mese del rinnovo (1-12)
-     categoria: "musica"     // id di una categoria di categorie.js
+     categoria: "musica",    // id di una categoria di categorie.js
+     stato: "attivo"         // "attivo", "pausa" oppure "disdetto"
    }
    ===================================================================== */
 
@@ -66,6 +67,8 @@ const Archivio = (function () {
     const mese = Number(grezzo.mese);
     // Categoria mancante o sconosciuta (es. dati della versione 1) → "Altro"
     const categoria = categoriaEsiste(grezzo.categoria) ? grezzo.categoria : CATEGORIA_PREDEFINITA;
+    // Stato mancante (dati delle versioni precedenti) o sconosciuto → "attivo"
+    const stato = ['attivo', 'pausa', 'disdetto'].includes(grezzo.stato) ? grezzo.stato : 'attivo';
 
     if (!nome) return null;
     if (!(costo > 0)) return null;
@@ -81,6 +84,7 @@ const Archivio = (function () {
       giorno,
       mese: frequenza === 'annuale' ? mese : null,
       categoria,
+      stato,
     };
   }
 
@@ -148,7 +152,9 @@ const Archivio = (function () {
   async function esportaBackup() {
     const backup = {
       app: 'Abbonamenti',
-      versione: 2, // la 2 aggiunge le categorie (i backup della versione 1 si importano lo stesso)
+      // versione 2 = categorie, versione 3 = stato (attivo/pausa/disdetto).
+      // I backup delle versioni precedenti si importano lo stesso.
+      versione: 3,
       esportatoIl: new Date().toISOString(),
       abbonamenti: await tutti(),
     };
