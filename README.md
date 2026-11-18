@@ -3,11 +3,12 @@
 Una piccola app web in stile iPhone per tenere sotto controllo i propri abbonamenti:
 quanto spendi al mese e all'anno, e quale rinnovo sta per arrivare.
 
-## Cosa fa (versione 1)
+## Cosa fa
 - Lista degli abbonamenti con nome, costo, frequenza (mensile o annuale) e giorno del rinnovo
 - Aggiungi, modifica ed elimina con un modulo che sale dal basso
 - Totale al mese e all'anno (gli annuali contano costo / 12 al mese)
 - Prossimo rinnovo in evidenza, con i giorni mancanti colorati (grigio, arancione, rosso, "Oggi!")
+- Categorie (Streaming, Musica, Giochi, …): lista divisa in gruppi, filtro e spesa al mese per categoria
 - Esporta e importa un backup in formato JSON
 - Modalità scura automatica, installabile nella schermata Home dell'iPhone
 

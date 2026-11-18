@@ -56,8 +56,18 @@
 
     <!-- ===== Lista degli abbonamenti (riempita da app.js) ===== -->
     <h2 class="titolo-sezione">I tuoi abbonamenti</h2>
-    <ul id="lista" class="lista card"></ul>
+    <!-- Pillole per filtrare per categoria: "Tutte", "Streaming", ... -->
+    <div id="filtri" class="filtri" role="group" aria-label="Filtra per categoria"></div>
+    <!-- Qui app.js mette un gruppo (titoletto + card) per ogni categoria -->
+    <div id="gruppi"></div>
     <p id="lista-vuota" class="nota" hidden>Nessun abbonamento. Tocca + per aggiungerne uno.</p>
+
+    <!-- ===== Quanto spendi al mese per ogni categoria ===== -->
+    <section id="sezione-categorie" aria-labelledby="titolo-categorie">
+      <h2 class="titolo-sezione" id="titolo-categorie">Spesa per categoria</h2>
+      <ul id="per-categoria" class="lista card"></ul>
+      <p class="nota">Importi al mese: gli abbonamenti annuali contano il costo diviso 12.</p>
+    </section>
 
     <!-- ===== Backup ===== -->
     <h2 class="titolo-sezione">Backup</h2>
@@ -90,6 +100,11 @@
         <label class="riga campo">
           <span>Nome</span>
           <input id="campo-nome" type="text" maxlength="40" placeholder="Es. Netflix" autocomplete="off" enterkeyhint="next">
+        </label>
+        <label class="riga campo">
+          <span>Categoria</span>
+          <!-- Le opzioni le aggiunge app.js leggendo categorie.js -->
+          <select id="campo-categoria"></select>
         </label>
         <label class="riga campo">
           <span>Costo (€)</span>
@@ -134,7 +149,8 @@
     </svg>
   </template>
 
-  <!-- Prima storage.js (i dati), poi app.js (che li usa) -->
+  <!-- L'ordine conta: prima le categorie, poi storage.js (i dati), poi app.js (che usa entrambi) -->
+  <script src="categorie.js"></script>
   <script src="storage.js"></script>
   <script src="app.js"></script>
 </body>
