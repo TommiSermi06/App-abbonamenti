@@ -18,6 +18,10 @@
 /* ---------- Strumenti per scrivere numeri e date in italiano ---------- */
 const formatoEuro = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' });
 const formatoData = new Intl.DateTimeFormat('it-IT', { weekday: 'long', day: 'numeric', month: 'long' });
+const formatoMeseBreve = new Intl.DateTimeFormat('it-IT', { month: 'short' });                 // "dic"
+const formatoMeseLungo = new Intl.DateTimeFormat('it-IT', { month: 'long', year: 'numeric' }); // "dicembre 2026"
+const formatoGiornoMese = new Intl.DateTimeFormat('it-IT', { day: 'numeric', month: 'short' }); // "4 dic"
+const formatoEuroTondo = new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }); // "50 €"
 const NOMI_MESI = ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno',
   'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'];
 const MS_AL_GIORNO = 24 * 60 * 60 * 1000; // millisecondi in un giorno
@@ -29,6 +33,8 @@ let idInModifica = null;  // id dell'abbonamento aperto nel modulo (null = nuovo
 let idDaAnimare = null;   // la riga appena aggiunta, che compare con dissolvenza
 let primoDisegno = true;  // al primo avvio facciamo comparire tutte le righe
 let filtro = 'tutte';     // categoria mostrata nella lista: 'tutte' oppure l'id di una categoria
+let meseScelto = 0;       // colonna scelta nel grafico: 0 = questo mese, 11 = tra 11 mesi
+let mesiCalcolati = [];   // i 12 mesi del grafico, con i loro pagamenti
 let elementoPrimaDelFoglio = null; // dove tornare con il focus dopo aver chiuso
 
 
@@ -44,6 +50,11 @@ const el = {
   sezioneCategorie: $('sezione-categorie'),
   perCategoria: $('per-categoria'),
   campoCategoria: $('campo-categoria'),
+  sezioneMesi: $('sezione-mesi'),
+  graficoGriglia: $('grafico-griglia'),
+  graficoColonne: $('grafico-colonne'),
+  dettaglioMese: $('dettaglio-mese'),
+  notaMesi: $('nota-mesi'),
   btnAggiungi: $('btn-aggiungi'),
   btnEsporta: $('btn-esporta'),
   btnImporta: $('btn-importa'),
@@ -170,6 +181,7 @@ function disegna() {
   disegnaFiltri();
   disegnaGruppi(conInfo);
   disegnaPerCategoria();
+  disegnaGraficoMesi();
   primoDisegno = false;
 }
 
@@ -317,6 +329,145 @@ function disegnaPerCategoria() {
     riga.append(alto, barra);
     el.perCategoria.append(riga);
   }
+}
+
+
+/* =====================================================================
+   GRAFICO: SPESE MESE PER MESE
+   Qui contiamo quanto si paga DAVVERO ogni mese: i mensili ogni mese,
+   gli annuali per intero solo nel mese del rinnovo (non divisi per 12).
+   ===================================================================== */
+
+// I pagamenti di un mese (mese da 0 = gennaio a 11 = dicembre), in ordine di giorno
+function pagamentiDelMese(anno, mese) {
+  const pagamenti = [];
+  for (const abb of abbonamenti) {
+    const pagaQuestoMese = abb.frequenza === 'mensile' || abb.mese - 1 === mese;
+    if (pagaQuestoMese) pagamenti.push({ abb, data: dataSicura(anno, mese, abb.giorno) });
+  }
+  return pagamenti.sort((a, b) => a.data - b.data || a.abb.nome.localeCompare(b.abb.nome, 'it'));
+}
+
+// I 12 mesi del grafico, a partire da questo mese
+function calcolaProssimi12Mesi() {
+  const oggi = oggiAMezzanotte();
+  const mesi = [];
+  for (let i = 0; i < 12; i++) {
+    // new Date sistema da solo i mesi oltre dicembre (es. mese 13 → febbraio dell'anno dopo)
+    const inizio = new Date(oggi.getFullYear(), oggi.getMonth() + i, 1);
+    const pagamenti = pagamentiDelMese(inizio.getFullYear(), inizio.getMonth());
+    const totale = pagamenti.reduce((somma, p) => somma + p.abb.costo, 0);
+    mesi.push({ inizio, pagamenti, totale });
+  }
+  return mesi;
+}
+
+// Sceglie un passo "tondo" per le linee della griglia (1, 2, 2,5 o 5 × 10, 100…),
+// così da avere circa 3 linee con numeri facili da leggere
+function passoGriglia(massimo) {
+  const grezzo = massimo / 3;
+  const potenza = 10 ** Math.floor(Math.log10(grezzo));
+  for (const moltiplicatore of [1, 2, 2.5, 5, 10]) {
+    if (moltiplicatore * potenza >= grezzo) return moltiplicatore * potenza;
+  }
+  return 10 * potenza;
+}
+
+function disegnaGraficoMesi() {
+  mesiCalcolati = calcolaProssimi12Mesi();
+  const massimoMese = Math.max(...mesiCalcolati.map((m) => m.totale));
+
+  el.sezioneMesi.hidden = abbonamenti.length === 0;
+  el.graficoGriglia.replaceChildren();
+  el.graficoColonne.replaceChildren();
+  if (massimoMese === 0) return;
+
+  // L'altezza massima del grafico è un multiplo "tondo" del passo della griglia
+  const passo = passoGriglia(massimoMese);
+  const cima = Math.ceil(massimoMese / passo) * passo;
+
+  // Linee della griglia: 0, passo, 2×passo... fino alla cima
+  for (let valore = 0; valore <= cima + 0.001; valore += passo) {
+    const linea = crea('div', 'griglia-linea');
+    linea.style.bottom = `${(valore / cima) * 100}%`; // posizione in altezza
+    linea.append(crea('span', 'griglia-valore', formatoEuroTondo.format(valore)));
+    el.graficoGriglia.append(linea);
+  }
+
+  // Le colonne: una per mese
+  mesiCalcolati.forEach((mese, indice) => {
+    const nomeMese = formatoMeseLungo.format(mese.inizio);
+    const colonna = crea('button', 'colonna');
+    colonna.type = 'button';
+    colonna.dataset.indice = String(indice);
+    colonna.setAttribute('aria-label', `${nomeMese}: ${formatoEuro.format(mese.totale)}`);
+
+    const area = crea('span', 'colonna-area');
+    if (mese.totale > 0) {
+      const barra = crea('span', 'colonna-barra');
+      barra.style.height = `${(mese.totale / cima) * 100}%`;
+      barra.style.animationDelay = `${indice * 25}ms`; // crescono una dopo l'altra
+      area.append(barra);
+    }
+    // "dic." → "dic": togliamo il punto per avere etichette più pulite
+    const etichetta = crea('span', 'colonna-etichetta', formatoMeseBreve.format(mese.inizio).replace('.', ''));
+
+    colonna.append(area, etichetta);
+    el.graficoColonne.append(colonna);
+  });
+
+  // Nota sotto il grafico: il mese più caro e il totale dei 12 mesi
+  const piuCaro = mesiCalcolati.reduce((a, b) => (b.totale > a.totale ? b : a));
+  const totale12 = mesiCalcolati.reduce((somma, m) => somma + m.totale, 0);
+  el.notaMesi.textContent = `Mese più caro: ${formatoMeseLungo.format(piuCaro.inizio)} (${formatoEuro.format(piuCaro.totale)}). `
+    + `Totale dei prossimi 12 mesi: ${formatoEuro.format(totale12)}.`;
+
+  selezionaMese(meseScelto);
+}
+
+// Evidenzia una colonna e mostra sotto il dettaglio di quel mese
+function selezionaMese(indice) {
+  meseScelto = indice;
+  for (const colonna of el.graficoColonne.children) {
+    colonna.setAttribute('aria-pressed', String(Number(colonna.dataset.indice) === indice));
+  }
+
+  const mese = mesiCalcolati[indice];
+  const oggi = oggiAMezzanotte();
+  el.dettaglioMese.replaceChildren();
+
+  // Intestazione: "Dicembre 2026" ...... "64,97 €"
+  const testata = crea('div', 'dettaglio-testata');
+  const nomeMese = formatoMeseLungo.format(mese.inizio);
+  testata.append(
+    crea('span', 'dettaglio-mese-nome', nomeMese.charAt(0).toUpperCase() + nomeMese.slice(1)),
+    crea('span', 'dettaglio-totale', formatoEuro.format(mese.totale)),
+  );
+  el.dettaglioMese.append(testata);
+
+  if (mese.pagamenti.length === 0) {
+    el.dettaglioMese.append(crea('p', 'dettaglio-vuoto', 'Nessun pagamento in questo mese.'));
+    return;
+  }
+
+  // Una riga per pagamento: "4 dic   🎬 Disney+   15,99 €"
+  const elenco = crea('ul', 'dettaglio-elenco');
+  for (const { abb, data } of mese.pagamenti) {
+    const riga = crea('li', 'dettaglio-riga');
+    if (data < oggi) riga.classList.add('passato'); // già addebitato questo mese
+
+    const nome = crea('span', 'dettaglio-nome', `${trovaCategoria(abb.categoria).emoji} ${abb.nome}`);
+    if (abb.frequenza === 'annuale') nome.append(crea('span', 'dettaglio-nota', ' · annuale'));
+    if (data < oggi) nome.append(crea('span', 'dettaglio-nota', ' · già pagato'));
+
+    riga.append(
+      crea('span', 'dettaglio-data', formatoGiornoMese.format(data).replace('.', '')),
+      nome,
+      crea('span', 'dettaglio-importo', formatoEuro.format(abb.costo)),
+    );
+    elenco.append(riga);
+  }
+  el.dettaglioMese.append(elenco);
 }
 
 
@@ -519,6 +670,12 @@ el.filtri.addEventListener('click', (e) => {
   filtro = pulsante.dataset.filtro;
   primoDisegno = true; // le righe ricompaiono con la dissolvenza
   disegna();
+});
+
+// Tocco su una colonna del grafico: mostriamo il dettaglio di quel mese
+el.graficoColonne.addEventListener('click', (e) => {
+  const colonna = e.target.closest('button[data-indice]');
+  if (colonna) selezionaMese(Number(colonna.dataset.indice));
 });
 
 el.btnEsporta.addEventListener('click', esportaBackup);
