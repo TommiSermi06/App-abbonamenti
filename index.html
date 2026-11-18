@@ -18,10 +18,16 @@
 
   <link rel="apple-touch-icon" href="icon-180.png">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <link rel="manifest" href="manifest.json">
+  <!-- NUMERO DI VERSIONE: "?v=2.5" in fondo ai nomi dei file.
+       Per il browser "app.js?v=2.5" e "app.js?v=2.6" sono file diversi:
+       cambiando il numero, l'iPhone è costretto a scaricare il codice nuovo
+       invece di usare la copia vecchia che tiene in memoria.
+       A ogni modifica di CSS o JavaScript aumenta il numero in TUTTI i punti
+       di questo file (cerca "2.5"), anche nella scritta in fondo alla pagina. -->
+  <link rel="manifest" href="manifest.json?v=2.5">
 
   <title>Abbonamenti</title>
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=2.5">
 </head>
 <body>
   <main class="app">
@@ -100,6 +106,9 @@
       <button type="button" id="btn-importa" class="riga riga-azione">Importa backup</button>
     </div>
     <p class="nota">Il backup è un file .json con tutti i tuoi abbonamenti. Importarlo sostituisce i dati attuali.</p>
+
+    <!-- Versione dell'app: utile per capire se l'iPhone ha già l'ultima -->
+    <p class="versione">Abbonamenti · versione 2.5</p>
     <!-- Campo per scegliere il file: è nascosto, lo apre il pulsante "Importa backup" -->
     <input type="file" id="file-importa" accept=".json,application/json" hidden>
   </main>
@@ -187,9 +196,9 @@
 
   <!-- L'ordine conta: prima le categorie, poi storage.js (i dati) e calendario.js,
        infine app.js che li usa tutti -->
-  <script src="categorie.js"></script>
-  <script src="storage.js"></script>
-  <script src="calendario.js"></script>
-  <script src="app.js"></script>
+  <script src="categorie.js?v=2.5"></script>
+  <script src="storage.js?v=2.5"></script>
+  <script src="calendario.js?v=2.5"></script>
+  <script src="app.js?v=2.5"></script>
 </body>
 </html>
