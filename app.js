@@ -55,6 +55,8 @@ const el = {
   graficoColonne: $('grafico-colonne'),
   dettaglioMese: $('dettaglio-mese'),
   notaMesi: $('nota-mesi'),
+  btnCalendario: $('btn-calendario'),
+  notaCalendario: $('nota-calendario'),
   btnAggiungi: $('btn-aggiungi'),
   btnEsporta: $('btn-esporta'),
   btnImporta: $('btn-importa'),
@@ -639,6 +641,58 @@ async function importaBackup() {
 
 
 /* =====================================================================
+   PROMEMORIA NEL CALENDARIO
+   ===================================================================== */
+
+// iPhone o iPad? (gli iPad recenti si presentano come "Mac" con lo schermo touch)
+function suDispositivoApple() {
+  return /iPhone|iPad|iPod/.test(navigator.userAgent)
+    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+}
+
+function aggiungiAlCalendario() {
+  // Gli stessi pagamenti del grafico, tenendo solo quelli da oggi in poi
+  const oggi = oggiAMezzanotte();
+  const pagamenti = calcolaProssimi12Mesi()
+    .flatMap((mese) => mese.pagamenti)
+    .filter(({ data }) => data >= oggi);
+
+  if (pagamenti.length === 0) {
+    alert('Non ci sono rinnovi da aggiungere al calendario.');
+    return;
+  }
+
+  const testo = creaFileCalendario(pagamenti);
+  const file = new Blob([testo], { type: 'text/calendar;charset=utf-8' });
+  const indirizzo = URL.createObjectURL(file);
+
+  if (suDispositivoApple()) {
+    // Sull'iPhone apriamo il file: Safari riconosce il calendario
+    // e propone di aggiungere gli eventi all'app Calendario
+    window.location.href = indirizzo;
+  } else {
+    // Sul computer lo scarichiamo, come il backup
+    const link = crea('a');
+    link.href = indirizzo;
+    link.download = 'rinnovi-abbonamenti.ics';
+    document.body.append(link);
+    link.click();
+    link.remove();
+  }
+  // Liberiamo la memoria dopo un po' (lasciamo il tempo all'iPhone di leggerlo)
+  setTimeout(() => URL.revokeObjectURL(indirizzo), 60000);
+}
+
+// Il testo sotto il pulsante usa le impostazioni di calendario.js
+function scriviNotaCalendario() {
+  const prima = GIORNI_PREAVVISO === 1 ? '1 giorno prima' : `${GIORNI_PREAVVISO} giorni prima`;
+  el.notaCalendario.textContent = 'Crea un evento per ogni rinnovo dei prossimi 12 mesi, '
+    + `con un avviso ${prima} e uno il giorno stesso alle ${ORA_AVVISO}:00. `
+    + 'Se aggiungi o modifichi abbonamenti, ripeti l\'operazione.';
+}
+
+
+/* =====================================================================
    COLLEGARE I PULSANTI ALLE FUNZIONI
    ===================================================================== */
 
@@ -678,6 +732,7 @@ el.graficoColonne.addEventListener('click', (e) => {
   if (colonna) selezionaMese(Number(colonna.dataset.indice));
 });
 
+el.btnCalendario.addEventListener('click', aggiungiAlCalendario);
 el.btnEsporta.addEventListener('click', esportaBackup);
 el.btnImporta.addEventListener('click', () => el.fileImporta.click());
 el.fileImporta.addEventListener('change', importaBackup);
@@ -707,6 +762,7 @@ function preparaMenuCategorie() {
 
 async function avvia() {
   preparaMenuCategorie();
+  scriviNotaCalendario();
   try {
     abbonamenti = await Archivio.tutti();
   } catch (e) {

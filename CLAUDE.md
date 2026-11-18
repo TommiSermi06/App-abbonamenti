@@ -41,8 +41,9 @@ Il proprietario del progetto **sta imparando a programmare**:
 | `index.html` | Struttura della pagina, foglio del modulo, meta tag per iPhone |
 | `style.css` | Tutto l'aspetto: variabili colore, liste, foglio, etichette, animazioni |
 | `categorie.js` | Elenco fisso delle categorie (`CATEGORIE`), unico punto dove modificarle |
+| `calendario.js` | Crea il file .ics dei promemoria (`creaFileCalendario`); impostazioni `GIORNI_PREAVVISO` e `ORA_AVVISO` |
 | `storage.js` | `Archivio`: lettura/scrittura dati, dati iniziali, controllo e backup |
-| `app.js` | Logica: calcolo date e totali, filtro, lista divisa in gruppi, spesa per categoria, grafico mese per mese, modulo, backup |
+| `app.js` | Logica: calcolo date e totali, filtro, lista divisa in gruppi, spesa per categoria, grafico mese per mese, promemoria nel calendario, modulo, backup |
 | `manifest.json` | Informazioni per installare l'app |
 | `icon.svg`, `icon-180.png`, `icon-512.png` | Icone |
 
@@ -75,6 +76,11 @@ I backup della versione 1 si importano ancora.
   Fatto con div e CSS, senza librerie: colonne blu, mese scelto con fascia azzurrina,
   griglia leggera (`--griglia`) con circa 3 linee a valori tondi; un tocco su una colonna
   mostra sotto il dettaglio dei pagamenti di quel mese.
+- Promemoria: un evento .ics di tutto il giorno per ogni rinnovo da oggi ai prossimi 12 mesi
+  (stessi pagamenti del grafico), con due avvisi: `GIORNI_PREAVVISO` giorni prima e il giorno
+  stesso, alle `ORA_AVVISO`. Righe del file ≤ 75 byte, separate da CRLF, testo protetto con `testoICS`.
+  Su iPhone/iPad il file si apre (Safari propone "Aggiungi tutti"); sul computer si scarica.
+  Ogni esportazione crea nuovi eventi: per aggiornare conviene un calendario dedicato da svuotare.
 - Colori dell'etichetta dei giorni mancanti: più di 7 grigio; da 7 a 4 arancione;
   3 o meno rosso con bagliore che pulsa; il giorno stesso "Oggi!" (rosso pieno).
 
