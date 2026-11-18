@@ -40,18 +40,30 @@ Il proprietario del progetto **sta imparando a programmare**:
 | --- | --- |
 | `index.html` | Struttura della pagina, foglio del modulo, meta tag per iPhone |
 | `style.css` | Tutto l'aspetto: variabili colore, liste, foglio, etichette, animazioni |
+| `categorie.js` | Elenco fisso delle categorie (`CATEGORIE`), unico punto dove modificarle |
 | `storage.js` | `Archivio`: lettura/scrittura dati, dati iniziali, controllo e backup |
-| `app.js` | Logica: calcolo date e totali, disegno della lista, modulo, backup |
+| `app.js` | Logica: calcolo date e totali, filtro, lista divisa in gruppi, spesa per categoria, modulo, backup |
 | `manifest.json` | Informazioni per installare l'app |
 | `icon.svg`, `icon-180.png`, `icon-512.png` | Icone |
 
 ## Modello dei dati
 ```js
 { id: "…", nome: "Spotify", costo: 16.99, frequenza: "mensile" | "annuale",
-  giorno: 1-31, mese: 1-12 (solo annuali, altrimenti null) }
+  giorno: 1-31, mese: 1-12 (solo annuali, altrimenti null),
+  categoria: "streaming" | "musica" | … (id di categorie.js) }
 ```
-Chiave nel localStorage: `abbonamenti:v1`.
-Backup: file JSON `{ app, versione: 1, esportatoIl, abbonamenti: [...] }`.
+Chiave nel localStorage: `abbonamenti:v1` (invariata: i dati della versione 1 restano compatibili).
+Backup: file JSON `{ app, versione: 2, esportatoIl, abbonamenti: [...] }`.
+I backup della versione 1 si importano ancora.
+
+## Categorie (versione 2)
+- Elenco **fisso** in `categorie.js` (scelta del proprietario): non c'è una schermata per crearle.
+  Gli `id` non vanno mai cambiati (sono salvati nei dati); `nome` ed `emoji` sì.
+- Categoria mancante o sconosciuta (dati della versione 1) → `altro`, gestito in `normalizza()` di `storage.js`.
+- Lista divisa in gruppi nell'ordine di `CATEGORIE`; dentro ogni gruppo, ordine per prossimo rinnovo.
+- Filtro a pillole ("Tutte" + categorie usate). Se la categoria filtrata resta vuota, o salvi
+  un abbonamento di un'altra categoria, il filtro torna a "Tutte".
+- "Spesa per categoria": importo al mese (annuali / 12), percentuale e barra, dalla più costosa.
 
 ## Regole di calcolo
 - Totale al mese = somma dei mensili + (annuali / 12). Totale all'anno = totale al mese × 12.

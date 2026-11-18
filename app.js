@@ -28,6 +28,7 @@ let abbonamenti = [];     // la lista caricata da Archivio
 let idInModifica = null;  // id dell'abbonamento aperto nel modulo (null = nuovo)
 let idDaAnimare = null;   // la riga appena aggiunta, che compare con dissolvenza
 let primoDisegno = true;  // al primo avvio facciamo comparire tutte le righe
+let filtro = 'tutte';     // categoria mostrata nella lista: 'tutte' oppure l'id di una categoria
 let elementoPrimaDelFoglio = null; // dove tornare con il focus dopo aver chiuso
 
 
@@ -37,8 +38,12 @@ const el = {
   totaleMese: $('totale-mese'),
   totaleAnno: $('totale-anno'),
   prossimo: $('prossimo'),
-  lista: $('lista'),
+  filtri: $('filtri'),
+  gruppi: $('gruppi'),
   listaVuota: $('lista-vuota'),
+  sezioneCategorie: $('sezione-categorie'),
+  perCategoria: $('per-categoria'),
+  campoCategoria: $('campo-categoria'),
   btnAggiungi: $('btn-aggiungi'),
   btnEsporta: $('btn-esporta'),
   btnImporta: $('btn-importa'),
@@ -162,12 +167,24 @@ function disegna() {
 
   disegnaTotali();
   disegnaProssimo(conInfo[0]);
-  disegnaLista(conInfo);
+  disegnaFiltri();
+  disegnaGruppi(conInfo);
+  disegnaPerCategoria();
   primoDisegno = false;
 }
 
+// Le categorie che hanno almeno un abbonamento, nell'ordine di categorie.js
+function categorieUsate() {
+  return CATEGORIE.filter((cat) => abbonamenti.some((abb) => abb.categoria === cat.id));
+}
+
+// Quanto si spende al mese per un gruppo di abbonamenti
+function totaleAlMese(lista) {
+  return lista.reduce((somma, abb) => somma + costoMensile(abb), 0);
+}
+
 function disegnaTotali() {
-  const alMese = abbonamenti.reduce((somma, abb) => somma + costoMensile(abb), 0);
+  const alMese = totaleAlMese(abbonamenti);
   el.totaleMese.textContent = formatoEuro.format(alMese);
   el.totaleAnno.textContent = formatoEuro.format(alMese * 12);
 }
@@ -189,41 +206,117 @@ function disegnaProssimo(primo) {
   );
 }
 
-function disegnaLista(conInfo) {
-  el.lista.replaceChildren();
-  el.lista.hidden = conInfo.length === 0;
+// --- Pillole del filtro: "Tutte" + una per ogni categoria usata ---
+function disegnaFiltri() {
+  const usate = categorieUsate();
+
+  // Se la categoria filtrata non ha più abbonamenti (es. li hai eliminati), torniamo a "Tutte"
+  if (filtro !== 'tutte' && !usate.some((cat) => cat.id === filtro)) filtro = 'tutte';
+
+  el.filtri.replaceChildren();
+  el.filtri.hidden = abbonamenti.length === 0;
+
+  const voci = [{ id: 'tutte', nome: 'Tutte', emoji: '' }, ...usate];
+  for (const voce of voci) {
+    const pulsante = crea('button', 'filtro');
+    pulsante.type = 'button';
+    pulsante.dataset.filtro = voce.id;
+    // aria-pressed dice a VoiceOver quale pillola è scelta
+    pulsante.setAttribute('aria-pressed', String(voce.id === filtro));
+    const testo = voce.emoji ? `${voce.emoji} ${voce.nome}` : voce.nome;
+    pulsante.append(crea('span', 'pillola', testo));
+    el.filtri.append(pulsante);
+  }
+}
+
+// --- Lista divisa in gruppi: un titoletto e una card per ogni categoria ---
+function disegnaGruppi(conInfo) {
+  el.gruppi.replaceChildren();
   el.listaVuota.hidden = conInfo.length > 0;
 
-  conInfo.forEach(({ abb, info }, posizione) => {
-    const riga = crea('li');
+  // Con un filtro attivo teniamo solo gli abbonamenti di quella categoria
+  const visibili = filtro === 'tutte'
+    ? conInfo
+    : conInfo.filter(({ abb }) => abb.categoria === filtro);
 
-    // Animazione: tutte le righe al primo avvio, poi solo quella nuova
-    if (primoDisegno || abb.id === idDaAnimare) {
-      riga.classList.add('compari');
-      riga.style.animationDelay = primoDisegno ? `${posizione * 40}ms` : '0ms';
+  let posizione = 0; // serve per far comparire le righe una dopo l'altra
+  for (const cat of CATEGORIE) {
+    // conInfo è già ordinato per rinnovo, quindi anche ogni gruppo lo è
+    const delGruppo = visibili.filter(({ abb }) => abb.categoria === cat.id);
+    if (delGruppo.length === 0) continue; // niente gruppi vuoti
+
+    const titolo = crea('h3', 'titolo-gruppo', `${cat.emoji} ${cat.nome}`);
+    const lista = crea('ul', 'lista card');
+    for (const { abb, info } of delGruppo) {
+      lista.append(creaRigaAbbonamento(abb, info, posizione));
+      posizione += 1;
     }
-
-    // Ogni riga è un pulsante: toccandola si apre il modulo di modifica
-    const pulsante = crea('button', 'riga');
-    pulsante.type = 'button';
-    pulsante.dataset.id = abb.id;
-
-    const dettaglio = abb.frequenza === 'mensile'
-      ? `${formatoEuro.format(abb.costo)} al mese · il ${abb.giorno}`
-      : `${formatoEuro.format(abb.costo)} all'anno · ${abb.giorno} ${NOMI_MESI[abb.mese - 1]}`;
-
-    const testi = crea('span', 'abb-testi');
-    testi.append(crea('span', 'abb-nome', abb.nome), crea('span', 'abb-dettaglio', dettaglio));
-
-    // Copiamo la freccia ">" dal <template> dell'HTML
-    const freccia = el.tplFreccia.content.cloneNode(true);
-
-    pulsante.append(testi, creaBadge(info.giorni, info.stato, false), freccia);
-    riga.append(pulsante);
-    el.lista.append(riga);
-  });
+    el.gruppi.append(titolo, lista);
+  }
 
   idDaAnimare = null;
+}
+
+// Crea la riga di un abbonamento (un pulsante che apre il modulo di modifica)
+function creaRigaAbbonamento(abb, info, posizione) {
+  const riga = crea('li');
+
+  // Animazione: tutte le righe al primo avvio, poi solo quella nuova
+  if (primoDisegno || abb.id === idDaAnimare) {
+    riga.classList.add('compari');
+    riga.style.animationDelay = primoDisegno ? `${posizione * 40}ms` : '0ms';
+  }
+
+  const pulsante = crea('button', 'riga');
+  pulsante.type = 'button';
+  pulsante.dataset.id = abb.id;
+
+  const dettaglio = abb.frequenza === 'mensile'
+    ? `${formatoEuro.format(abb.costo)} al mese · il ${abb.giorno}`
+    : `${formatoEuro.format(abb.costo)} all'anno · ${abb.giorno} ${NOMI_MESI[abb.mese - 1]}`;
+
+  const testi = crea('span', 'abb-testi');
+  testi.append(crea('span', 'abb-nome', abb.nome), crea('span', 'abb-dettaglio', dettaglio));
+
+  // Copiamo la freccia ">" dal <template> dell'HTML
+  const freccia = el.tplFreccia.content.cloneNode(true);
+
+  pulsante.append(testi, creaBadge(info.giorni, info.stato, false), freccia);
+  riga.append(pulsante);
+  return riga;
+}
+
+// --- Spesa al mese per ogni categoria, con una barra della proporzione ---
+function disegnaPerCategoria() {
+  const totale = totaleAlMese(abbonamenti);
+  el.perCategoria.replaceChildren();
+  el.sezioneCategorie.hidden = abbonamenti.length === 0;
+  if (totale === 0) return;
+
+  // Calcoliamo il totale di ogni categoria e mettiamo prima quelle che costano di più
+  const righe = categorieUsate()
+    .map((cat) => ({ cat, alMese: totaleAlMese(abbonamenti.filter((abb) => abb.categoria === cat.id)) }))
+    .sort((a, b) => b.alMese - a.alMese);
+
+  for (const { cat, alMese } of righe) {
+    const percentuale = Math.round((alMese / totale) * 100);
+
+    const riga = crea('li', 'riga-categoria');
+    const alto = crea('div', 'categoria-alto');
+    const valore = crea('span', 'categoria-valore', formatoEuro.format(alMese));
+    valore.append(crea('span', 'categoria-percentuale', ` · ${percentuale}%`));
+    alto.append(crea('span', 'categoria-nome', `${cat.emoji} ${cat.nome}`), valore);
+
+    // La barra: la parte blu è larga quanto la percentuale della categoria
+    const barra = crea('div', 'categoria-barra');
+    barra.setAttribute('aria-hidden', 'true'); // il numero è già scritto accanto
+    const riempimento = crea('span');
+    riempimento.style.width = `${(alMese / totale) * 100}%`;
+    barra.append(riempimento);
+
+    riga.append(alto, barra);
+    el.perCategoria.append(riga);
+  }
 }
 
 
@@ -256,6 +349,10 @@ function apriFoglio(abb) {
   el.campoCosto.value = abb ? abb.costo.toFixed(2).replace('.', ',') : '';
   el.campoGiorno.value = abb ? String(abb.giorno) : '';
   el.campoMese.value = String(abb && abb.mese ? abb.mese : new Date().getMonth() + 1);
+  // Nuovo abbonamento: se stai guardando una categoria, la proponiamo già scelta
+  el.campoCategoria.value = abb ? abb.categoria
+    : filtro !== 'tutte' ? filtro
+    : CATEGORIA_PREDEFINITA;
   impostaFrequenza(abb ? abb.frequenza : 'mensile');
   el.bloccoElimina.hidden = !abb;
   el.errore.textContent = '';
@@ -286,6 +383,7 @@ function leggiModulo() {
   const giorno = Number(el.campoGiorno.value.trim());
   const frequenza = frequenzaScelta();
   const mese = Number(el.campoMese.value);
+  const categoria = el.campoCategoria.value;
 
   if (!nome) return { errore: 'Scrivi il nome dell\'abbonamento.', campo: el.campoNome };
   if (!Number.isFinite(costo) || costo <= 0) {
@@ -295,7 +393,7 @@ function leggiModulo() {
     return { errore: 'Il giorno del rinnovo va da 1 a 31.', campo: el.campoGiorno };
   }
 
-  return { dati: { nome, costo, frequenza, giorno, mese: frequenza === 'annuale' ? mese : null } };
+  return { dati: { nome, costo, frequenza, giorno, mese: frequenza === 'annuale' ? mese : null, categoria } };
 }
 
 async function salva(evento) {
@@ -315,6 +413,9 @@ async function salva(evento) {
       const nuovo = await Archivio.aggiungi(dati);
       idDaAnimare = nuovo.id;
     }
+    // Se l'abbonamento salvato non è nella categoria filtrata, sparirebbe dalla vista:
+    // meglio tornare a "Tutte" così lo vedi subito
+    if (filtro !== 'tutte' && dati.categoria !== filtro) filtro = 'tutte';
     abbonamenti = await Archivio.tutti();
     chiudiFoglio();
     disegna();
@@ -403,12 +504,21 @@ el.modulo.addEventListener('input', () => {
   el.errore.textContent = '';
 });
 
-// Un solo "ascoltatore" per tutta la lista: capiamo quale riga è stata toccata
-el.lista.addEventListener('click', (e) => {
+// Un solo "ascoltatore" per tutti i gruppi: capiamo quale riga è stata toccata
+el.gruppi.addEventListener('click', (e) => {
   const pulsante = e.target.closest('button[data-id]');
   if (!pulsante) return;
   const abb = abbonamenti.find((a) => a.id === pulsante.dataset.id);
   if (abb) apriFoglio(abb);
+});
+
+// Tocco su una pillola del filtro: cambiamo categoria e ridisegniamo
+el.filtri.addEventListener('click', (e) => {
+  const pulsante = e.target.closest('button[data-filtro]');
+  if (!pulsante || pulsante.dataset.filtro === filtro) return;
+  filtro = pulsante.dataset.filtro;
+  primoDisegno = true; // le righe ricompaiono con la dissolvenza
+  disegna();
 });
 
 el.btnEsporta.addEventListener('click', esportaBackup);
@@ -429,7 +539,17 @@ document.addEventListener('visibilitychange', () => {
 /* =====================================================================
    AVVIO
    ===================================================================== */
+// Riempie il menu "Categoria" del modulo con l'elenco di categorie.js
+function preparaMenuCategorie() {
+  for (const cat of CATEGORIE) {
+    const opzione = crea('option', '', `${cat.emoji} ${cat.nome}`);
+    opzione.value = cat.id;
+    el.campoCategoria.append(opzione);
+  }
+}
+
 async function avvia() {
+  preparaMenuCategorie();
   try {
     abbonamenti = await Archivio.tutti();
   } catch (e) {

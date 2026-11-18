@@ -17,7 +17,8 @@
      costo: 16.99,           // numero con il punto, in euro
      frequenza: "mensile",   // "mensile" oppure "annuale"
      giorno: 2,              // giorno del mese in cui si rinnova (1-31)
-     mese: null              // solo per gli annuali: mese del rinnovo (1-12)
+     mese: null,             // solo per gli annuali: mese del rinnovo (1-12)
+     categoria: "musica"     // id di una categoria di categorie.js
    }
    ===================================================================== */
 
@@ -29,10 +30,10 @@ const Archivio = (function () {
   // Dati di esempio: li carichiamo SOLO al primo avvio,
   // cioè quando nel localStorage non c'è ancora niente.
   const DATI_INIZIALI = [
-    { nome: 'Disney+', costo: 15.99, frequenza: 'mensile', giorno: 4 },
-    { nome: 'ChatGPT', costo: 23, frequenza: 'mensile', giorno: 20 },
-    { nome: 'Spotify', costo: 16.99, frequenza: 'mensile', giorno: 2 },
-    { nome: 'PlayStation Plus', costo: 8.99, frequenza: 'mensile', giorno: 29 },
+    { nome: 'Disney+', costo: 15.99, frequenza: 'mensile', giorno: 4, categoria: 'streaming' },
+    { nome: 'ChatGPT', costo: 23, frequenza: 'mensile', giorno: 20, categoria: 'lavoro' },
+    { nome: 'Spotify', costo: 16.99, frequenza: 'mensile', giorno: 2, categoria: 'musica' },
+    { nome: 'PlayStation Plus', costo: 8.99, frequenza: 'mensile', giorno: 29, categoria: 'giochi' },
   ];
 
   // Crea un codice unico per ogni abbonamento.
@@ -63,6 +64,8 @@ const Archivio = (function () {
       : null;
     const giorno = Number(grezzo.giorno);
     const mese = Number(grezzo.mese);
+    // Categoria mancante o sconosciuta (es. dati della versione 1) → "Altro"
+    const categoria = categoriaEsiste(grezzo.categoria) ? grezzo.categoria : CATEGORIA_PREDEFINITA;
 
     if (!nome) return null;
     if (!(costo > 0)) return null;
@@ -77,6 +80,7 @@ const Archivio = (function () {
       frequenza,
       giorno,
       mese: frequenza === 'annuale' ? mese : null,
+      categoria,
     };
   }
 
@@ -144,7 +148,7 @@ const Archivio = (function () {
   async function esportaBackup() {
     const backup = {
       app: 'Abbonamenti',
-      versione: 1,
+      versione: 2, // la 2 aggiunge le categorie (i backup della versione 1 si importano lo stesso)
       esportatoIl: new Date().toISOString(),
       abbonamenti: await tutti(),
     };

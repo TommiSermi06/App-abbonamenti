@@ -9,6 +9,7 @@
    5. Totali e prossimo rinnovo
    6. Etichette dei giorni mancanti (grigio / arancione / rosso)
    7. Foglio che sale dal basso e modulo
+   7b. Categorie: filtro, gruppi e spesa per categoria
    8. Animazioni e "movimento ridotto"
    ===================================================================== */
 
@@ -545,6 +546,126 @@ button:active {
   margin: 8px 32px 16px;
   font-size: 13px;
   color: var(--rosso);
+}
+
+
+/* ---------- 7b. Categorie: filtro, gruppi e spesa per categoria ---------- */
+
+/* Fila di pillole che scorre in orizzontale se non ci sta tutta */
+.filtri {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 0 16px;
+  scrollbar-width: none;              /* niente barra di scorrimento (Firefox) */
+  -webkit-overflow-scrolling: touch;  /* scorrimento fluido sull'iPhone */
+}
+
+.filtri::-webkit-scrollbar {
+  display: none;                      /* niente barra di scorrimento (Safari, Chrome) */
+}
+
+/* Il pulsante è alto 44px (area tattile), la pillola visibile un po' meno */
+.filtro {
+  flex: none;
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+.pillola {
+  display: block;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: var(--azzurro-tenue);   /* azzurrino: particolare */
+  color: var(--blu);
+  font-size: 15px;
+  font-weight: 500;
+  white-space: nowrap;
+  transition: background-color var(--durata) var(--curva), color var(--durata) var(--curva);
+}
+
+/* La pillola scelta: blu pieno */
+.filtro[aria-pressed="true"] .pillola {
+  background: var(--blu);
+  color: var(--su-blu);
+  font-weight: 600;
+}
+
+.filtro:focus-visible {
+  outline: none;
+}
+
+.filtro:focus-visible .pillola {
+  outline: 2px solid var(--blu);
+  outline-offset: 2px;
+}
+
+/* Titoletto sopra ogni gruppo della lista (es. "🎬 Streaming") */
+.titolo-gruppo {
+  margin: 16px 32px 7px;
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--testo-secondario);
+}
+
+/* Riga della spesa per categoria: nome e importo sopra, barra sotto */
+.riga-categoria {
+  min-height: 44px;
+  padding: 12px 16px;
+}
+
+.categoria-alto {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.categoria-nome {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.categoria-valore {
+  flex: none;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.categoria-percentuale {
+  font-weight: 400;
+  color: var(--testo-secondario);
+}
+
+/* Barra: binario azzurrino, riempimento blu */
+.categoria-barra {
+  height: 6px;
+  margin-top: 8px;
+  border-radius: 3px;
+  background: var(--azzurro-tenue);
+  overflow: hidden;
+}
+
+.categoria-barra > span {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--blu);
+  transform-origin: left;             /* cresce da sinistra verso destra */
+  animation: cresci 0.35s var(--curva) both;
+}
+
+@keyframes cresci {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
 }
 
 
