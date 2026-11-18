@@ -199,5 +199,37 @@ const Archivio = (function () {
   }
 
   // Queste sono le sole funzioni "visibili" dall'esterno
-  return { tutti, aggiungi, aggiorna, elimina, esportaBackup, leggiBackup, sostituisciTutti };
+  // ---------- Impostazioni dell'app (es. l'ordine scelto per la lista) ----------
+  // Stanno in un "cassetto" separato dagli abbonamenti, così non finiscono nel backup.
+  const CHIAVE_IMPOSTAZIONI = 'abbonamenti:impostazioni';
+
+  function leggiTutteLeImpostazioni() {
+    try {
+      const dati = JSON.parse(localStorage.getItem(CHIAVE_IMPOSTAZIONI));
+      return dati && typeof dati === 'object' ? dati : {};
+    } catch (e) {
+      return {}; // impostazioni rovinate o salvataggio bloccato: si riparte da quelle predefinite
+    }
+  }
+
+  // Restituisce un'impostazione, oppure "predefinito" se non è mai stata salvata
+  async function leggiImpostazione(nome, predefinito) {
+    const impostazioni = leggiTutteLeImpostazioni();
+    return nome in impostazioni ? impostazioni[nome] : predefinito;
+  }
+
+  async function salvaImpostazione(nome, valore) {
+    const impostazioni = leggiTutteLeImpostazioni();
+    impostazioni[nome] = valore;
+    try {
+      localStorage.setItem(CHIAVE_IMPOSTAZIONI, JSON.stringify(impostazioni));
+    } catch (e) {
+      /* se non si può salvare, l'app funziona lo stesso: l'impostazione dura fino alla chiusura */
+    }
+  }
+
+  return {
+    tutti, aggiungi, aggiorna, elimina, esportaBackup, leggiBackup, sostituisciTutti,
+    leggiImpostazione, salvaImpostazione,
+  };
 })();

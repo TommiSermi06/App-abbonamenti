@@ -12,6 +12,7 @@ quanto spendi al mese e all'anno, e quale rinnovo sta per arrivare.
 - Grafico delle spese dei prossimi 12 mesi, con il dettaglio dei pagamenti di ogni mese
 - Promemoria dei rinnovi nel Calendario dell'iPhone (file .ics con avvisi)
 - Abbonamenti in pausa o disdetti: restano nella lista ma non contano nei totali
+- Ricerca per nome e ordinamento della lista (rinnovo, prezzo, nome)
 - Esporta e importa un backup in formato JSON
 - Modalità scura automatica, installabile nella schermata Home dell'iPhone
 

@@ -33,6 +33,7 @@ let idInModifica = null;  // id dell'abbonamento aperto nel modulo (null = nuovo
 let idDaAnimare = null;   // la riga appena aggiunta, che compare con dissolvenza
 let primoDisegno = true;  // al primo avvio facciamo comparire tutte le righe
 let filtro = 'tutte';     // categoria mostrata nella lista: 'tutte' oppure l'id di una categoria
+let ordine = 'rinnovo';   // ordine della lista: 'rinnovo', 'prezzo' oppure 'nome'
 let meseScelto = 0;       // colonna scelta nel grafico: 0 = questo mese, 11 = tra 11 mesi
 let mesiCalcolati = [];   // i 12 mesi del grafico, con i loro pagamenti
 let elementoPrimaDelFoglio = null; // dove tornare con il focus dopo aver chiuso
@@ -44,6 +45,12 @@ const el = {
   totaleMese: $('totale-mese'),
   totaleAnno: $('totale-anno'),
   prossimo: $('prossimo'),
+  bloccoOrdina: $('blocco-ordina'),
+  campoOrdine: $('campo-ordine'),
+  bloccoRicerca: $('blocco-ricerca'),
+  campoRicerca: $('campo-ricerca'),
+  btnCancellaRicerca: $('btn-cancella-ricerca'),
+  nessunRisultato: $('nessun-risultato'),
   filtri: $('filtri'),
   gruppi: $('gruppi'),
   listaVuota: $('lista-vuota'),
@@ -183,10 +190,55 @@ function disegna() {
   // Il prossimo rinnovo è il primo tra quelli ATTIVI
   disegnaProssimo(conInfo.find(({ abb }) => abb.stato === 'attivo'));
   disegnaFiltri();
-  disegnaGruppi(conInfo);
+  disegnaLista();
   disegnaPerCategoria();
   disegnaGraficoMesi();
   primoDisegno = false;
+}
+
+
+/* ---------- Ricerca e ordinamento della lista ---------- */
+
+// Toglie accenti e maiuscole, così "disney" trova "Disney+" e "e" trova "è"
+function semplifica(testo) {
+  return testo.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+}
+
+// I modi di ordinare: ognuno è una funzione che confronta due righe (a e b).
+// Se il primo criterio è pari, si usa il nome per decidere.
+const perNome = (a, b) => a.abb.nome.localeCompare(b.abb.nome, 'it');
+const ORDINAMENTI = {
+  rinnovo: (a, b) => a.info.giorni - b.info.giorni || perNome(a, b),
+  prezzo: (a, b) => costoMensile(b.abb) - costoMensile(a.abb) || perNome(a, b), // dal più caro al mese
+  nome: perNome,
+};
+
+// Disegna solo la lista (ricerca + ordine + gruppi), senza toccare totali e grafico
+function disegnaLista() {
+  const oggi = oggiAMezzanotte();
+  const cercato = semplifica(el.campoRicerca.value);
+
+  // Nascondiamo ricerca e ordine finché non c'è nessun abbonamento
+  el.bloccoRicerca.hidden = abbonamenti.length === 0;
+  el.bloccoOrdina.hidden = abbonamenti.length === 0;
+  el.btnCancellaRicerca.hidden = el.campoRicerca.value === '';
+
+  const conInfo = abbonamenti
+    .filter((abb) => semplifica(abb.nome).includes(cercato)) // "" è contenuto in ogni nome
+    .map((abb) => ({ abb, info: infoRinnovo(abb, oggi) }))
+    .sort(ORDINAMENTI[ordine]);
+
+  disegnaGruppi(conInfo);
+
+  // Nessun risultato: lo diciamo, invece di mostrare una lista vuota senza spiegazioni
+  const quantiVisibili = el.gruppi.querySelectorAll('.riga').length;
+  const nessunRisultato = abbonamenti.length > 0 && quantiVisibili === 0;
+  el.nessunRisultato.hidden = !nessunRisultato;
+  if (nessunRisultato) {
+    el.nessunRisultato.textContent = cercato
+      ? `Nessun abbonamento trovato per "${el.campoRicerca.value.trim()}".`
+      : 'Nessun abbonamento in questa categoria.';
+  }
 }
 
 // Solo gli abbonamenti attivi: sono gli unici che contano in totali, grafico e calendario
@@ -254,9 +306,10 @@ function disegnaFiltri() {
 }
 
 // --- Lista divisa in gruppi: un titoletto e una card per ogni categoria ---
+// (conInfo arriva già filtrato dalla ricerca e ordinato come ha scelto l'utente)
 function disegnaGruppi(conInfo) {
   el.gruppi.replaceChildren();
-  el.listaVuota.hidden = conInfo.length > 0;
+  el.listaVuota.hidden = abbonamenti.length > 0;
 
   // Con un filtro attivo teniamo solo gli abbonamenti di quella categoria
   const visibili = filtro === 'tutte'
@@ -265,13 +318,13 @@ function disegnaGruppi(conInfo) {
 
   // Separiamo gli attivi dagli altri (in pausa o disdetti)
   const visibiliAttivi = visibili.filter(({ abb }) => abb.stato === 'attivo');
-  const visibiliNonAttivi = visibili
-    .filter(({ abb }) => abb.stato !== 'attivo')
-    .sort((a, b) => a.abb.nome.localeCompare(b.abb.nome, 'it')); // in ordine alfabetico
+  const visibiliNonAttivi = visibili.filter(({ abb }) => abb.stato !== 'attivo');
+  // Chi è fermo non ha un "prossimo rinnovo": in quel caso li mettiamo in ordine alfabetico
+  if (ordine === 'rinnovo') visibiliNonAttivi.sort(perNome);
 
   let posizione = 0; // serve per far comparire le righe una dopo l'altra
   for (const cat of CATEGORIE) {
-    // conInfo è già ordinato per rinnovo, quindi anche ogni gruppo lo è
+    // conInfo è già nell'ordine scelto, quindi anche ogni gruppo lo è
     const delGruppo = visibiliAttivi.filter(({ abb }) => abb.categoria === cat.id);
     if (delGruppo.length === 0) continue; // niente gruppi vuoti
 
@@ -768,6 +821,31 @@ el.filtri.addEventListener('click', (e) => {
   disegna();
 });
 
+// Ricerca: a ogni lettera ridisegniamo solo la lista (niente animazioni)
+el.campoRicerca.addEventListener('input', () => disegnaLista());
+
+// Tasto "Cerca" della tastiera: chiudiamo la tastiera per vedere i risultati
+el.campoRicerca.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') el.campoRicerca.blur();
+  if (e.key === 'Escape') { el.campoRicerca.value = ''; disegnaLista(); }
+});
+
+// Pulsante × : svuota la ricerca e rimette il cursore nel campo
+el.btnCancellaRicerca.addEventListener('click', () => {
+  el.campoRicerca.value = '';
+  disegnaLista();
+  el.campoRicerca.focus();
+});
+
+// Nuovo ordine scelto: lo applichiamo e lo ricordiamo per la prossima volta
+el.campoOrdine.addEventListener('change', () => {
+  ordine = el.campoOrdine.value;
+  Archivio.salvaImpostazione('ordine', ordine);
+  primoDisegno = true; // le righe ricompaiono con la dissolvenza
+  disegnaLista();
+  primoDisegno = false;
+});
+
 // Tocco su una colonna del grafico: mostriamo il dettaglio di quel mese
 el.graficoColonne.addEventListener('click', (e) => {
   const colonna = e.target.closest('button[data-indice]');
@@ -805,6 +883,12 @@ function preparaMenuCategorie() {
 async function avvia() {
   preparaMenuCategorie();
   scriviNotaCalendario();
+
+  // Recuperiamo l'ordine scelto l'ultima volta (se è uno di quelli validi)
+  const ordineSalvato = await Archivio.leggiImpostazione('ordine', 'rinnovo');
+  ordine = Object.keys(ORDINAMENTI).includes(ordineSalvato) ? ordineSalvato : 'rinnovo';
+  el.campoOrdine.value = ordine;
+
   try {
     abbonamenti = await Archivio.tutti();
   } catch (e) {

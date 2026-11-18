@@ -51,7 +51,7 @@ Il proprietario del progetto **sta imparando a programmare**:
 | `style.css` | Tutto l'aspetto: variabili colore, liste, foglio, etichette, animazioni |
 | `categorie.js` | Elenco fisso delle categorie (`CATEGORIE`), unico punto dove modificarle |
 | `calendario.js` | Crea il file .ics dei promemoria (`creaFileCalendario`); impostazioni `GIORNI_PREAVVISO` e `ORA_AVVISO` |
-| `storage.js` | `Archivio`: lettura/scrittura dati, dati iniziali, controllo e backup |
+| `storage.js` | `Archivio`: lettura/scrittura dati, dati iniziali, controllo e backup, impostazioni (`leggiImpostazione`/`salvaImpostazione`) |
 | `app.js` | Logica: calcolo date e totali, filtro, lista divisa in gruppi, spesa per categoria, grafico mese per mese, promemoria nel calendario, modulo, backup |
 | `manifest.json` | Informazioni per installare l'app |
 | `icon.svg`, `icon-180.png`, `icon-512.png` | Icone |
@@ -75,6 +75,14 @@ I backup delle versioni precedenti si importano ancora (stato mancante → `atti
 - Filtro a pillole ("Tutte" + categorie usate). Se la categoria filtrata resta vuota, o salvi
   un abbonamento di un'altra categoria, il filtro torna a "Tutte".
 - "Spesa per categoria": importo al mese (annuali / 12), percentuale e barra, dalla più costosa.
+
+## Ricerca e ordinamento
+- Barra di ricerca sopra la lista: filtra per nome, senza badare a maiuscole e accenti (`semplifica()`),
+  insieme al filtro per categoria. Scrivendo si ridisegna solo la lista (`disegnaLista()`), non totali e grafico.
+- "Ordina" accanto al titolo: `rinnovo` (predefinito), `prezzo` (costo al mese, dal più caro), `nome` (A-Z).
+  I gruppi per categoria restano; cambia l'ordine dentro ogni gruppo (i non attivi in ordine "rinnovo" vanno per nome).
+- L'ordine scelto si salva con `Archivio.salvaImpostazione('ordine', …)` nella chiave `abbonamenti:impostazioni`
+  (separata dai dati: non finisce nel backup).
 
 ## Abbonamenti in pausa o disdetti
 - Campo `stato` nel modulo. Solo gli abbonamenti **attivi** (funzione `attivi()` in `app.js`) contano in:

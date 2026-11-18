@@ -18,16 +18,16 @@
 
   <link rel="apple-touch-icon" href="icon-180.png">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <!-- NUMERO DI VERSIONE: "?v=2.5" in fondo ai nomi dei file.
-       Per il browser "app.js?v=2.5" e "app.js?v=2.6" sono file diversi:
+  <!-- NUMERO DI VERSIONE: "?v=2.6" in fondo ai nomi dei file.
+       Per il browser "app.js?v=2.6" e "app.js?v=2.7" sono file diversi:
        cambiando il numero, l'iPhone è costretto a scaricare il codice nuovo
        invece di usare la copia vecchia che tiene in memoria.
        A ogni modifica di CSS o JavaScript aumenta il numero in TUTTI i punti
-       di questo file (cerca "2.5"), anche nella scritta in fondo alla pagina. -->
-  <link rel="manifest" href="manifest.json?v=2.5">
+       di questo file (cerca il numero attuale), anche nella scritta in fondo alla pagina. -->
+  <link rel="manifest" href="manifest.json?v=2.6">
 
   <title>Abbonamenti</title>
-  <link rel="stylesheet" href="style.css?v=2.5">
+  <link rel="stylesheet" href="style.css?v=2.6">
 </head>
 <body>
   <main class="app">
@@ -61,12 +61,45 @@
     <section id="prossimo" class="card prossimo" aria-live="polite"></section>
 
     <!-- ===== Lista degli abbonamenti (riempita da app.js) ===== -->
-    <h2 class="titolo-sezione">I tuoi abbonamenti</h2>
+    <!-- Titolo della sezione con, a destra, la scelta dell'ordine -->
+    <div class="intestazione-lista">
+      <h2 class="titolo-sezione">I tuoi abbonamenti</h2>
+      <label class="ordina" id="blocco-ordina">
+        <span class="ordina-etichetta">Ordina:</span>
+        <select id="campo-ordine" aria-label="Ordina la lista">
+          <option value="rinnovo">Rinnovo</option>
+          <option value="prezzo">Prezzo</option>
+          <option value="nome">Nome</option>
+        </select>
+        <svg class="ordina-freccia" viewBox="0 0 12 8" width="10" height="7" aria-hidden="true">
+          <path d="M1.5 1.5 6 6l4.5-4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </label>
+    </div>
+
+    <!-- Barra di ricerca stile iPhone: lente, campo e pulsante per cancellare -->
+    <div class="ricerca" id="blocco-ricerca" role="search">
+      <svg class="ricerca-lente" viewBox="0 0 20 20" width="17" height="17" aria-hidden="true">
+        <circle cx="8.5" cy="8.5" r="6" fill="none" stroke="currentColor" stroke-width="2"/>
+        <path d="m13 13 5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <input id="campo-ricerca" type="search" placeholder="Cerca" autocomplete="off" autocorrect="off"
+             spellcheck="false" enterkeyhint="search" aria-label="Cerca un abbonamento per nome">
+      <button type="button" id="btn-cancella-ricerca" class="btn-cancella" aria-label="Cancella la ricerca" hidden>
+        <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true">
+          <circle cx="10" cy="10" r="9" fill="currentColor"/>
+          <path class="btn-cancella-x" d="m6.5 6.5 7 7m0-7-7 7" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
+
     <!-- Pillole per filtrare per categoria: "Tutte", "Streaming", ... -->
     <div id="filtri" class="filtri" role="group" aria-label="Filtra per categoria"></div>
     <!-- Qui app.js mette un gruppo (titoletto + card) per ogni categoria -->
     <div id="gruppi"></div>
     <p id="lista-vuota" class="nota" hidden>Nessun abbonamento. Tocca + per aggiungerne uno.</p>
+    <!-- Messaggio quando la ricerca non trova niente (il testo lo scrive app.js) -->
+    <p id="nessun-risultato" class="nota" hidden></p>
 
     <!-- ===== Quanto spendi al mese per ogni categoria ===== -->
     <section id="sezione-categorie" aria-labelledby="titolo-categorie">
@@ -108,7 +141,7 @@
     <p class="nota">Il backup è un file .json con tutti i tuoi abbonamenti. Importarlo sostituisce i dati attuali.</p>
 
     <!-- Versione dell'app: utile per capire se l'iPhone ha già l'ultima -->
-    <p class="versione">Abbonamenti · versione 2.5</p>
+    <p class="versione">Abbonamenti · versione 2.6</p>
     <!-- Campo per scegliere il file: è nascosto, lo apre il pulsante "Importa backup" -->
     <input type="file" id="file-importa" accept=".json,application/json" hidden>
   </main>
@@ -196,9 +229,9 @@
 
   <!-- L'ordine conta: prima le categorie, poi storage.js (i dati) e calendario.js,
        infine app.js che li usa tutti -->
-  <script src="categorie.js?v=2.5"></script>
-  <script src="storage.js?v=2.5"></script>
-  <script src="calendario.js?v=2.5"></script>
-  <script src="app.js?v=2.5"></script>
+  <script src="categorie.js?v=2.6"></script>
+  <script src="storage.js?v=2.6"></script>
+  <script src="calendario.js?v=2.6"></script>
+  <script src="app.js?v=2.6"></script>
 </body>
 </html>
