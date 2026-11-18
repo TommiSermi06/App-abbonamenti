@@ -10,6 +10,7 @@
    6. Etichette dei giorni mancanti (grigio / arancione / rosso)
    7. Foglio che sale dal basso e modulo
    7b. Categorie: filtro, gruppi e spesa per categoria
+   7c. Grafico "Spese mese per mese"
    8. Animazioni e "movimento ridotto"
    ===================================================================== */
 
@@ -46,6 +47,7 @@
   --su-colore: #FFFFFF;         /* testo sopra il rosso pieno ("Oggi!") */
 
   /* --- Colori di supporto --- */
+  --griglia: rgba(64, 58, 46, 0.12); /* linee leggere della griglia del grafico */
   --velo: rgba(20, 32, 56, 0.35);  /* oscura la pagina quando il foglio è aperto */
   --sfondo-foglio: #F8F3E6;
   --card-foglio: #FFFDF6;
@@ -84,6 +86,7 @@
     --rosso-tenue: rgba(255, 69, 58, 0.2);
     --rosso-bagliore: rgba(255, 69, 58, 0.6);
 
+    --griglia: rgba(246, 240, 223, 0.12);
     --velo: rgba(0, 0, 0, 0.6);
     --sfondo-foglio: #1F1D18;
     --card-foglio: #2A2721;
@@ -666,6 +669,199 @@ button:active {
 @keyframes cresci {
   from { transform: scaleX(0); }
   to   { transform: scaleX(1); }
+}
+
+
+/* ---------- 7c. Grafico "Spese mese per mese" ----------
+   Com'è fatto: due strati sovrapposti nello stesso riquadro.
+   - sotto, la griglia: linee orizzontali con i valori a sinistra;
+   - sopra, 12 colonne (pulsanti) con la barra blu che parte dal basso.
+   Le misure in alto (8px) e in basso (24px, le etichette dei mesi)
+   sono uguali nei due strati, così le barre combaciano con la griglia. */
+
+.grafico {
+  position: relative;
+  height: 190px;
+  margin: 16px 16px 0;
+}
+
+.grafico-griglia {
+  position: absolute;
+  top: 8px;
+  bottom: 24px;
+  left: 0;
+  right: 0;
+}
+
+/* Una linea della griglia: sottile e leggera, per non disturbare i dati */
+.griglia-linea {
+  position: absolute;
+  left: 40px;               /* a sinistra lasciamo posto ai valori */
+  right: 0;
+  height: 1px;
+  background: var(--griglia);
+}
+
+/* Il valore della linea, scritto a sinistra (es. "50 €") */
+.griglia-valore {
+  position: absolute;
+  right: 100%;
+  bottom: 0;
+  transform: translateY(50%); /* centrato sulla linea */
+  padding-right: 6px;
+  font-size: 11px;
+  color: var(--testo-secondario);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Le 12 colonne, una accanto all'altra, larghe uguali */
+.grafico-colonne {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 40px;
+  right: 0;
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+}
+
+/* Ogni colonna è un pulsante alto quanto tutto il grafico: facile da toccare */
+.colonna {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  transition: background-color var(--durata) var(--curva);
+}
+
+/* Il mese scelto: fascia azzurrina dietro la colonna */
+.colonna[aria-pressed="true"] {
+  background: var(--azzurro-tenue);
+}
+
+/* Sul computer: fascia anche passandoci sopra con il mouse */
+@media (hover: hover) {
+  .colonna:hover {
+    background: var(--azzurro-tenue);
+  }
+}
+
+.colonna:focus-visible {
+  outline: 2px solid var(--blu);
+  outline-offset: -2px;
+}
+
+/* Lo spazio in cui cresce la barra */
+.colonna-area {
+  position: relative;
+  flex: 1;
+  margin-top: 8px;
+}
+
+/* La barra: blu, stretta, angoli arrotondati solo in alto, appoggiata in basso */
+.colonna-barra {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  width: min(16px, 60%);
+  translate: -50% 0;            /* centrata nella colonna */
+  border-radius: 4px 4px 0 0;
+  background: var(--blu);
+  transform-origin: bottom;     /* cresce dal basso verso l'alto */
+  animation: cresci-su 0.35s var(--curva) both;
+}
+
+@keyframes cresci-su {
+  from { transform: scaleY(0); }
+  to   { transform: scaleY(1); }
+}
+
+/* Etichetta del mese sotto la colonna ("dic", "gen"...) */
+.colonna-etichetta {
+  height: 24px;
+  display: grid;
+  place-items: center;
+  font-size: 11px;
+  color: var(--testo-secondario);
+}
+
+.colonna[aria-pressed="true"] .colonna-etichetta {
+  color: var(--testo);
+  font-weight: 600;
+}
+
+/* Dettaglio del mese scelto, sotto il grafico */
+.dettaglio-mese {
+  margin-top: 12px;
+  padding: 12px 16px 14px;
+  border-top: 0.5px solid var(--separatore);
+}
+
+.dettaglio-testata {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  font-weight: 600;
+}
+
+.dettaglio-totale {
+  font-variant-numeric: tabular-nums;
+}
+
+.dettaglio-elenco {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+
+.dettaglio-riga {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  padding: 5px 0;
+  font-size: 15px;
+}
+
+.dettaglio-data {
+  flex: none;
+  width: 52px;
+  white-space: nowrap;          /* "15 giu" resta su una riga */
+  color: var(--testo-secondario);
+  font-variant-numeric: tabular-nums;
+}
+
+.dettaglio-nome {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.dettaglio-nota {
+  font-size: 13px;
+  color: var(--testo-secondario);
+}
+
+.dettaglio-importo {
+  flex: none;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Pagamenti già fatti questo mese: un po' più tenui */
+.dettaglio-riga.passato .dettaglio-importo {
+  color: var(--testo-secondario);
+}
+
+.dettaglio-vuoto {
+  margin: 8px 0 0;
+  font-size: 15px;
+  color: var(--testo-secondario);
 }
 
 

@@ -42,7 +42,7 @@ Il proprietario del progetto **sta imparando a programmare**:
 | `style.css` | Tutto l'aspetto: variabili colore, liste, foglio, etichette, animazioni |
 | `categorie.js` | Elenco fisso delle categorie (`CATEGORIE`), unico punto dove modificarle |
 | `storage.js` | `Archivio`: lettura/scrittura dati, dati iniziali, controllo e backup |
-| `app.js` | Logica: calcolo date e totali, filtro, lista divisa in gruppi, spesa per categoria, modulo, backup |
+| `app.js` | Logica: calcolo date e totali, filtro, lista divisa in gruppi, spesa per categoria, grafico mese per mese, modulo, backup |
 | `manifest.json` | Informazioni per installare l'app |
 | `icon.svg`, `icon-180.png`, `icon-512.png` | Icone |
 
@@ -69,6 +69,12 @@ I backup della versione 1 si importano ancora.
 - Totale al mese = somma dei mensili + (annuali / 12). Totale all'anno = totale al mese × 12.
 - Prossimo rinnovo: la prima data uguale o successiva a oggi; se il giorno non esiste
   nel mese (es. 31 in febbraio) si usa l'ultimo giorno del mese.
+- Grafico "Spese mese per mese": i 12 mesi a partire da quello attuale; ogni colonna è
+  quanto si paga DAVVERO quel mese (mensili ogni mese, annuali per intero nel loro mese,
+  NON divisi per 12). La somma dei 12 mesi è uguale al totale all'anno.
+  Fatto con div e CSS, senza librerie: colonne blu, mese scelto con fascia azzurrina,
+  griglia leggera (`--griglia`) con circa 3 linee a valori tondi; un tocco su una colonna
+  mostra sotto il dettaglio dei pagamenti di quel mese.
 - Colori dell'etichetta dei giorni mancanti: più di 7 grigio; da 7 a 4 arancione;
   3 o meno rosso con bagliore che pulsa; il giorno stesso "Oggi!" (rosso pieno).
 

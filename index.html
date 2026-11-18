@@ -69,6 +69,22 @@
       <p class="nota">Importi al mese: gli abbonamenti annuali contano il costo diviso 12.</p>
     </section>
 
+    <!-- ===== Grafico: quanto pagherai davvero nei prossimi 12 mesi ===== -->
+    <section id="sezione-mesi" aria-labelledby="titolo-mesi">
+      <h2 class="titolo-sezione" id="titolo-mesi">Spese mese per mese</h2>
+      <div class="card grafico-card">
+        <div class="grafico">
+          <!-- Linee orizzontali della griglia con i valori (le crea app.js) -->
+          <div id="grafico-griglia" class="grafico-griglia" aria-hidden="true"></div>
+          <!-- Una colonna per mese: ogni colonna è un pulsante -->
+          <div id="grafico-colonne" class="grafico-colonne" role="group" aria-label="Spesa dei prossimi 12 mesi. Tocca un mese per il dettaglio."></div>
+        </div>
+        <!-- Dettaglio del mese toccato: data, abbonamento, importo -->
+        <div id="dettaglio-mese" class="dettaglio-mese" aria-live="polite"></div>
+      </div>
+      <p id="nota-mesi" class="nota"></p>
+    </section>
+
     <!-- ===== Backup ===== -->
     <h2 class="titolo-sezione">Backup</h2>
     <div class="lista card">
