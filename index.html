@@ -158,6 +158,18 @@
         </label>
       </div>
 
+      <!-- Stato: un abbonamento in pausa o disdetto resta nella lista ma non conta nei totali -->
+      <div class="lista card spazio-sopra">
+        <label class="riga campo">
+          <span>Stato</span>
+          <select id="campo-stato">
+            <option value="attivo">Attivo</option>
+            <option value="pausa">In pausa</option>
+            <option value="disdetto">Disdetto</option>
+          </select>
+        </label>
+      </div>
+
       <p id="errore" class="errore" role="alert"></p>
 
       <div class="lista card" id="blocco-elimina" hidden>

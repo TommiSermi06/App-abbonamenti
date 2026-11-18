@@ -672,6 +672,24 @@ button:active {
 }
 
 
+/* Abbonamenti in pausa o disdetti: riga più tenue ed etichetta con il bordo.
+   Non usiamo grigio, arancione o rosso: quei colori sono riservati ai giorni mancanti. */
+.inattiva .abb-testi {
+  opacity: 0.55;
+}
+
+.stato-inattivo {
+  background: none;
+  color: var(--testo-secondario);
+  box-shadow: inset 0 0 0 1px var(--separatore); /* bordo sottile azzurrino */
+}
+
+/* Un po' di spazio tra due card dello stesso modulo */
+.spazio-sopra {
+  margin-top: 20px;
+}
+
+
 /* ---------- 7c. Grafico "Spese mese per mese" ----------
    Com'è fatto: due strati sovrapposti nello stesso riquadro.
    - sotto, la griglia: linee orizzontali con i valori a sinistra;
