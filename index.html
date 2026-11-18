@@ -85,6 +85,14 @@
       <p id="nota-mesi" class="nota"></p>
     </section>
 
+    <!-- ===== Promemoria nel Calendario dell'iPhone ===== -->
+    <h2 class="titolo-sezione">Promemoria</h2>
+    <div class="lista card">
+      <button type="button" id="btn-calendario" class="riga riga-azione">Aggiungi i rinnovi al Calendario</button>
+    </div>
+    <!-- Il testo lo scrive app.js, così resta uguale alle impostazioni di calendario.js -->
+    <p id="nota-calendario" class="nota"></p>
+
     <!-- ===== Backup ===== -->
     <h2 class="titolo-sezione">Backup</h2>
     <div class="lista card">
@@ -165,9 +173,11 @@
     </svg>
   </template>
 
-  <!-- L'ordine conta: prima le categorie, poi storage.js (i dati), poi app.js (che usa entrambi) -->
+  <!-- L'ordine conta: prima le categorie, poi storage.js (i dati) e calendario.js,
+       infine app.js che li usa tutti -->
   <script src="categorie.js"></script>
   <script src="storage.js"></script>
+  <script src="calendario.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

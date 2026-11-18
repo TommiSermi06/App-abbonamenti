@@ -10,6 +10,7 @@ quanto spendi al mese e all'anno, e quale rinnovo sta per arrivare.
 - Prossimo rinnovo in evidenza, con i giorni mancanti colorati (grigio, arancione, rosso, "Oggi!")
 - Categorie (Streaming, Musica, Giochi, …): lista divisa in gruppi, filtro e spesa al mese per categoria
 - Grafico delle spese dei prossimi 12 mesi, con il dettaglio dei pagamenti di ogni mese
+- Promemoria dei rinnovi nel Calendario dell'iPhone (file .ics con avvisi)
 - Esporta e importa un backup in formato JSON
 - Modalità scura automatica, installabile nella schermata Home dell'iPhone
 
