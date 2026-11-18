@@ -19,6 +19,15 @@ Il proprietario del progetto **sta imparando a programmare**:
 - PWA: `manifest.json` + meta tag Apple in `index.html`, icone `icon-180.png` e `icon-512.png`
   (generate da `icon.svg`, con sfondo quadrato: gli angoli li arrotonda iOS).
 
+## Numero di versione (da aggiornare a OGNI rilascio)
+- In `index.html` i file hanno un numero di versione: `style.css?v=2.5`, `app.js?v=2.5`, `manifest.json?v=2.5`…
+  e c'è la scritta "Abbonamenti · versione 2.5" in fondo alla pagina.
+- A ogni modifica di CSS, JavaScript o manifest **aumenta il numero in tutti i punti di `index.html`**
+  (cerca la versione attuale), così l'iPhone scarica i file nuovi invece di usare la copia in memoria.
+  Piccole modifiche: 2.5 → 2.6; una nuova versione grande dell'app: 2.x → 3.0.
+- GitHub Pages fa tenere in memoria i file fino a ~10 minuti: dopo un merge, l'iPhone può
+  vedere la versione nuova con qualche minuto di ritardo (la scritta in fondo lo conferma).
+
 ## Design in stile iOS (da rispettare)
 - Font di sistema `-apple-system`; titolo grande 34px, testo 17px.
 - Colori SOLO tramite le variabili CSS in cima a `style.css`, con modalità scura automatica

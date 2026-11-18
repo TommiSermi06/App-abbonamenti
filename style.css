@@ -684,6 +684,14 @@ button:active {
   box-shadow: inset 0 0 0 1px var(--separatore); /* bordo sottile azzurrino */
 }
 
+/* Scritta con la versione, in fondo alla pagina */
+.versione {
+  margin: 32px 16px 0;
+  font-size: 12px;
+  text-align: center;
+  color: var(--testo-secondario);
+}
+
 /* Un po' di spazio tra due card dello stesso modulo */
 .spazio-sopra {
   margin-top: 20px;
