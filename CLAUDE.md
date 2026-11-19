@@ -13,18 +13,18 @@ Il proprietario del progetto **sta imparando a programmare**:
 - Solo **HTML, CSS e JavaScript semplici**: niente framework, librerie esterne o passaggi di build.
 - Gli script sono normali `<script>` (non moduli ES), così l'app si apre anche con un doppio clic su `index.html`.
 - **Dati**: si leggono e si scrivono SOLO tramite `storage.js` (l'oggetto `Archivio`).
-  `app.js` non deve mai usare `localStorage` direttamente. Le funzioni di `Archivio`
-  sono `async`, così in futuro si potrà passare a un database online cambiando solo `storage.js`.
+  `app.js` non deve mai usare `localStorage` né `Supabase` direttamente. Le funzioni di `Archivio` sono `async`.
+  `storage.js` è l'unico che usa `supabase.js`.
 - I dati iniziali di esempio si caricano solo al primo avvio (localStorage vuoto).
 - PWA: `manifest.json` + meta tag Apple in `index.html`, icone `icon-180.png` e `icon-512.png`
   (generate da `icon.svg`, con sfondo quadrato: gli angoli li arrotonda iOS).
 
 ## Numero di versione (da aggiornare a OGNI rilascio)
-- In `index.html` i file hanno un numero di versione: `style.css?v=2.5`, `app.js?v=2.5`, `manifest.json?v=2.5`…
-  e c'è la scritta "Abbonamenti · versione 2.5" in fondo alla pagina.
+- Versione attuale: **3.0**. In `index.html` i file hanno il numero di versione (`style.css?v=3.0`, `app.js?v=3.0`…)
+  e c'è la scritta "Abbonamenti · versione 3.0" in fondo alla pagina.
 - A ogni modifica di CSS, JavaScript o manifest **aumenta il numero in tutti i punti di `index.html`**
   (cerca la versione attuale), così l'iPhone scarica i file nuovi invece di usare la copia in memoria.
-  Piccole modifiche: 2.5 → 2.6; una nuova versione grande dell'app: 2.x → 3.0.
+  Piccole modifiche: 3.0 → 3.1; una nuova versione grande dell'app: 3.x → 4.0.
 - GitHub Pages fa tenere in memoria i file fino a ~10 minuti: dopo un merge, l'iPhone può
   vedere la versione nuova con qualche minuto di ritardo (la scritta in fondo lo conferma).
 
@@ -51,7 +51,9 @@ Il proprietario del progetto **sta imparando a programmare**:
 | `style.css` | Tutto l'aspetto: variabili colore, liste, foglio, etichette, animazioni |
 | `categorie.js` | Elenco fisso delle categorie (`CATEGORIE`), unico punto dove modificarle |
 | `calendario.js` | Crea il file .ics dei promemoria (`creaFileCalendario`); impostazioni `GIORNI_PREAVVISO` e `ORA_AVVISO` |
-| `storage.js` | `Archivio`: lettura/scrittura dati, dati iniziali, controllo e backup, impostazioni (`leggiImpostazione`/`salvaImpostazione`) |
+| `supabase.js` | `Supabase`: collegamento con il database online (account, sessione, richieste con `fetch`). Lo usa solo `storage.js` |
+| `storage.js` | `Archivio`: lettura/scrittura dati, dati iniziali, controllo e backup, impostazioni, account e sincronizzazione online |
+| `supabase/schema.sql` | Com'è fatto il database online (tabella, regole di protezione, permessi). Già eseguito: è documentazione |
 | `app.js` | Logica: calcolo date e totali, filtro, lista divisa in gruppi, spesa per categoria, grafico mese per mese, promemoria nel calendario, modulo, backup |
 | `manifest.json` | Informazioni per installare l'app |
 | `icon.svg`, `icon-180.png`, `icon-512.png` | Icone |
@@ -75,6 +77,27 @@ I backup delle versioni precedenti si importano ancora (stato mancante → `atti
 - Filtro a pillole ("Tutte" + categorie usate). Se la categoria filtrata resta vuota, o salvi
   un abbonamento di un'altra categoria, il filtro torna a "Tutte".
 - "Spesa per categoria": importo al mese (annuali / 12), percentuale e barra, dalla più costosa.
+
+## Sincronizzazione online (versione 3.0)
+- Servizio: **Supabase**, progetto `https://rjsdckmaadbevnadgrkb.supabase.co`, tabella `public.abbonamenti`
+  (vedi `supabase/schema.sql`). In `supabase.js` c'è la chiave **publishable** (pubblica per natura);
+  la chiave **secret/service_role non va MAI** nel codice. I dati sono protetti dalle regole RLS:
+  ognuno legge/scrive solo le righe con il suo `user_id`; senza account nessun permesso.
+- Niente librerie: chiamate REST con `fetch` (`/auth/v1/...` per l'account, `/rest/v1/...` per i dati).
+  Sessione in localStorage (`abbonamenti:sessione`): access_token rinnovato in automatico con il refresh_token.
+- Account con **email e password** ("Confirm email" spento in Supabase: con il link via email l'iPhone
+  aprirebbe Safari invece dell'app sulla schermata Home).
+- Funziona **offline-first**: ogni modifica si salva subito sul dispositivo e va in una coda
+  (`abbonamenti:sincronizzazione`: `daInviare`, `daEliminare`, `ultimoServer`, `unito`).
+  `sincronizza()`: 1) invia la coda (upsert `on_conflict=user_id,id`; eliminati = `eliminato: true`),
+  2) scarica le righe con `aggiornato_il` più recente di `ultimoServer` (l'ora la mette il server con un trigger).
+  Parte da sola dopo ogni modifica (~0,8 s), all'avvio, quando l'app torna in primo piano e quando torna internet.
+- Prima volta su un dispositivo (`unito: false`): se online non c'è niente si carica tutto; se online ci sono
+  già dati, del dispositivo si tengono solo quelli che online non ci sono (esclusi i dati di esempio con id
+  `esempio-…` e quelli con lo stesso nome di uno online: vince quello online).
+- `storage.js` avvisa `app.js` con gli eventi `archivio-stato` (stato: `in-corso`, `sincronizzato`, `offline`,
+  `errore`, `disconnesso`) e `archivio-aggiornato` (sono arrivati dati nuovi: ridisegnare).
+- Uscendo dall'account i dati restano sul dispositivo, ma non si sincronizzano più.
 
 ## Ricerca e ordinamento
 - Barra di ricerca sopra la lista: filtra per nome, senza badare a maiuscole e accenti (`semplifica()`),

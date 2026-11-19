@@ -13,6 +13,7 @@ quanto spendi al mese e all'anno, e quale rinnovo sta per arrivare.
 - Promemoria dei rinnovi nel Calendario dell'iPhone (file .ics con avvisi)
 - Abbonamenti in pausa o disdetti: restano nella lista ma non contano nei totali
 - Ricerca per nome e ordinamento della lista (rinnovo, prezzo, nome)
+- Sincronizzazione online con account (Supabase): stessi dati su telefono, iPad e computer, anche offline
 - Esporta e importa un backup in formato JSON
 - Modalità scura automatica, installabile nella schermata Home dell'iPhone
 
@@ -25,4 +26,4 @@ python3 -m http.server 8000
 
 e vai su http://localhost:8000.
 
-Fatta con solo HTML, CSS e JavaScript, senza librerie. I dati restano nel browser (localStorage).
+Fatta con solo HTML, CSS e JavaScript, senza librerie. I dati stanno nel browser (localStorage) e, se entri con un account, anche online su Supabase.

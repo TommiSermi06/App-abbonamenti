@@ -802,6 +802,54 @@ button:active {
   box-shadow: inset 0 0 0 1px var(--separatore); /* bordo sottile azzurrino */
 }
 
+/* ----- Sincronizzazione ----- */
+
+/* Riga solo da leggere: etichetta a sinistra, valore grigio a destra */
+.riga-info {
+  justify-content: space-between;
+}
+
+.valore-info {
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  color: var(--testo-secondario);
+}
+
+/* "Esci": rosso come le azioni che tolgono qualcosa */
+.riga-azione.rosso {
+  color: var(--rosso);
+}
+
+.riga:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+/* Pulsante principale pieno (es. "Accedi"): blu, alto 50px, angoli 12px */
+.btn-principale {
+  display: block;
+  width: calc(100% - 32px);
+  min-height: 50px;
+  margin: 0 16px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--blu);
+  color: var(--su-blu);
+  font-size: 17px;
+  font-weight: 600;
+  transition: opacity 0.2s var(--curva);
+}
+
+.btn-principale:disabled {
+  opacity: 0.5;
+}
+
+.btn-principale + .nota {
+  margin-top: 12px;
+}
+
 /* Scritta con la versione, in fondo alla pagina */
 .versione {
   margin: 32px 16px 0;
