@@ -30,11 +30,13 @@ const Archivio = (function () {
 
   // Dati di esempio: li carichiamo SOLO al primo avvio,
   // cioè quando nel localStorage non c'è ancora niente.
+  // Il loro id inizia con "esempio-": così, se entri con un account che ha
+  // già dei dati online, la sincronizzazione sa che sono solo esempi e non li carica.
   const DATI_INIZIALI = [
-    { nome: 'Disney+', costo: 15.99, frequenza: 'mensile', giorno: 4, categoria: 'streaming' },
-    { nome: 'ChatGPT', costo: 23, frequenza: 'mensile', giorno: 20, categoria: 'lavoro' },
-    { nome: 'Spotify', costo: 16.99, frequenza: 'mensile', giorno: 2, categoria: 'musica' },
-    { nome: 'PlayStation Plus', costo: 8.99, frequenza: 'mensile', giorno: 29, categoria: 'giochi' },
+    { id: 'esempio-disney', nome: 'Disney+', costo: 15.99, frequenza: 'mensile', giorno: 4, categoria: 'streaming' },
+    { id: 'esempio-chatgpt', nome: 'ChatGPT', costo: 23, frequenza: 'mensile', giorno: 20, categoria: 'lavoro' },
+    { id: 'esempio-spotify', nome: 'Spotify', costo: 16.99, frequenza: 'mensile', giorno: 2, categoria: 'musica' },
+    { id: 'esempio-psplus', nome: 'PlayStation Plus', costo: 8.99, frequenza: 'mensile', giorno: 29, categoria: 'giochi' },
   ];
 
   // Crea un codice unico per ogni abbonamento.
@@ -127,6 +129,7 @@ const Archivio = (function () {
     if (!nuovo) throw new Error('I dati dell\'abbonamento non sono validi.');
     lista.push(nuovo);
     scriviSulDisco(lista);
+    segnaDaInviare([nuovo.id]); // da mandare online alla prossima sincronizzazione
     return nuovo;
   }
 
@@ -139,6 +142,7 @@ const Archivio = (function () {
     if (!aggiornato) throw new Error('I dati dell\'abbonamento non sono validi.');
     lista[posizione] = aggiornato;
     scriviSulDisco(lista);
+    segnaDaInviare([id]);
     return aggiornato;
   }
 
@@ -146,6 +150,7 @@ const Archivio = (function () {
   async function elimina(id) {
     const lista = await tutti();
     scriviSulDisco(lista.filter((a) => a.id !== id));
+    segnaDaEliminare([id]); // online lo segneremo come "eliminato"
   }
 
   // Prepara il testo del file di backup.
@@ -195,10 +200,14 @@ const Archivio = (function () {
 
   // Sostituisce tutti i dati (usato dall'importazione del backup).
   async function sostituisciTutti(lista) {
+    const prima = leggiDalDisco() || [];
     scriviSulDisco(lista);
+    // Online: quelli del backup vanno inviati, quelli che non ci sono più vanno eliminati
+    const nuoviId = new Set(lista.map((a) => a.id));
+    segnaDaEliminare(prima.filter((a) => !nuoviId.has(a.id)).map((a) => a.id));
+    segnaDaInviare([...nuoviId]);
   }
 
-  // Queste sono le sole funzioni "visibili" dall'esterno
   // ---------- Impostazioni dell'app (es. l'ordine scelto per la lista) ----------
   // Stanno in un "cassetto" separato dagli abbonamenti, così non finiscono nel backup.
   const CHIAVE_IMPOSTAZIONI = 'abbonamenti:impostazioni';
@@ -228,8 +237,294 @@ const Archivio = (function () {
     }
   }
 
+  /* ===================================================================
+     SINCRONIZZAZIONE ONLINE (con Supabase, tramite supabase.js)
+
+     Come funziona, in breve:
+     - ogni modifica viene salvata SUBITO sul dispositivo (veloce, e
+       funziona anche senza internet) e messa in una "coda" di cose da
+       mandare online;
+     - poco dopo parte la sincronizzazione:
+         1. INVIA la coda (abbonamenti nuovi/modificati ed eliminati);
+         2. SCARICA quello che è cambiato online dall'ultima volta
+            (per esempio una modifica fatta sull'altro dispositivo);
+     - se manca internet, la coda aspetta e si riprova più tardi.
+     Gli abbonamenti eliminati online non spariscono: vengono segnati
+     "eliminato", così anche l'altro dispositivo sa che deve toglierli.
+     =================================================================== */
+
+  // Il "cassetto" con lo stato della sincronizzazione
+  const CHIAVE_SINCRO = 'abbonamenti:sincronizzazione';
+
+  function leggiSincro() {
+    const vuoto = { daInviare: [], daEliminare: [], ultimoServer: null, unito: false, ultimaRiuscita: null };
+    try {
+      return { ...vuoto, ...JSON.parse(localStorage.getItem(CHIAVE_SINCRO)) };
+    } catch (e) {
+      return vuoto;
+    }
+  }
+
+  function salvaSincro(sincro) {
+    localStorage.setItem(CHIAVE_SINCRO, JSON.stringify(sincro));
+  }
+
+  // Mette degli abbonamenti nella coda "da inviare" (solo se sei entrato)
+  function segnaDaInviare(ids) {
+    if (!Supabase.utente() || ids.length === 0) return;
+    const sincro = leggiSincro();
+    sincro.daInviare = [...new Set([...sincro.daInviare, ...ids])];
+    sincro.daEliminare = sincro.daEliminare.filter((id) => !ids.includes(id));
+    salvaSincro(sincro);
+    programmaSincronizzazione();
+  }
+
+  // Mette degli abbonamenti nella coda "da eliminare online"
+  function segnaDaEliminare(ids) {
+    if (!Supabase.utente() || ids.length === 0) return;
+    const sincro = leggiSincro();
+    sincro.daInviare = sincro.daInviare.filter((id) => !ids.includes(id));
+    sincro.daEliminare = [...new Set([...sincro.daEliminare, ...ids])];
+    salvaSincro(sincro);
+    programmaSincronizzazione();
+  }
+
+  // Aspettiamo un attimo prima di sincronizzare: se fai più modifiche
+  // di seguito, partono tutte insieme in una volta sola
+  let timerSincro = null;
+  function programmaSincronizzazione() {
+    clearTimeout(timerSincro);
+    timerSincro = setTimeout(sincronizza, 800);
+  }
+
+  // Avvisa app.js: 'archivio-stato' = è cambiato lo stato della sincronizzazione,
+  // 'archivio-aggiornato' = sono arrivati dati nuovi da internet
+  let statoAttuale = { stato: 'disconnesso', messaggio: '' };
+  function avvisaStato(stato, messaggio = '') {
+    statoAttuale = { stato, messaggio };
+    window.dispatchEvent(new CustomEvent('archivio-stato', { detail: statoAttuale }));
+  }
+
+  // Un abbonamento come lo vuole la tabella online
+  function versoServer(abb) {
+    return {
+      id: abb.id,
+      nome: abb.nome,
+      costo: abb.costo,
+      frequenza: abb.frequenza,
+      giorno: abb.giorno,
+      mese: abb.mese,
+      categoria: abb.categoria,
+      stato: abb.stato,
+      eliminato: false,
+    };
+  }
+
+  // Per confrontare i nomi senza badare a maiuscole, accenti e spazi
+  function nomeSemplice(nome) {
+    return String(nome).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+  }
+
+  const COLONNE = 'id,nome,costo,frequenza,giorno,mese,categoria,stato,eliminato,aggiornato_il';
+
+  // La PRIMA volta che entri da questo dispositivo uniamo i dati:
+  // - se online non c'è ancora niente, carichiamo tutto quello che c'è qui;
+  // - se online ci sono già dei dati (es. dall'altro dispositivo), qui teniamo
+  //   solo quelli che online NON ci sono: non i dati di esempio, e non quelli
+  //   con lo stesso nome di uno online (vince quello online, così niente doppioni).
+  async function unisciLaPrimaVolta() {
+    const online = await Supabase.database(`abbonamenti?select=${COLONNE}`);
+    const qui = leggiDalDisco() || [];
+
+    let daCaricare = qui;
+    if (online.length > 0) {
+      const nomiOnline = new Set(online.map((r) => nomeSemplice(r.nome)));
+      const idOnline = new Set(online.map((r) => r.id));
+      daCaricare = qui.filter((abb) => !abb.id.startsWith('esempio-')
+        && !nomiOnline.has(nomeSemplice(abb.nome))
+        && !idOnline.has(abb.id));
+      // Sul dispositivo restano solo questi: gli altri arrivano da internet tra un attimo
+      scriviSulDisco(daCaricare);
+    }
+
+    const sincro = leggiSincro();
+    sincro.daInviare = daCaricare.map((abb) => abb.id);
+    sincro.daEliminare = [];
+    sincro.ultimoServer = null; // = scarica tutto
+    sincro.unito = true;
+    salvaSincro(sincro);
+    return online.length > 0;
+  }
+
+  // 1. INVIA la coda
+  async function inviaModifiche() {
+    const sincro = leggiSincro();
+    const lista = leggiDalDisco() || [];
+    const daInviare = lista.filter((abb) => sincro.daInviare.includes(abb.id));
+    const daEliminare = [...sincro.daEliminare];
+
+    if (daInviare.length > 0) {
+      // "upsert": aggiunge quelli nuovi e aggiorna quelli che online ci sono già
+      await Supabase.database('abbonamenti?on_conflict=user_id,id', {
+        metodo: 'POST',
+        prefer: 'resolution=merge-duplicates,return=minimal',
+        corpo: daInviare.map(versoServer),
+      });
+    }
+    if (daEliminare.length > 0) {
+      // Segniamo come "eliminato" tutti quelli con questi id
+      const elenco = encodeURIComponent(`(${daEliminare.map((id) => `"${id}"`).join(',')})`);
+      await Supabase.database(`abbonamenti?id=in.${elenco}`, {
+        metodo: 'PATCH',
+        prefer: 'return=minimal',
+        corpo: { eliminato: true },
+      });
+    }
+
+    // Togliamo dalla coda solo quello che abbiamo inviato ED è rimasto uguale:
+    // se mentre inviavamo hai aggiunto o modificato qualcosa, resta in coda per la prossima volta
+    const comeInviati = new Map(daInviare.map((abb) => [abb.id, JSON.stringify(abb)]));
+    const listaOra = leggiDalDisco() || [];
+    const dopo = leggiSincro();
+    dopo.daInviare = dopo.daInviare.filter((id) => {
+      if (!comeInviati.has(id)) return true; // non era tra quelli inviati
+      const attuale = listaOra.find((abb) => abb.id === id);
+      return Boolean(attuale) && JSON.stringify(attuale) !== comeInviati.get(id);
+    });
+    dopo.daEliminare = dopo.daEliminare.filter((id) => !daEliminare.includes(id));
+    salvaSincro(dopo);
+  }
+
+  // 2. SCARICA quello che è cambiato online dall'ultima volta.
+  // Restituisce true se sul dispositivo è cambiato qualcosa.
+  async function scaricaModifiche() {
+    const sincro = leggiSincro();
+    let percorso = `abbonamenti?select=${COLONNE}&order=aggiornato_il.asc`;
+    if (sincro.ultimoServer) percorso += `&aggiornato_il=gt.${encodeURIComponent(sincro.ultimoServer)}`;
+    const righe = await Supabase.database(percorso);
+    if (righe.length === 0) return false;
+
+    const lista = leggiDalDisco() || [];
+    const inAttesa = new Set(leggiSincro().daInviare); // modifiche nostre non ancora inviate: vincono loro
+    let cambiato = false;
+
+    for (const riga of righe) {
+      if (inAttesa.has(riga.id)) continue;
+      const posizione = lista.findIndex((abb) => abb.id === riga.id);
+
+      if (riga.eliminato) {
+        if (posizione !== -1) {
+          lista.splice(posizione, 1);
+          cambiato = true;
+        }
+        continue;
+      }
+
+      const abb = normalizza(riga);
+      if (!abb) continue; // riga online con dati strani: la saltiamo
+      if (posizione === -1) {
+        lista.push(abb);
+        cambiato = true;
+      } else if (JSON.stringify(lista[posizione]) !== JSON.stringify(abb)) {
+        lista[posizione] = abb;
+        cambiato = true;
+      }
+    }
+
+    if (cambiato) scriviSulDisco(lista);
+    const dopo = leggiSincro();
+    dopo.ultimoServer = righe[righe.length - 1].aggiornato_il; // la prossima volta, solo le novità
+    salvaSincro(dopo);
+    return cambiato;
+  }
+
+  // La sincronizzazione completa. Se è già in corso, ne facciamo un'altra subito dopo.
+  let sincroInCorso = null;
+  let ancoraUnaVolta = false;
+
+  async function sincronizza() {
+    if (!Supabase.utente()) {
+      avvisaStato('disconnesso');
+      return false;
+    }
+    if (sincroInCorso) {
+      ancoraUnaVolta = true;
+      return sincroInCorso;
+    }
+
+    sincroInCorso = (async () => {
+      avvisaStato('in-corso');
+      try {
+        let cambiato = false;
+        if (!leggiSincro().unito) cambiato = await unisciLaPrimaVolta();
+        await inviaModifiche();
+        cambiato = (await scaricaModifiche()) || cambiato;
+
+        const sincro = leggiSincro();
+        sincro.ultimaRiuscita = new Date().toISOString();
+        salvaSincro(sincro);
+        if (cambiato) window.dispatchEvent(new CustomEvent('archivio-aggiornato'));
+        avvisaStato('sincronizzato');
+        return cambiato;
+      } catch (e) {
+        if (e.tipo === 'rete') avvisaStato('offline', e.message);
+        else if (e.tipo === 'sessione') avvisaStato('disconnesso', e.message);
+        else avvisaStato('errore', e.message);
+        return false;
+      } finally {
+        sincroInCorso = null;
+        if (ancoraUnaVolta) {
+          ancoraUnaVolta = false;
+          programmaSincronizzazione();
+        }
+      }
+    })();
+    return sincroInCorso;
+  }
+
+  // ---------- Account (usate da app.js) ----------
+
+  function account() {
+    return Supabase.utente();
+  }
+
+  async function accedi(email, password) {
+    const utente = await Supabase.entra(email, password);
+    salvaSincro({ ...leggiSincro(), unito: false, ultimoServer: null, daInviare: [], daEliminare: [] });
+    return utente;
+  }
+
+  async function creaAccount(email, password) {
+    const utente = await Supabase.creaAccount(email, password);
+    salvaSincro({ ...leggiSincro(), unito: false, ultimoServer: null, daInviare: [], daEliminare: [] });
+    return utente;
+  }
+
+  // Esci: i dati restano su questo dispositivo, ma non si sincronizzano più
+  async function esci() {
+    await Supabase.esci();
+    try {
+      localStorage.removeItem(CHIAVE_SINCRO);
+    } catch (e) {
+      /* niente da fare */
+    }
+    avvisaStato('disconnesso');
+  }
+
+  // Lo stato attuale e l'ora dell'ultima sincronizzazione riuscita
+  function statoSincronizzazione() {
+    const sincro = leggiSincro();
+    return {
+      ...statoAttuale,
+      ultimaRiuscita: sincro.ultimaRiuscita,
+      inAttesa: sincro.daInviare.length + sincro.daEliminare.length,
+    };
+  }
+
+  // Queste sono le sole funzioni "visibili" dall'esterno
   return {
     tutti, aggiungi, aggiorna, elimina, esportaBackup, leggiBackup, sostituisciTutti,
     leggiImpostazione, salvaImpostazione,
+    account, accedi, creaAccount, esci, sincronizza, statoSincronizzazione,
   };
 })();

@@ -64,6 +64,15 @@ const el = {
   dettaglioMese: $('dettaglio-mese'),
   notaMesi: $('nota-mesi'),
   btnCalendario: $('btn-calendario'),
+  cardAccount: $('card-account'),
+  notaAccount: $('nota-account'),
+  foglioAccount: $('foglio-account'),
+  btnAnnullaAccount: $('btn-annulla-account'),
+  moduloAccount: $('modulo-account'),
+  campoEmail: $('campo-email'),
+  campoPassword: $('campo-password'),
+  erroreAccount: $('errore-account'),
+  btnInviaAccount: $('btn-invia-account'),
   notaCalendario: $('nota-calendario'),
   btnAggiungi: $('btn-aggiungi'),
   btnEsporta: $('btn-esporta'),
@@ -584,10 +593,34 @@ function aggiornaRigaMese() {
   el.rigaMese.hidden = frequenzaScelta() !== 'annuale';
 }
 
-// Apre il foglio. Senza argomento = nuovo abbonamento; con un abbonamento = modifica.
+// --- Aprire e chiudere un foglio (vale per tutti i fogli dell'app) ---
+let foglioAperto = null; // il foglio aperto in questo momento, oppure null
+
+function mostraFoglio(foglio) {
+  elementoPrimaDelFoglio = document.activeElement;
+  foglioAperto = foglio;
+  el.velo.classList.add('aperto');
+  foglio.classList.add('aperto');
+  foglio.scrollTop = 0;
+  document.body.classList.add('bloccato');
+  foglio.focus({ preventScroll: true });
+}
+
+function nascondiFoglio() {
+  if (!foglioAperto) return;
+  el.velo.classList.remove('aperto');
+  foglioAperto.classList.remove('aperto');
+  foglioAperto = null;
+  document.body.classList.remove('bloccato');
+  // Riportiamo il focus dov'era (utile per chi usa la tastiera)
+  if (elementoPrimaDelFoglio && document.body.contains(elementoPrimaDelFoglio)) {
+    elementoPrimaDelFoglio.focus({ preventScroll: true });
+  }
+}
+
+// Apre il foglio del modulo. Senza argomento = nuovo abbonamento; con un abbonamento = modifica.
 function apriFoglio(abb) {
   idInModifica = abb ? abb.id : null;
-  elementoPrimaDelFoglio = document.activeElement;
 
   el.foglioTitolo.textContent = abb ? 'Modifica' : 'Nuovo abbonamento';
   el.campoNome.value = abb ? abb.nome : '';
@@ -603,22 +636,11 @@ function apriFoglio(abb) {
   impostaFrequenza(abb ? abb.frequenza : 'mensile');
   el.bloccoElimina.hidden = !abb;
   el.errore.textContent = '';
-
-  el.velo.classList.add('aperto');
-  el.foglio.classList.add('aperto');
-  el.foglio.scrollTop = 0;
-  document.body.classList.add('bloccato');
-  el.foglio.focus({ preventScroll: true });
+  mostraFoglio(el.foglio);
 }
 
 function chiudiFoglio() {
-  el.velo.classList.remove('aperto');
-  el.foglio.classList.remove('aperto');
-  document.body.classList.remove('bloccato');
-  // Riportiamo il focus dov'era (utile per chi usa la tastiera)
-  if (elementoPrimaDelFoglio && document.body.contains(elementoPrimaDelFoglio)) {
-    elementoPrimaDelFoglio.focus({ preventScroll: true });
-  }
+  nascondiFoglio();
 }
 
 // Legge e controlla i campi del modulo.
@@ -788,12 +810,146 @@ function scriviNotaCalendario() {
 
 
 /* =====================================================================
+   SINCRONIZZAZIONE ONLINE: la sezione e il foglio dell'account
+   ===================================================================== */
+
+const formatoOra = new Intl.DateTimeFormat('it-IT', { hour: '2-digit', minute: '2-digit' });
+const formatoGiornoOra = new Intl.DateTimeFormat('it-IT', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+
+// "alle 12:49" se è oggi, altrimenti "il 18 nov, 12:49"
+function quando(iso) {
+  const data = new Date(iso);
+  const oggi = new Date();
+  return data.toDateString() === oggi.toDateString()
+    ? `alle ${formatoOra.format(data)}`
+    : `il ${formatoGiornoOra.format(data)}`;
+}
+
+// Una riga con un'etichetta a sinistra e un valore grigio a destra (non si tocca)
+function rigaInformazione(etichetta, valore) {
+  const riga = crea('div', 'riga riga-info');
+  riga.append(crea('span', '', etichetta), crea('span', 'valore-info', valore));
+  return riga;
+}
+
+// Disegna la card "Sincronizzazione" in base a chi è entrato e allo stato
+function disegnaAccount() {
+  const utente = Archivio.account();
+  const { stato, messaggio, ultimaRiuscita, inAttesa } = Archivio.statoSincronizzazione();
+  el.cardAccount.replaceChildren();
+
+  // Nessuno è entrato: un solo pulsante
+  if (!utente) {
+    const accedi = crea('button', 'riga riga-azione', 'Accedi o crea un account');
+    accedi.type = 'button';
+    accedi.addEventListener('click', apriFoglioAccount);
+    el.cardAccount.append(accedi);
+    el.notaAccount.textContent = messaggio
+      || 'Entra con un account per avere gli stessi abbonamenti su telefono, iPad e computer. '
+      + 'Senza account i dati restano solo su questo dispositivo.';
+    return;
+  }
+
+  // Che cosa scrivere accanto a "Stato"
+  const attesa = inAttesa === 1 ? '1 modifica da inviare' : `${inAttesa} modifiche da inviare`;
+  const testi = {
+    'in-corso': 'Sincronizzazione…',
+    sincronizzato: ultimaRiuscita ? `Sincronizzato ${quando(ultimaRiuscita)}` : 'Sincronizzato',
+    offline: inAttesa > 0 ? `Offline · ${attesa}` : 'Offline',
+    errore: 'Non riuscita',
+    disconnesso: ultimaRiuscita ? `Ultima volta ${quando(ultimaRiuscita)}` : 'In attesa…',
+  };
+  const note = {
+    offline: 'Senza internet l\'app funziona lo stesso: le modifiche partono appena torni online.',
+    errore: messaggio ? `${messaggio} Riproverò in automatico.` : 'Riproverò in automatico.',
+  };
+
+  const sincronizzaOra = crea('button', 'riga riga-azione', 'Sincronizza ora');
+  sincronizzaOra.type = 'button';
+  sincronizzaOra.disabled = stato === 'in-corso';
+  sincronizzaOra.addEventListener('click', () => Archivio.sincronizza());
+
+  const esci = crea('button', 'riga riga-azione rosso', 'Esci');
+  esci.type = 'button';
+  esci.addEventListener('click', async () => {
+    if (!confirm('Vuoi uscire dall\'account? I dati restano su questo dispositivo, ma non verranno più sincronizzati.')) return;
+    await Archivio.esci();
+    disegnaAccount();
+  });
+
+  el.cardAccount.append(
+    rigaInformazione('Account', utente.email),
+    rigaInformazione('Stato', testi[stato] || ''),
+    sincronizzaOra,
+    esci,
+  );
+  el.notaAccount.textContent = note[stato] || 'Le modifiche si sincronizzano da sole. Sull\'altro dispositivo compaiono quando apri l\'app.';
+}
+
+// --- Il foglio dell'account ---
+
+function modoAccount() {
+  return el.moduloAccount.querySelector('input[name="modo-account"]:checked').value;
+}
+
+// "Accedi" o "Crea account": cambiano il pulsante e il tipo di password
+// (così il Portachiavi dell'iPhone propone la password salvata o ne suggerisce una nuova)
+function aggiornaModoAccount() {
+  const nuovo = modoAccount() === 'crea';
+  el.btnInviaAccount.textContent = nuovo ? 'Crea account' : 'Accedi';
+  el.campoPassword.autocomplete = nuovo ? 'new-password' : 'current-password';
+  el.erroreAccount.textContent = '';
+}
+
+function apriFoglioAccount() {
+  el.campoPassword.value = '';
+  aggiornaModoAccount();
+  mostraFoglio(el.foglioAccount);
+}
+
+async function inviaAccount(evento) {
+  evento.preventDefault();
+  const email = el.campoEmail.value.trim();
+  const password = el.campoPassword.value;
+
+  if (!email.includes('@')) {
+    el.erroreAccount.textContent = 'Scrivi il tuo indirizzo email.';
+    el.campoEmail.focus();
+    return;
+  }
+  if (password.length < 6) {
+    el.erroreAccount.textContent = 'La password deve avere almeno 6 caratteri.';
+    el.campoPassword.focus();
+    return;
+  }
+
+  // Mentre aspettiamo la risposta, il pulsante non si può premere due volte
+  const nuovo = modoAccount() === 'crea';
+  el.btnInviaAccount.disabled = true;
+  el.btnInviaAccount.textContent = 'Attendere…';
+  try {
+    if (nuovo) await Archivio.creaAccount(email, password);
+    else await Archivio.accedi(email, password);
+    el.campoPassword.value = '';
+    nascondiFoglio();
+    disegnaAccount();
+    await Archivio.sincronizza(); // la prima sincronizzazione unisce i dati
+  } catch (e) {
+    el.erroreAccount.textContent = e.message;
+  } finally {
+    el.btnInviaAccount.disabled = false;
+    el.btnInviaAccount.textContent = nuovo ? 'Crea account' : 'Accedi';
+  }
+}
+
+
+/* =====================================================================
    COLLEGARE I PULSANTI ALLE FUNZIONI
    ===================================================================== */
 
 el.btnAggiungi.addEventListener('click', () => apriFoglio());
 el.btnAnnulla.addEventListener('click', chiudiFoglio);
-el.velo.addEventListener('click', chiudiFoglio); // toccare fuori dal foglio lo chiude
+el.velo.addEventListener('click', nascondiFoglio); // toccare fuori dal foglio lo chiude
 el.modulo.addEventListener('submit', salva);
 el.btnElimina.addEventListener('click', eliminaAbbonamento);
 el.modulo.addEventListener('change', (e) => {
@@ -857,15 +1013,36 @@ el.btnEsporta.addEventListener('click', esportaBackup);
 el.btnImporta.addEventListener('click', () => el.fileImporta.click());
 el.fileImporta.addEventListener('change', importaBackup);
 
-// Tasto Esc (sul computer) per chiudere il foglio
+// Tasto Esc (sul computer) per chiudere il foglio aperto
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && el.foglio.classList.contains('aperto')) chiudiFoglio();
+  if (e.key === 'Escape' && foglioAperto) nascondiFoglio();
 });
 
 // Quando torni sull'app (magari il giorno dopo) ricalcoliamo i giorni mancanti
+// e chiediamo a internet se sull'altro dispositivo è cambiato qualcosa
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') disegna();
+  if (document.visibilityState === 'visible') {
+    disegna();
+    Archivio.sincronizza();
+  }
 });
+
+// --- Sincronizzazione: collegamenti ---
+el.btnAnnullaAccount.addEventListener('click', nascondiFoglio);
+el.moduloAccount.addEventListener('submit', inviaAccount);
+el.moduloAccount.addEventListener('change', (e) => {
+  if (e.target.name === 'modo-account') aggiornaModoAccount();
+});
+el.moduloAccount.addEventListener('input', () => { el.erroreAccount.textContent = ''; });
+
+// storage.js ci avvisa quando cambia lo stato e quando arrivano dati nuovi
+window.addEventListener('archivio-stato', disegnaAccount);
+window.addEventListener('archivio-aggiornato', async () => {
+  abbonamenti = await Archivio.tutti();
+  disegna();
+});
+// Torna internet: inviamo subito le modifiche rimaste in attesa
+window.addEventListener('online', () => Archivio.sincronizza());
 
 
 /* =====================================================================
@@ -896,7 +1073,9 @@ async function avvia() {
     alert('Non riesco a leggere i dati salvati. Controlla che il browser permetta di salvare i dati dei siti.');
     abbonamenti = [];
   }
-  disegna();
+  disegna();         // prima mostriamo subito i dati del dispositivo...
+  disegnaAccount();
+  Archivio.sincronizza(); // ...poi, se sei entrato, controlliamo le novità online
 }
 
 avvia();

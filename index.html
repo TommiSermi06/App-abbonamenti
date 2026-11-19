@@ -18,16 +18,16 @@
 
   <link rel="apple-touch-icon" href="icon-180.png">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <!-- NUMERO DI VERSIONE: "?v=2.6" in fondo ai nomi dei file.
-       Per il browser "app.js?v=2.6" e "app.js?v=2.7" sono file diversi:
+  <!-- NUMERO DI VERSIONE: "?v=3.0" in fondo ai nomi dei file.
+       Per il browser "app.js?v=3.0" e "app.js?v=3.1" sono file diversi:
        cambiando il numero, l'iPhone è costretto a scaricare il codice nuovo
        invece di usare la copia vecchia che tiene in memoria.
        A ogni modifica di CSS o JavaScript aumenta il numero in TUTTI i punti
        di questo file (cerca il numero attuale), anche nella scritta in fondo alla pagina. -->
-  <link rel="manifest" href="manifest.json?v=2.6">
+  <link rel="manifest" href="manifest.json?v=3.0">
 
   <title>Abbonamenti</title>
-  <link rel="stylesheet" href="style.css?v=2.6">
+  <link rel="stylesheet" href="style.css?v=3.0">
 </head>
 <body>
   <main class="app">
@@ -132,6 +132,11 @@
     <!-- Il testo lo scrive app.js, così resta uguale alle impostazioni di calendario.js -->
     <p id="nota-calendario" class="nota"></p>
 
+    <!-- ===== Sincronizzazione online (il contenuto lo disegna app.js) ===== -->
+    <h2 class="titolo-sezione">Sincronizzazione</h2>
+    <div id="card-account" class="lista card"></div>
+    <p id="nota-account" class="nota"></p>
+
     <!-- ===== Backup ===== -->
     <h2 class="titolo-sezione">Backup</h2>
     <div class="lista card">
@@ -141,7 +146,7 @@
     <p class="nota">Il backup è un file .json con tutti i tuoi abbonamenti. Importarlo sostituisce i dati attuali.</p>
 
     <!-- Versione dell'app: utile per capire se l'iPhone ha già l'ultima -->
-    <p class="versione">Abbonamenti · versione 2.6</p>
+    <p class="versione">Abbonamenti · versione 3.0</p>
     <!-- Campo per scegliere il file: è nascosto, lo apre il pulsante "Importa backup" -->
     <input type="file" id="file-importa" accept=".json,application/json" hidden>
   </main>
@@ -220,6 +225,39 @@
     </form>
   </section>
 
+  <!-- ===== Foglio per entrare o creare l'account ===== -->
+  <section id="foglio-account" class="foglio" role="dialog" aria-modal="true" aria-labelledby="account-titolo" tabindex="-1">
+    <header class="foglio-barra">
+      <button type="button" id="btn-annulla-account" class="btn-testo">Annulla</button>
+      <h2 id="account-titolo" class="foglio-titolo">Account</h2>
+      <span></span>
+    </header>
+
+    <form id="modulo-account" novalidate>
+      <!-- Due modalità: entrare con un account che esiste, o crearne uno nuovo -->
+      <div class="segmentato" role="radiogroup" aria-label="Cosa vuoi fare">
+        <label><input type="radio" name="modo-account" value="accedi" checked><span>Accedi</span></label>
+        <label><input type="radio" name="modo-account" value="crea"><span>Crea account</span></label>
+      </div>
+
+      <div class="lista card">
+        <label class="riga campo">
+          <span>Email</span>
+          <input id="campo-email" type="email" inputmode="email" autocomplete="email" autocapitalize="off"
+                 spellcheck="false" placeholder="nome@esempio.it">
+        </label>
+        <label class="riga campo">
+          <span>Password</span>
+          <input id="campo-password" type="password" autocomplete="current-password" placeholder="almeno 6 caratteri">
+        </label>
+      </div>
+
+      <p id="errore-account" class="errore" role="alert"></p>
+      <button type="submit" id="btn-invia-account" class="btn-principale">Accedi</button>
+      <p class="nota">I tuoi abbonamenti verranno salvati online e saranno uguali su tutti i dispositivi in cui entri con questo account.</p>
+    </form>
+  </section>
+
   <!-- Freccia ">" delle righe: app.js la copia da qui -->
   <template id="tpl-freccia">
     <svg class="freccia" viewBox="0 0 8 14" width="8" height="14" aria-hidden="true">
@@ -227,11 +265,12 @@
     </svg>
   </template>
 
-  <!-- L'ordine conta: prima le categorie, poi storage.js (i dati) e calendario.js,
-       infine app.js che li usa tutti -->
-  <script src="categorie.js?v=2.6"></script>
-  <script src="storage.js?v=2.6"></script>
-  <script src="calendario.js?v=2.6"></script>
-  <script src="app.js?v=2.6"></script>
+  <!-- L'ordine conta: prima le categorie, poi supabase.js (il collegamento online),
+       storage.js (i dati) e calendario.js, infine app.js che li usa tutti -->
+  <script src="categorie.js?v=3.0"></script>
+  <script src="supabase.js?v=3.0"></script>
+  <script src="storage.js?v=3.0"></script>
+  <script src="calendario.js?v=3.0"></script>
+  <script src="app.js?v=3.0"></script>
 </body>
 </html>
