@@ -32,6 +32,8 @@
   <link rel="stylesheet" href="vetro.css?v=4.1">
   <!-- La schermata di benvenuto "Orbita" e il saluto all'apertura -->
   <link rel="stylesheet" href="benvenuto.css?v=4.1">
+  <!-- Il pianeta serve subito (benvenuto e saluto): il browser lo scarica in anticipo -->
+  <link rel="preload" as="image" href="pianeta.webp?v=4.1" type="image/webp">
 </head>
 <body>
   <!-- Sfondo vivo: macchie di luce sfumate dietro al vetro (solo decorazione) -->
@@ -333,10 +335,15 @@
     <div class="orbita" aria-hidden="true">
       <div class="anello-scala esterno"><div class="anello" id="anello-esterno"></div></div>
       <div class="anello-scala interno"><div class="anello" id="anello-interno"></div></div>
+      <!-- Al centro il pianeta (immagine creata con Higgsfield) -->
       <div class="orbita-centro">
+        <img class="pianeta-immagine" src="pianeta.webp?v=4.1" alt="" width="520" height="520" decoding="async">
+      </div>
+      <!-- Sotto l'orbita, la capsula di vetro con il totale al mese -->
+      <span class="orbita-capsula">
         <span id="benvenuto-totale" class="orbita-totale">0,00 €</span>
         <span class="orbita-etichetta">al mese</span>
-      </div>
+      </span>
     </div>
 
     <!-- Passo 1: il messaggio di benvenuto -->
@@ -360,7 +367,7 @@
 
   <!-- Saluto lampo a ogni apertura: goccia + "Buonasera, Tommaso" (si salta toccando) -->
   <div id="saluto-avvio" class="saluto-avvio" role="status" hidden>
-    <div class="goccia" aria-hidden="true"></div>
+    <img class="goccia" src="pianeta.webp?v=4.1" alt="" width="520" height="520" decoding="async">
     <p id="saluto-avvio-testo" class="saluto-avvio-testo"></p>
   </div>
 

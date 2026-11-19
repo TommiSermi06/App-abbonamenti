@@ -82,6 +82,9 @@ Il proprietario del progetto **sta imparando a programmare**:
   (`Benvenuto.salutoLampo`, < 1 s, un tocco lo salta). Nella Home il saluto sta sopra il titolo (`#saluto`).
 - Il nome (impostazione `nome`) si cambia dalla sezione "Profilo"; resta SOLO sul dispositivo (non va online).
 - L'entrata a cascata della Home parte quando `app.js` aggiunge la classe `entra` a `.app` (`entraNellApp()`).
+- Il **pianeta** (`pianeta.webp`, 520×520 con trasparenza, ~59 KB) è un'immagine generata con Higgsfield
+  (modello Z Image) e scontornata tenendo l'alone dell'atmosfera; sta al centro dell'orbita (le iniziali
+  girano intorno come lune) e nel saluto lampo. Il totale è nella capsula di vetro sotto l'orbita.
 - Iniziale e colore di un abbonamento: `Benvenuto.iniziale(nome)` e `Benvenuto.tinta(nome)` (`mono-1…5`,
   sempre nella tinta blu/azzurrino; riutilizzabili per le icone della lista).
 - **Prove automatiche**: per saltare benvenuto e saluto impostare `abbonamenti:impostazioni` =
