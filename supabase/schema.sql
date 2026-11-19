@@ -47,6 +47,9 @@ create trigger abbonamenti_aggiornato_il
 -- Chi non è entrato (ruolo "anon") non ha nessun permesso.
 grant select, insert, update on public.abbonamenti to authenticated;
 
+-- Versione 3.1: fine della prova gratuita (null = nessuna prova)
+alter table public.abbonamenti add column fine_prova date;
+
 -- Impostazioni fatte dal sito di Supabase (non con SQL):
 -- - Authentication → URL Configuration → Site URL: https://tommisermi06.github.io/App-abbonamenti/
 -- - Authentication → Sign In / Providers → Email → "Confirm email": spento

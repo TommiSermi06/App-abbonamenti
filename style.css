@@ -48,6 +48,8 @@
 
   /* --- Colori di supporto --- */
   --griglia: rgba(64, 58, 46, 0.12); /* linee leggere della griglia del grafico */
+  --interruttore-spento: rgba(125, 184, 232, 0.35); /* binario dell'interruttore spento (azzurrino) */
+  --pallino: #FFFFFF;           /* pallino dell'interruttore */
   --velo: rgba(20, 32, 56, 0.35);  /* oscura la pagina quando il foglio è aperto */
   --sfondo-foglio: #F8F3E6;
   --card-foglio: #FFFDF6;
@@ -87,6 +89,7 @@
     --rosso-bagliore: rgba(255, 69, 58, 0.6);
 
     --griglia: rgba(246, 240, 223, 0.12);
+    --interruttore-spento: rgba(157, 208, 247, 0.25);
     --velo: rgba(0, 0, 0, 0.6);
     --sfondo-foglio: #1F1D18;
     --card-foglio: #2A2721;
@@ -850,6 +853,56 @@ button:active {
   margin-top: 12px;
 }
 
+/* ----- Interruttore stile iPhone (es. "Prova gratuita") -----
+   È una normale casella da spuntare, ridisegnata: un binario con un pallino
+   che scorre a destra quando è accesa. */
+.campo-interruttore {
+  justify-content: space-between;
+  cursor: pointer;
+}
+
+.campo .interruttore {
+  -webkit-appearance: none;
+  appearance: none;
+  position: relative;
+  flex: none;
+  width: 51px;
+  height: 31px;
+  margin: 0;
+  border-radius: 16px;
+  background: var(--interruttore-spento);
+  cursor: pointer;
+  transition: background-color var(--durata) var(--curva);
+}
+
+/* Il pallino */
+.campo .interruttore::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  background: var(--pallino);
+  box-shadow: 0 3px 8px rgba(0, 0, 0, 0.15), 0 3px 1px rgba(0, 0, 0, 0.06);
+  transition: transform var(--durata) var(--curva);
+}
+
+/* Acceso: binario blu e pallino a destra */
+.campo .interruttore:checked {
+  background: var(--blu);
+}
+
+.campo .interruttore:checked::after {
+  transform: translateX(20px);
+}
+
+.campo .interruttore:focus-visible {
+  outline: 2px solid var(--blu);
+  outline-offset: 2px;
+}
+
 /* Scritta con la versione, in fondo alla pagina */
 .versione {
   margin: 32px 16px 0;
@@ -861,6 +914,11 @@ button:active {
 /* Un po' di spazio tra due card dello stesso modulo */
 .spazio-sopra {
   margin-top: 20px;
+}
+
+/* Nota sotto una card del modulo (es. spiegazione della prova gratuita) */
+.spazio-sopra + .nota {
+  margin-bottom: 4px;
 }
 
 

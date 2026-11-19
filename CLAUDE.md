@@ -27,8 +27,8 @@ Il proprietario del progetto **sta imparando a programmare**:
   (generate da `icon.svg`, con sfondo quadrato: gli angoli li arrotonda iOS).
 
 ## Numero di versione (da aggiornare a OGNI rilascio)
-- Versione attuale: **3.0**. In `index.html` i file hanno il numero di versione (`style.css?v=3.0`, `app.js?v=3.0`…)
-  e c'è la scritta "Abbonamenti · versione 3.0" in fondo alla pagina.
+- Versione attuale: **3.1**. In `index.html` i file hanno il numero di versione (`style.css?v=3.1`, `app.js?v=3.1`…)
+  e c'è la scritta "Abbonamenti · versione 3.1" in fondo alla pagina.
 - A ogni modifica di CSS, JavaScript o manifest **aumenta il numero in tutti i punti di `index.html`**
   (cerca la versione attuale), così l'iPhone scarica i file nuovi invece di usare la copia in memoria.
   Piccole modifiche: 3.0 → 3.1; una nuova versione grande dell'app: 3.x → 4.0.
@@ -70,10 +70,11 @@ Il proprietario del progetto **sta imparando a programmare**:
 { id: "…", nome: "Spotify", costo: 16.99, frequenza: "mensile" | "annuale",
   giorno: 1-31, mese: 1-12 (solo annuali, altrimenti null),
   categoria: "streaming" | "musica" | … (id di categorie.js),
-  stato: "attivo" | "pausa" | "disdetto" }
+  stato: "attivo" | "pausa" | "disdetto",
+  fineProva: "2026-11-25" | null }   // online: colonna fine_prova (date)
 ```
 Chiave nel localStorage: `abbonamenti:v1` (invariata: i dati della versione 1 restano compatibili).
-Backup: file JSON `{ app, versione: 3, esportatoIl, abbonamenti: [...] }`.
+Backup: file JSON `{ app, versione: 4, esportatoIl, abbonamenti: [...] }`.
 I backup delle versioni precedenti si importano ancora (stato mancante → `attivo`, categoria mancante → `altro`).
 
 ## Categorie (versione 2)
@@ -105,6 +106,17 @@ I backup delle versioni precedenti si importano ancora (stato mancante → `atti
 - `storage.js` avvisa `app.js` con gli eventi `archivio-stato` (stato: `in-corso`, `sincronizzato`, `offline`,
   `errore`, `disconnesso`) e `archivio-aggiornato` (sono arrivati dati nuovi: ridisegnare).
 - Uscendo dall'account i dati restano sul dispositivo, ma non si sincronizzano più.
+
+## Prova gratuita (versione 3.1)
+- Nel modulo: interruttore "Prova gratuita" + data "Finisce il" (`fineProva`). Accendendolo propone oggi + 7 giorni;
+  il "giorno del rinnovo" segue quella data finché l'utente non lo scrive a mano.
+- `inProva(abb, oggi)` = la fine è DOPO oggi. Il giorno in cui finisce si paga già.
+- Durante la prova l'abbonamento **non conta** in totali, spesa per categoria e grafico (funzione `paganti()` =
+  attivi e non in prova); nel grafico i pagamenti iniziano dal giorno di fine prova.
+  Sotto i totali la nota "🎁 In prova gratuita: …, +X € al mese quando finisce".
+- `infoRinnovo` restituisce `prova: true` finché la fine non è passata: l'evento è la fine della prova
+  (etichetta "Prova: tra X giorni", con gli stessi colori dei giorni mancanti; riga "Gratis fino al …, poi …").
+- Calendario: evento "🎁 Fine prova: Nome · poi costo" con gli stessi avvisi dei rinnovi.
 
 ## Ricerca e ordinamento
 - Barra di ricerca sopra la lista: filtra per nome, senza badare a maiuscole e accenti (`semplifica()`),

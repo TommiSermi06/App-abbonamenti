@@ -14,6 +14,7 @@ quanto spendi al mese e all'anno, e quale rinnovo sta per arrivare.
 - Abbonamenti in pausa o disdetti: restano nella lista ma non contano nei totali
 - Ricerca per nome e ordinamento della lista (rinnovo, prezzo, nome)
 - Sincronizzazione online con account (Supabase): stessi dati su telefono, iPad e computer, anche offline
+- Prove gratuite: non contano nei totali finché durano, con avviso prima che diventino a pagamento
 - Esporta e importa un backup in formato JSON
 - Modalità scura automatica, installabile nella schermata Home dell'iPhone
 
