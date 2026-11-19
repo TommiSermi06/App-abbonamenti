@@ -18,6 +18,7 @@ quanto spendi al mese e all'anno, e quale rinnovo sta per arrivare.
 - Per ogni abbonamento: link per disdire, metodo di pagamento e note
 - Guida "Come disdire" per i servizi più diffusi, con il link alla pagina ufficiale inserito in automatico
 - Esporta e importa un backup in formato JSON
+- Stile "Liquid Glass" con animazioni morbide (rispetta Riduci movimento e Riduci trasparenza)
 - Modalità scura automatica, installabile nella schermata Home dell'iPhone
 
 ## Come provarla

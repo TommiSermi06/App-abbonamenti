@@ -28,8 +28,8 @@ Il proprietario del progetto **sta imparando a programmare**:
   (generate da `icon.svg`, con sfondo quadrato: gli angoli li arrotonda iOS).
 
 ## Numero di versione (da aggiornare a OGNI rilascio)
-- Versione attuale: **3.3**. In `index.html` i file hanno il numero di versione (`style.css?v=3.3`, `app.js?v=3.3`…)
-  e c'è la scritta "Abbonamenti · versione 3.3" in fondo alla pagina.
+- Versione attuale: **4.0**. In `index.html` i file hanno il numero di versione (`style.css?v=4.0`, `app.js?v=4.0`…)
+  e c'è la scritta "Abbonamenti · versione 4.0" in fondo alla pagina.
 - A ogni modifica di CSS, JavaScript o manifest **aumenta il numero in tutti i punti di `index.html`**
   (cerca la versione attuale), così l'iPhone scarica i file nuovi invece di usare la copia in memoria.
   Piccole modifiche: 3.0 → 3.1; una nuova versione grande dell'app: 3.x → 4.0.
@@ -46,11 +46,32 @@ Il proprietario del progetto **sta imparando a programmare**:
   - particolari **azzurrino** → linee di separazione, bordi delle card, frecce, sfondo del controllo segmentato.
   - **NON cambiare** i colori dei giorni mancanti (grigio, arancione e rosso di sistema iOS):
     variabili `--grigio-badge*`, `--arancione*`, `--rosso*`.
-- Liste raggruppate: card con angoli 12px, margini laterali 16px, righe alte almeno 44px.
+- Liste raggruppate: card di vetro con angoli 20px (`--raggio-card`), margini laterali 16px, righe alte almeno 44px.
 - Animazioni morbide 0.25–0.35s; rispettare sempre `prefers-reduced-motion`.
 - Aree sicure dell'iPhone con `env(safe-area-inset-*)`.
 - Moduli: foglio che sale dal basso con "Annulla" a sinistra e "Salva" a destra.
 - Vedi anche la skill `stile-ios` se disponibile.
+
+## Stile "Liquid Glass" futuristico (versione 4.0)
+- Tutto lo stile vetro sta in **`vetro.css`**, caricato DOPO `style.css` (che resta la base e non va riscritta
+  per il vetro). Le animazioni che richiedono JS stanno in **`animazioni.js`** (oggetto `Animazioni`).
+  Togliendo questi due file da `index.html` si torna all'aspetto precedente.
+- Vetro: sfondo semitrasparente (`--vetro`, `--vetro-forte`, `--vetro-barra`) + `backdrop-filter`
+  (`--vetro-sfocatura`), bordo e riflesso chiari, ombra morbida, lampo diagonale (`.card::after`).
+  Dietro c'è lo **sfondo vivo** (`.sfondo-vivo`: 3 macchie di luce `--luce-1/2/3` che si muovono lentissime).
+  Dentro al foglio le card NON hanno `backdrop-filter` (troppo pesante per il telefono).
+- Totali "eroe": bordo sfumato blu → azzurrino e numeri con sfumatura `--blu` → `--blu-chiaro`
+  (stessa tinta); `adattaLarghezza()` rimpicciolisce i numeri lunghi perché stiano interi.
+- Movimento: curve `--molla` (rimbalzo), `--molla-foglio`, `--uscita`. Animazioni solo con uno scopo:
+  totali che contano (`Animazioni.conta`), goccia che scivola nel segmentato (CSS `:has`) e nei filtri
+  (`Animazioni.posizionaIndicatore`), barra in alto che diventa compatta (`Animazioni.barraCompatta`),
+  foglio con molla + pagina dietro che si allontana + chiusura trascinando la maniglia
+  (`Animazioni.trascinaPerChiudere`), righe che entrano "mettendosi a fuoco", capsula "✓" dopo le azioni
+  (`Animazioni.avviso`). Niente animazioni decorative continue tranne lo sfondo lentissimo.
+- Nel foglio maniglia e barra "Annulla / Salva" sono `sticky` in cima: restano visibili scorrendo.
+- Accessibilità: con **Riduci movimento** niente animazioni (anche i numeri compaiono subito); con
+  **Riduci trasparenza** (o browser senza `backdrop-filter`) superfici piene e niente macchie.
+  I colori dei giorni mancanti restano quelli di sempre.
 
 ## Struttura dei file
 | File | Cosa contiene |
@@ -59,6 +80,8 @@ Il proprietario del progetto **sta imparando a programmare**:
 | `style.css` | Tutto l'aspetto: variabili colore, liste, foglio, etichette, animazioni |
 | `categorie.js` | Elenco fisso delle categorie (`CATEGORIE`), unico punto dove modificarle |
 | `calendario.js` | Crea il file .ics dei promemoria (`creaFileCalendario`); impostazioni `GIORNI_PREAVVISO` e `ORA_AVVISO` |
+| `vetro.css` | Stile "Liquid Glass": vetro, sfondo vivo, molle e animazioni CSS (riveste `style.css`) |
+| `animazioni.js` | `Animazioni`: numeri che contano, goccia dei filtri, barra compatta, foglio da trascinare, capsula di avviso |
 | `servizi.js` | Come disdire i servizi più diffusi (`SERVIZI`: alias, link ufficiale, passi, nota) e `guidaDisdetta(nome, pagamento)` |
 | `supabase.js` | `Supabase`: collegamento con il database online (account, sessione, richieste con `fetch`). Lo usa solo `storage.js` |
 | `storage.js` | `Archivio`: lettura/scrittura dati, dati iniziali, controllo e backup, impostazioni, account e sincronizzazione online |

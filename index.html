@@ -18,30 +18,38 @@
 
   <link rel="apple-touch-icon" href="icon-180.png">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <!-- NUMERO DI VERSIONE: "?v=3.3" in fondo ai nomi dei file.
-       Per il browser "app.js?v=3.3" e "app.js?v=3.4" sono file diversi:
+  <!-- NUMERO DI VERSIONE: "?v=4.0" in fondo ai nomi dei file.
+       Per il browser "app.js?v=4.0" e "app.js?v=4.1" sono file diversi:
        cambiando il numero, l'iPhone è costretto a scaricare il codice nuovo
        invece di usare la copia vecchia che tiene in memoria.
        A ogni modifica di CSS o JavaScript aumenta il numero in TUTTI i punti
        di questo file (cerca il numero attuale), anche nella scritta in fondo alla pagina. -->
-  <link rel="manifest" href="manifest.json?v=3.3">
+  <link rel="manifest" href="manifest.json?v=4.0">
 
   <title>Abbonamenti</title>
-  <link rel="stylesheet" href="style.css?v=3.3">
+  <link rel="stylesheet" href="style.css?v=4.0">
+  <!-- Lo stile "Liquid Glass": va DOPO style.css perché lo riveste -->
+  <link rel="stylesheet" href="vetro.css?v=4.0">
 </head>
 <body>
+  <!-- Sfondo vivo: macchie di luce sfumate dietro al vetro (solo decorazione) -->
+  <div class="sfondo-vivo" aria-hidden="true"><span></span><span></span><span></span></div>
+  <!-- Striscia di vetro sotto il notch, quando serve -->
+  <div class="striscia-alto" aria-hidden="true"></div>
+
   <main class="app">
 
-    <!-- ===== Barra in alto: pulsante "+" e titolo grande ===== -->
+    <!-- ===== Barra in alto: resta attaccata scorrendo e diventa di vetro ===== -->
+    <div class="barra-fissa" id="barra-fissa">
+      <span class="titolo-compatto" aria-hidden="true">Abbonamenti</span>
+      <button type="button" id="btn-aggiungi" class="btn-icona" aria-label="Aggiungi abbonamento">
+        <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
+          <path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+        </svg>
+      </button>
+    </div>
     <header class="barra">
-      <div class="barra-azioni">
-        <button type="button" id="btn-aggiungi" class="btn-icona" aria-label="Aggiungi abbonamento">
-          <svg viewBox="0 0 24 24" width="24" height="24" aria-hidden="true">
-            <path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
-          </svg>
-        </button>
-      </div>
-      <h1 class="titolo-grande">Abbonamenti</h1>
+      <h1 class="titolo-grande" id="titolo-grande">Abbonamenti</h1>
     </header>
 
     <!-- ===== Totali al mese e all'anno ===== -->
@@ -148,7 +156,7 @@
     <p class="nota">Il backup è un file .json con tutti i tuoi abbonamenti. Importarlo sostituisce i dati attuali.</p>
 
     <!-- Versione dell'app: utile per capire se l'iPhone ha già l'ultima -->
-    <p class="versione">Abbonamenti · versione 3.3</p>
+    <p class="versione">Abbonamenti · versione 4.0</p>
     <!-- Campo per scegliere il file: è nascosto, lo apre il pulsante "Importa backup" -->
     <input type="file" id="file-importa" accept=".json,application/json" hidden>
   </main>
@@ -156,6 +164,8 @@
   <!-- ===== Foglio che sale dal basso con il modulo ===== -->
   <div id="velo" class="velo"></div>
   <section id="foglio" class="foglio" role="dialog" aria-modal="true" aria-labelledby="foglio-titolo" tabindex="-1">
+    <!-- Maniglia: tirando giù il foglio si chiude -->
+    <div class="maniglia" aria-hidden="true"></div>
     <header class="foglio-barra">
       <button type="button" id="btn-annulla" class="btn-testo">Annulla</button>
       <h2 id="foglio-titolo" class="foglio-titolo">Nuovo abbonamento</h2>
@@ -271,6 +281,7 @@
 
   <!-- ===== Foglio per entrare o creare l'account ===== -->
   <section id="foglio-account" class="foglio" role="dialog" aria-modal="true" aria-labelledby="account-titolo" tabindex="-1">
+    <div class="maniglia" aria-hidden="true"></div>
     <header class="foglio-barra">
       <button type="button" id="btn-annulla-account" class="btn-testo">Annulla</button>
       <h2 id="account-titolo" class="foglio-titolo">Account</h2>
@@ -311,11 +322,12 @@
 
   <!-- L'ordine conta: prima le categorie, poi supabase.js (il collegamento online),
        storage.js (i dati), calendario.js e servizi.js (le guide per disdire), infine app.js che li usa tutti -->
-  <script src="categorie.js?v=3.3"></script>
-  <script src="supabase.js?v=3.3"></script>
-  <script src="storage.js?v=3.3"></script>
-  <script src="calendario.js?v=3.3"></script>
-  <script src="servizi.js?v=3.3"></script>
-  <script src="app.js?v=3.3"></script>
+  <script src="categorie.js?v=4.0"></script>
+  <script src="supabase.js?v=4.0"></script>
+  <script src="storage.js?v=4.0"></script>
+  <script src="calendario.js?v=4.0"></script>
+  <script src="servizi.js?v=4.0"></script>
+  <script src="animazioni.js?v=4.0"></script>
+  <script src="app.js?v=4.0"></script>
 </body>
 </html>
