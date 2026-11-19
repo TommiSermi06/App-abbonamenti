@@ -3,6 +3,13 @@
 App web per tenere sotto controllo gli abbonamenti (costi e prossimi rinnovi),
 pensata per l'iPhone e installabile nella schermata Home.
 
+## Da ricordare al proprietario (finché non dice che l'ha fatto)
+All'inizio di ogni sessione ricordagli in breve queste cose ancora aperte, poi togli la voce quando conferma:
+- **Pulizia su Supabase** (dopo la versione 3.0):
+  1. Authentication → Users: eliminare i tre account di prova `prova.sincronizzazione@example.com`,
+     `prova.altro.utente@example.com`, `prova.telefono@example.com` (NON il suo account con la sua email);
+  2. Authentication → Sign In / Providers: spegnere "Allow new users to sign up" e salvare.
+
 ## Chi ci lavora
 Il proprietario del progetto **sta imparando a programmare**:
 - spiega sempre in italiano e in modo semplice cosa fai e perché;
