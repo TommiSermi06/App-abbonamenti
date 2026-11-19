@@ -17,6 +17,7 @@
    8. Foglio dal basso: vetro, molla, maniglia, pagina che si allontana
    9. Interruttore "liquido", pulsante principale, grafico e barre
    10. Capsula di avviso ("Salvato ✓")
+   10b. Barra delle schede di vetro e cambio di scheda
    11. Accessibilità: Riduci trasparenza e Riduci movimento
    ===================================================================== */
 
@@ -347,22 +348,32 @@ body {
 
 /* Le sezioni della pagina entrano una dopo l'altra.
    Partono quando app.js aggiunge la classe "entra" (dopo il benvenuto o il saluto lampo);
-   fino ad allora restano invisibili, così l'entrata non si "consuma" dietro al saluto. */
-.app > * {
+   fino ad allora restano invisibili, così l'entrata non si "consuma" dietro al saluto.
+   Le tre schede sono solo contenitori: a entrare sono i blocchi che hanno dentro.
+   Finita l'entrata, app.js cambia "entra" in "entrata": così, quando cambi scheda,
+   la cascata non riparte ogni volta (c'è un passaggio più leggero, vedi 10b). */
+.app > :not(.scheda),
+.scheda > * {
   opacity: 0;
 }
 
-.app.entra > * {
+.app.entrata > :not(.scheda),
+.app.entrata .scheda > * {
+  opacity: 1;
+}
+
+.app.entra > :not(.scheda),
+.app.entra .scheda > * {
   opacity: 1;
   animation: entrata 0.6s var(--uscita) both;
 }
 
-.app.entra > :nth-child(2) { animation-delay: 0.03s; }
-.app.entra > :nth-child(3) { animation-delay: 0.06s; }
-.app.entra > :nth-child(4) { animation-delay: 0.09s; }
-.app.entra > :nth-child(5) { animation-delay: 0.12s; }
-.app.entra > :nth-child(6) { animation-delay: 0.15s; }
-.app.entra > :nth-child(n + 7) { animation-delay: 0.18s; }
+.app.entra > :nth-child(2), .app.entra .scheda > :nth-child(2) { animation-delay: 0.03s; }
+.app.entra > :nth-child(3), .app.entra .scheda > :nth-child(3) { animation-delay: 0.06s; }
+.app.entra .scheda > :nth-child(4) { animation-delay: 0.09s; }
+.app.entra .scheda > :nth-child(5) { animation-delay: 0.12s; }
+.app.entra .scheda > :nth-child(6) { animation-delay: 0.15s; }
+.app.entra .scheda > :nth-child(n + 7) { animation-delay: 0.18s; }
 
 @keyframes entrata {
   from { opacity: 0; transform: translateY(14px); }
@@ -594,11 +605,74 @@ body.bloccato .app {
 }
 
 
+/* ---------- 10b. Barra delle schede di vetro ----------
+   Come su iOS 26: una capsula di vetro che galleggia in basso, con una goccia
+   azzurrina che scivola (con un piccolo rimbalzo) sotto la scheda scelta. */
+.barra-schede {
+  background: var(--vetro-forte);
+  -webkit-backdrop-filter: var(--vetro-sfocatura);
+  backdrop-filter: var(--vetro-sfocatura);
+  box-shadow: inset 0 1px 0 var(--vetro-riflesso), inset 0 0 0 1px var(--vetro-bordo), var(--vetro-ombra);
+  transition: opacity 0.25s var(--curva), transform 0.45s var(--molla);
+}
+
+/* Prima dell'entrata nell'app la barra non si vede; poi sale dal basso */
+.barra-schede {
+  opacity: 0;
+  transform: translateY(24px);
+}
+
+.barra-schede.entra {
+  opacity: 1;
+  transform: none;
+}
+
+/* Mentre scrivi in un campo scende fuori dalla vista (vedi anche style.css) */
+body:has(.app input:focus) .barra-schede {
+  transform: translateY(120%);
+}
+
+.barra-schede .indicatore {
+  background: var(--evidenzia);
+  box-shadow: inset 0 1px 0 var(--vetro-riflesso), inset 0 0 0 1px var(--vetro-bordo);
+  transition: transform 0.55s var(--molla), width 0.45s var(--molla);
+}
+
+/* Al tocco l'icona si schiaccia un po'; la scheda appena scelta fa un piccolo "saltello" */
+.scheda-btn svg {
+  transition: transform 0.35s var(--molla);
+}
+
+.scheda-btn:active svg {
+  transform: scale(0.86);
+}
+
+.scheda-btn[aria-current="page"] svg {
+  animation: saltello 0.5s var(--molla);
+}
+
+@keyframes saltello {
+  from { transform: scale(0.8); }
+  to   { transform: scale(1); }
+}
+
+/* Cambio di scheda: il contenuto nuovo compare "mettendosi a fuoco", in fretta */
+.scheda.appena-scelta {
+  animation: cambio-scheda 0.32s var(--uscita) both;
+}
+
+@keyframes cambio-scheda {
+  from { opacity: 0; transform: translateY(8px); filter: blur(4px); }
+  to   { opacity: 1; transform: none; filter: none; }
+}
+
+
 /* ---------- 11. Accessibilità ---------- */
 
 /* "Riduci trasparenza" (o browser senza vetro): superfici piene, niente macchie */
 @media (prefers-reduced-transparency: reduce) {
-  .card, .ricerca, .pillola, .btn-icona, .barra-fissa.compatta, .striscia-alto, .foglio, .capsula-avviso {
+  .card, .ricerca, .pillola, .btn-icona, .barra-fissa.compatta, .striscia-alto, .foglio, .capsula-avviso,
+  .barra-schede {
     background: var(--sfondo-card);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
@@ -612,7 +686,7 @@ body.bloccato .app {
 }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .card, .ricerca, .btn-icona, .barra-fissa.compatta, .striscia-alto, .capsula-avviso {
+  .card, .ricerca, .btn-icona, .barra-fissa.compatta, .striscia-alto, .capsula-avviso, .barra-schede {
     background: var(--sfondo-card);
   }
   .foglio {
@@ -624,12 +698,19 @@ body.bloccato .app {
    (le altre animazioni le spegne già la regola in fondo a style.css) */
 @media (prefers-reduced-motion: reduce) {
   .sfondo-vivo span,
-  .app.entra > *,
+  .app.entra > :not(.scheda),
+  .app.entra .scheda > *,
+  .scheda.appena-scelta,
+  .scheda-btn[aria-current="page"] svg,
   .categoria-barra > span::after {
     animation: none !important;
   }
   body.bloccato .app {
     transform: none;
     filter: none;
+  }
+  .barra-schede,
+  body:has(.app input:focus) .barra-schede {
+    transform: none; /* niente salita: compare e basta */
   }
 }

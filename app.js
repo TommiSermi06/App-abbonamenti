@@ -39,6 +39,8 @@ let guidaAperta = false; // la guida "Come disdire" nel modulo è aperta?
 let meseScelto = 0;       // colonna scelta nel grafico: 0 = questo mese, 11 = tra 11 mesi
 let mesiCalcolati = [];   // i 12 mesi del grafico, con i loro pagamenti
 let elementoPrimaDelFoglio = null; // dove tornare con il focus dopo aver chiuso
+let schedaAttiva = 'abbonamenti';  // la scheda mostrata: 'abbonamenti', 'statistiche' o 'impostazioni'
+const scorrimentoSchede = {};      // per ogni scheda, fin dove l'avevi fatta scorrere
 
 
 /* ---------- Riferimenti agli elementi della pagina ---------- */
@@ -109,6 +111,10 @@ const el = {
   bloccoElimina: $('blocco-elimina'),
   btnElimina: $('btn-elimina'),
   tplFreccia: $('tpl-freccia'),
+  titoloGrande: $('titolo-grande'),
+  titoloCompatto: document.querySelector('.titolo-compatto'),
+  barraSchede: $('barra-schede'),
+  statisticheVuote: $('statistiche-vuote'),
 };
 
 
@@ -260,6 +266,8 @@ function disegna() {
   disegnaLista();
   disegnaPerCategoria();
   disegnaGraficoMesi();
+  // Scheda Statistiche vuota? Mostriamo un messaggio al posto delle due sezioni
+  el.statisticheVuote.hidden = !(el.sezioneCategorie.hidden && el.sezioneMesi.hidden);
   primoDisegno = false;
 }
 
@@ -1303,6 +1311,14 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
+// --- Barra delle schede in basso ---
+el.barraSchede.addEventListener('click', (e) => {
+  const pulsante = e.target.closest('.scheda-btn');
+  if (pulsante) mostraScheda(pulsante.dataset.scheda);
+});
+// Se lo schermo cambia larghezza (iPad girato), la goccia va rimessa sotto la scheda giusta
+window.addEventListener('resize', posizionaGocciaSchede);
+
 // --- Sincronizzazione: collegamenti ---
 el.btnAnnullaAccount.addEventListener('click', nascondiFoglio);
 el.moduloAccount.addEventListener('submit', inviaAccount);
@@ -1320,6 +1336,67 @@ window.addEventListener('archivio-aggiornato', async () => {
 // Torna internet: inviamo subito le modifiche rimaste in attesa
 window.addEventListener('online', () => Archivio.sincronizza());
 
+
+/* =====================================================================
+   LE SCHEDE: Abbonamenti, Statistiche, Impostazioni
+   La barra in basso mostra una scheda alla volta (le altre sono "hidden").
+   Come sull'iPhone: ogni scheda ricorda fin dove l'avevi fatta scorrere,
+   e toccando di nuovo la scheda in cui sei torni in cima.
+   ===================================================================== */
+const TITOLI_SCHEDE = {
+  abbonamenti: 'Abbonamenti',
+  statistiche: 'Statistiche',
+  impostazioni: 'Impostazioni',
+};
+
+function mostraScheda(nome) {
+  if (!TITOLI_SCHEDE[nome]) return;
+  const movimentoRidotto = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Tocchi la scheda in cui sei già: torniamo in cima
+  if (nome === schedaAttiva) {
+    window.scrollTo({ top: 0, behavior: movimentoRidotto ? 'auto' : 'smooth' });
+    return;
+  }
+
+  scorrimentoSchede[schedaAttiva] = window.scrollY; // ricordiamo dove eravamo
+  schedaAttiva = nome;
+
+  // Si vede solo la scheda scelta; quella nuova compare con un breve passaggio
+  document.querySelectorAll('.scheda').forEach((scheda) => {
+    const scelta = scheda.dataset.scheda === nome;
+    scheda.hidden = !scelta;
+    scheda.classList.toggle('appena-scelta', scelta);
+  });
+
+  // Titolo grande e titolo piccolo della barra in alto
+  el.titoloGrande.textContent = TITOLI_SCHEDE[nome];
+  el.titoloCompatto.textContent = TITOLI_SCHEDE[nome];
+  // Il saluto sta solo nella prima scheda; il "+" non serve nelle Impostazioni
+  el.saluto.hidden = nome !== 'abbonamenti' || !nomeUtente;
+  el.btnAggiungi.hidden = nome === 'impostazioni';
+
+  // Nella barra: aria-current dice (anche a VoiceOver) qual è la scheda scelta
+  el.barraSchede.querySelectorAll('.scheda-btn').forEach((btn) => {
+    if (btn.dataset.scheda === nome) btn.setAttribute('aria-current', 'page');
+    else btn.removeAttribute('aria-current');
+  });
+  posizionaGocciaSchede();
+
+  // Mentre una scheda è nascosta non si può misurare niente:
+  // tornando sugli abbonamenti rimettiamo a posto i totali e la goccia dei filtri
+  if (nome === 'abbonamenti') {
+    disegnaTotali();
+    Animazioni.posizionaIndicatore(el.filtri, el.filtri.querySelector('[aria-pressed="true"] .pillola'));
+  }
+
+  window.scrollTo(0, scorrimentoSchede[nome] || 0);
+}
+
+// La goccia di vetro scivola sotto la scheda scelta
+function posizionaGocciaSchede() {
+  Animazioni.posizionaIndicatore(el.barraSchede, el.barraSchede.querySelector('[aria-current="page"]'));
+}
 
 /* =====================================================================
    AVVIO
@@ -1384,9 +1461,14 @@ async function avvia() {
 // Mostra la Home con l'entrata a cascata e i totali che contano
 function entraNellApp() {
   disegnaSaluto();
-  document.querySelector('.app').classList.add('entra');
+  const app = document.querySelector('.app');
+  app.classList.add('entra');
+  // Finita l'entrata a cascata la spegniamo, così non riparte cambiando scheda
+  setTimeout(() => app.classList.replace('entra', 'entrata'), 1000);
+  el.barraSchede.classList.add('entra'); // la barra delle schede sale dal basso
   disegna();
   disegnaAccount();
+  posizionaGocciaSchede();
 
   // Animazioni: barra in alto che diventa compatta, fogli che si chiudono tirandoli giù
   Animazioni.barraCompatta($('barra-fissa'), $('titolo-grande'));
@@ -1396,7 +1478,7 @@ function entraNellApp() {
 
 // "Buonasera, Tommaso" sopra il titolo (nascosto se non conosciamo il nome)
 function disegnaSaluto() {
-  el.saluto.hidden = !nomeUtente;
+  el.saluto.hidden = !nomeUtente || schedaAttiva !== 'abbonamenti';
   el.saluto.textContent = Benvenuto.testoSaluto(nomeUtente);
 }
 

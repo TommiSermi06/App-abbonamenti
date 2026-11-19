@@ -18,22 +18,22 @@
 
   <link rel="apple-touch-icon" href="icon-180.png">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <!-- NUMERO DI VERSIONE: "?v=4.1" in fondo ai nomi dei file.
-       Per il browser "app.js?v=4.1" e "app.js?v=4.2" sono file diversi:
+  <!-- NUMERO DI VERSIONE: "?v=4.2" in fondo ai nomi dei file.
+       Per il browser "app.js?v=4.2" e "app.js?v=4.3" sono file diversi:
        cambiando il numero, l'iPhone è costretto a scaricare il codice nuovo
        invece di usare la copia vecchia che tiene in memoria.
        A ogni modifica di CSS o JavaScript aumenta il numero in TUTTI i punti
        di questo file (cerca il numero attuale), anche nella scritta in fondo alla pagina. -->
-  <link rel="manifest" href="manifest.json?v=4.1">
+  <link rel="manifest" href="manifest.json?v=4.2">
 
   <title>Abbonamenti</title>
-  <link rel="stylesheet" href="style.css?v=4.1">
+  <link rel="stylesheet" href="style.css?v=4.2">
   <!-- Lo stile "Liquid Glass": va DOPO style.css perché lo riveste -->
-  <link rel="stylesheet" href="vetro.css?v=4.1">
+  <link rel="stylesheet" href="vetro.css?v=4.2">
   <!-- La schermata di benvenuto "Orbita" e il saluto all'apertura -->
-  <link rel="stylesheet" href="benvenuto.css?v=4.1">
+  <link rel="stylesheet" href="benvenuto.css?v=4.2">
   <!-- Il pianeta serve subito (benvenuto e saluto): il browser lo scarica in anticipo -->
-  <link rel="preload" as="image" href="pianeta.webp?v=4.1" type="image/webp">
+  <link rel="preload" as="image" href="pianeta.webp?v=4.2" type="image/webp">
 </head>
 <body>
   <!-- Sfondo vivo: macchie di luce sfumate dietro al vetro (solo decorazione) -->
@@ -58,124 +58,182 @@
       <h1 class="titolo-grande" id="titolo-grande">Abbonamenti</h1>
     </header>
 
-    <!-- ===== Totali al mese e all'anno ===== -->
-    <section class="card totali" aria-label="Totali">
-      <div class="totale">
-        <span class="etichetta">Al mese</span>
-        <span id="totale-mese" class="numero-grande">—</span>
-      </div>
-      <div class="totale">
-        <span class="etichetta">All'anno</span>
-        <span id="totale-anno" class="numero-grande">—</span>
-      </div>
-    </section>
-    <!-- Nota sulle prove gratuite in corso (la scrive app.js, solo se ce ne sono) -->
-    <p id="nota-prove" class="nota" hidden></p>
+    <!-- =====================================================================
+         SCHEDA 1 — ABBONAMENTI: totali, prossimo rinnovo e lista.
+         Le tre schede sono dei contenitori: si vede solo quella scelta nella barra
+         in basso (le altre hanno l'attributo hidden, lo mette app.js).
+         ===================================================================== -->
+    <div class="scheda" id="scheda-abbonamenti" data-scheda="abbonamenti">
 
-    <!-- ===== Il prossimo rinnovo, in evidenza ===== -->
-    <h2 class="titolo-sezione">Prossimo rinnovo</h2>
-    <section id="prossimo" class="card prossimo" aria-live="polite"></section>
-
-    <!-- ===== Lista degli abbonamenti (riempita da app.js) ===== -->
-    <!-- Titolo della sezione con, a destra, la scelta dell'ordine -->
-    <div class="intestazione-lista">
-      <h2 class="titolo-sezione">I tuoi abbonamenti</h2>
-      <label class="ordina" id="blocco-ordina">
-        <span class="ordina-etichetta">Ordina:</span>
-        <select id="campo-ordine" aria-label="Ordina la lista">
-          <option value="rinnovo">Rinnovo</option>
-          <option value="prezzo">Prezzo</option>
-          <option value="nome">Nome</option>
-        </select>
-        <svg class="ordina-freccia" viewBox="0 0 12 8" width="10" height="7" aria-hidden="true">
-          <path d="M1.5 1.5 6 6l4.5-4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </label>
-    </div>
-
-    <!-- Barra di ricerca stile iPhone: lente, campo e pulsante per cancellare -->
-    <div class="ricerca" id="blocco-ricerca" role="search">
-      <svg class="ricerca-lente" viewBox="0 0 20 20" width="17" height="17" aria-hidden="true">
-        <circle cx="8.5" cy="8.5" r="6" fill="none" stroke="currentColor" stroke-width="2"/>
-        <path d="m13 13 5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-      </svg>
-      <input id="campo-ricerca" type="search" placeholder="Cerca nome, pagamento, note" autocomplete="off" autocorrect="off"
-             spellcheck="false" enterkeyhint="search" aria-label="Cerca un abbonamento per nome, metodo di pagamento o note">
-      <button type="button" id="btn-cancella-ricerca" class="btn-cancella" aria-label="Cancella la ricerca" hidden>
-        <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true">
-          <circle cx="10" cy="10" r="9" fill="currentColor"/>
-          <path class="btn-cancella-x" d="m6.5 6.5 7 7m0-7-7 7" stroke-width="1.8" stroke-linecap="round"/>
-        </svg>
-      </button>
-    </div>
-
-    <!-- Pillole per filtrare per categoria: "Tutte", "Streaming", ... -->
-    <div id="filtri" class="filtri" role="group" aria-label="Filtra per categoria"></div>
-    <!-- Qui app.js mette un gruppo (titoletto + card) per ogni categoria -->
-    <div id="gruppi"></div>
-    <p id="lista-vuota" class="nota" hidden>Nessun abbonamento. Tocca + per aggiungerne uno.</p>
-    <!-- Messaggio quando la ricerca non trova niente (il testo lo scrive app.js) -->
-    <p id="nessun-risultato" class="nota" hidden></p>
-
-    <!-- ===== Quanto spendi al mese per ogni categoria ===== -->
-    <section id="sezione-categorie" aria-labelledby="titolo-categorie">
-      <h2 class="titolo-sezione" id="titolo-categorie">Spesa per categoria</h2>
-      <ul id="per-categoria" class="lista card"></ul>
-      <p class="nota">Importi al mese: gli abbonamenti annuali contano il costo diviso 12.</p>
-    </section>
-
-    <!-- ===== Grafico: quanto pagherai davvero nei prossimi 12 mesi ===== -->
-    <section id="sezione-mesi" aria-labelledby="titolo-mesi">
-      <h2 class="titolo-sezione" id="titolo-mesi">Spese mese per mese</h2>
-      <div class="card grafico-card">
-        <div class="grafico">
-          <!-- Linee orizzontali della griglia con i valori (le crea app.js) -->
-          <div id="grafico-griglia" class="grafico-griglia" aria-hidden="true"></div>
-          <!-- Una colonna per mese: ogni colonna è un pulsante -->
-          <div id="grafico-colonne" class="grafico-colonne" role="group" aria-label="Spesa dei prossimi 12 mesi. Tocca un mese per il dettaglio."></div>
+      <!-- ===== Totali al mese e all'anno ===== -->
+      <section class="card totali" aria-label="Totali">
+        <div class="totale">
+          <span class="etichetta">Al mese</span>
+          <span id="totale-mese" class="numero-grande">—</span>
         </div>
-        <!-- Dettaglio del mese toccato: data, abbonamento, importo -->
-        <div id="dettaglio-mese" class="dettaglio-mese" aria-live="polite"></div>
+        <div class="totale">
+          <span class="etichetta">All'anno</span>
+          <span id="totale-anno" class="numero-grande">—</span>
+        </div>
+      </section>
+      <!-- Nota sulle prove gratuite in corso (la scrive app.js, solo se ce ne sono) -->
+      <p id="nota-prove" class="nota" hidden></p>
+
+      <!-- ===== Il prossimo rinnovo, in evidenza ===== -->
+      <h2 class="titolo-sezione">Prossimo rinnovo</h2>
+      <section id="prossimo" class="card prossimo" aria-live="polite"></section>
+
+      <!-- ===== Lista degli abbonamenti (riempita da app.js) ===== -->
+      <!-- Titolo della sezione con, a destra, la scelta dell'ordine -->
+      <div class="intestazione-lista">
+        <h2 class="titolo-sezione">I tuoi abbonamenti</h2>
+        <label class="ordina" id="blocco-ordina">
+          <span class="ordina-etichetta">Ordina:</span>
+          <select id="campo-ordine" aria-label="Ordina la lista">
+            <option value="rinnovo">Rinnovo</option>
+            <option value="prezzo">Prezzo</option>
+            <option value="nome">Nome</option>
+          </select>
+          <svg class="ordina-freccia" viewBox="0 0 12 8" width="10" height="7" aria-hidden="true">
+            <path d="M1.5 1.5 6 6l4.5-4.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </label>
       </div>
-      <p id="nota-mesi" class="nota"></p>
-    </section>
 
-    <!-- ===== Promemoria nel Calendario dell'iPhone ===== -->
-    <h2 class="titolo-sezione">Promemoria</h2>
-    <div class="lista card">
-      <button type="button" id="btn-calendario" class="riga riga-azione">Aggiungi i rinnovi al Calendario</button>
+      <!-- Barra di ricerca stile iPhone: lente, campo e pulsante per cancellare -->
+      <div class="ricerca" id="blocco-ricerca" role="search">
+        <svg class="ricerca-lente" viewBox="0 0 20 20" width="17" height="17" aria-hidden="true">
+          <circle cx="8.5" cy="8.5" r="6" fill="none" stroke="currentColor" stroke-width="2"/>
+          <path d="m13 13 5 5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        <input id="campo-ricerca" type="search" placeholder="Cerca nome, pagamento, note" autocomplete="off" autocorrect="off"
+               spellcheck="false" enterkeyhint="search" aria-label="Cerca un abbonamento per nome, metodo di pagamento o note">
+        <button type="button" id="btn-cancella-ricerca" class="btn-cancella" aria-label="Cancella la ricerca" hidden>
+          <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true">
+            <circle cx="10" cy="10" r="9" fill="currentColor"/>
+            <path class="btn-cancella-x" d="m6.5 6.5 7 7m0-7-7 7" stroke-width="1.8" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Pillole per filtrare per categoria: "Tutte", "Streaming", ... -->
+      <div id="filtri" class="filtri" role="group" aria-label="Filtra per categoria"></div>
+      <!-- Qui app.js mette un gruppo (titoletto + card) per ogni categoria -->
+      <div id="gruppi"></div>
+      <p id="lista-vuota" class="nota" hidden>Nessun abbonamento. Tocca + per aggiungerne uno.</p>
+      <!-- Messaggio quando la ricerca non trova niente (il testo lo scrive app.js) -->
+      <p id="nessun-risultato" class="nota" hidden></p>
+
     </div>
-    <!-- Il testo lo scrive app.js, così resta uguale alle impostazioni di calendario.js -->
-    <p id="nota-calendario" class="nota"></p>
 
-    <!-- ===== Profilo: il nome con cui l'app ti saluta ===== -->
-    <h2 class="titolo-sezione">Profilo</h2>
-    <div class="lista card">
-      <label class="riga campo">
-        <span>Il tuo nome</span>
-        <input id="campo-nome-utente" type="text" maxlength="30" autocomplete="given-name" placeholder="Come ti chiami?">
-      </label>
+    <!-- =====================================================================
+         SCHEDA 2 — STATISTICHE: dove vanno i soldi e quando
+         ===================================================================== -->
+    <div class="scheda" id="scheda-statistiche" data-scheda="statistiche" hidden>
+      <!-- Quando non c'è niente da contare (nessun abbonamento attivo) -->
+      <p id="statistiche-vuote" class="nota nota-scheda-vuota" hidden>
+        Qui vedrai quanto spendi per categoria e mese per mese, appena avrai un abbonamento attivo.
+      </p>
+
+      <!-- ===== Quanto spendi al mese per ogni categoria ===== -->
+      <section id="sezione-categorie" aria-labelledby="titolo-categorie">
+        <h2 class="titolo-sezione" id="titolo-categorie">Spesa per categoria</h2>
+        <ul id="per-categoria" class="lista card"></ul>
+        <p class="nota">Importi al mese: gli abbonamenti annuali contano il costo diviso 12.</p>
+      </section>
+
+      <!-- ===== Grafico: quanto pagherai davvero nei prossimi 12 mesi ===== -->
+      <section id="sezione-mesi" aria-labelledby="titolo-mesi">
+        <h2 class="titolo-sezione" id="titolo-mesi">Spese mese per mese</h2>
+        <div class="card grafico-card">
+          <div class="grafico">
+            <!-- Linee orizzontali della griglia con i valori (le crea app.js) -->
+            <div id="grafico-griglia" class="grafico-griglia" aria-hidden="true"></div>
+            <!-- Una colonna per mese: ogni colonna è un pulsante -->
+            <div id="grafico-colonne" class="grafico-colonne" role="group" aria-label="Spesa dei prossimi 12 mesi. Tocca un mese per il dettaglio."></div>
+          </div>
+          <!-- Dettaglio del mese toccato: data, abbonamento, importo -->
+          <div id="dettaglio-mese" class="dettaglio-mese" aria-live="polite"></div>
+        </div>
+        <p id="nota-mesi" class="nota"></p>
+      </section>
     </div>
-    <p class="nota">Serve solo per salutarti quando apri l'app. Resta su questo dispositivo.</p>
 
-    <!-- ===== Sincronizzazione online (il contenuto lo disegna app.js) ===== -->
-    <h2 class="titolo-sezione">Sincronizzazione</h2>
-    <div id="card-account" class="lista card"></div>
-    <p id="nota-account" class="nota"></p>
+    <!-- =====================================================================
+         SCHEDA 3 — IMPOSTAZIONI: profilo, account, promemoria e backup
+         ===================================================================== -->
+    <div class="scheda" id="scheda-impostazioni" data-scheda="impostazioni" hidden>
 
-    <!-- ===== Backup ===== -->
-    <h2 class="titolo-sezione">Backup</h2>
-    <div class="lista card">
-      <button type="button" id="btn-esporta" class="riga riga-azione">Esporta backup</button>
-      <button type="button" id="btn-importa" class="riga riga-azione">Importa backup</button>
+      <!-- ===== Profilo: il nome con cui l'app ti saluta ===== -->
+      <h2 class="titolo-sezione">Profilo</h2>
+      <div class="lista card">
+        <label class="riga campo">
+          <span>Il tuo nome</span>
+          <input id="campo-nome-utente" type="text" maxlength="30" autocomplete="given-name" placeholder="Come ti chiami?">
+        </label>
+      </div>
+      <p class="nota">Serve solo per salutarti quando apri l'app. Resta su questo dispositivo.</p>
+
+      <!-- ===== Sincronizzazione online (il contenuto lo disegna app.js) ===== -->
+      <h2 class="titolo-sezione">Sincronizzazione</h2>
+      <div id="card-account" class="lista card"></div>
+      <p id="nota-account" class="nota"></p>
+
+      <!-- ===== Promemoria nel Calendario dell'iPhone ===== -->
+      <h2 class="titolo-sezione">Promemoria</h2>
+      <div class="lista card">
+        <button type="button" id="btn-calendario" class="riga riga-azione">Aggiungi i rinnovi al Calendario</button>
+      </div>
+      <!-- Il testo lo scrive app.js, così resta uguale alle impostazioni di calendario.js -->
+      <p id="nota-calendario" class="nota"></p>
+
+      <!-- ===== Backup ===== -->
+      <h2 class="titolo-sezione">Backup</h2>
+      <div class="lista card">
+        <button type="button" id="btn-esporta" class="riga riga-azione">Esporta backup</button>
+        <button type="button" id="btn-importa" class="riga riga-azione">Importa backup</button>
+      </div>
+      <p class="nota">Il backup è un file .json con tutti i tuoi abbonamenti. Importarlo sostituisce i dati attuali.</p>
+
+      <!-- Versione dell'app: utile per capire se l'iPhone ha già l'ultima -->
+      <p class="versione">Abbonamenti · versione 4.2</p>
     </div>
-    <p class="nota">Il backup è un file .json con tutti i tuoi abbonamenti. Importarlo sostituisce i dati attuali.</p>
-
-    <!-- Versione dell'app: utile per capire se l'iPhone ha già l'ultima -->
-    <p class="versione">Abbonamenti · versione 4.1</p>
     <!-- Campo per scegliere il file: è nascosto, lo apre il pulsante "Importa backup" -->
     <input type="file" id="file-importa" accept=".json,application/json" hidden>
   </main>
+
+  <!-- ===== Barra delle schede in basso, di vetro =====
+       Sta FUORI da <main>: quando un foglio è aperto la pagina si rimpicciolisce
+       (transform) e un elemento "fixed" dentro di lei si sposterebbe insieme.
+       La goccia sotto la scheda scelta la aggiunge animazioni.js. -->
+  <nav class="barra-schede" id="barra-schede" aria-label="Sezioni dell'app">
+    <button type="button" class="scheda-btn" data-scheda="abbonamenti" aria-current="page">
+      <!-- Icona: una pila di card -->
+      <svg viewBox="0 0 28 28" width="26" height="26" aria-hidden="true">
+        <rect x="4" y="9" width="20" height="14" rx="3.5" fill="none" stroke="currentColor" stroke-width="2"/>
+        <path d="M7 5.5h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <path d="M8 16h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <span>Abbonamenti</span>
+    </button>
+    <button type="button" class="scheda-btn" data-scheda="statistiche">
+      <!-- Icona: tre colonne del grafico -->
+      <svg viewBox="0 0 28 28" width="26" height="26" aria-hidden="true">
+        <path d="M6 22V15M14 22V6M22 22v-10" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+      </svg>
+      <span>Statistiche</span>
+    </button>
+    <button type="button" class="scheda-btn" data-scheda="impostazioni">
+      <!-- Icona: tre cursori, come le regolazioni -->
+      <svg viewBox="0 0 28 28" width="26" height="26" aria-hidden="true">
+        <path d="M5 8h18M5 14h18M5 20h18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <circle cx="10" cy="8" r="2.6" class="pomello"/>
+        <circle cx="18" cy="14" r="2.6" class="pomello"/>
+        <circle cx="12" cy="20" r="2.6" class="pomello"/>
+      </svg>
+      <span>Impostazioni</span>
+    </button>
+  </nav>
 
   <!-- ===== Foglio che sale dal basso con il modulo ===== -->
   <div id="velo" class="velo"></div>
@@ -337,7 +395,7 @@
       <div class="anello-scala interno"><div class="anello" id="anello-interno"></div></div>
       <!-- Al centro il pianeta (immagine creata con Higgsfield) -->
       <div class="orbita-centro">
-        <img class="pianeta-immagine" src="pianeta.webp?v=4.1" alt="" width="520" height="520" decoding="async">
+        <img class="pianeta-immagine" src="pianeta.webp?v=4.2" alt="" width="520" height="520" decoding="async">
       </div>
       <!-- Sotto l'orbita, la capsula di vetro con il totale al mese -->
       <span class="orbita-capsula">
@@ -367,7 +425,7 @@
 
   <!-- Saluto lampo a ogni apertura: goccia + "Buonasera, Tommaso" (si salta toccando) -->
   <div id="saluto-avvio" class="saluto-avvio" role="status" hidden>
-    <img class="goccia" src="pianeta.webp?v=4.1" alt="" width="520" height="520" decoding="async">
+    <img class="goccia" src="pianeta.webp?v=4.2" alt="" width="520" height="520" decoding="async">
     <p id="saluto-avvio-testo" class="saluto-avvio-testo"></p>
   </div>
 
@@ -380,13 +438,13 @@
 
   <!-- L'ordine conta: prima le categorie, poi supabase.js (il collegamento online),
        storage.js (i dati), calendario.js e servizi.js (le guide per disdire), infine app.js che li usa tutti -->
-  <script src="categorie.js?v=4.1"></script>
-  <script src="supabase.js?v=4.1"></script>
-  <script src="storage.js?v=4.1"></script>
-  <script src="calendario.js?v=4.1"></script>
-  <script src="servizi.js?v=4.1"></script>
-  <script src="animazioni.js?v=4.1"></script>
-  <script src="benvenuto.js?v=4.1"></script>
-  <script src="app.js?v=4.1"></script>
+  <script src="categorie.js?v=4.2"></script>
+  <script src="supabase.js?v=4.2"></script>
+  <script src="storage.js?v=4.2"></script>
+  <script src="calendario.js?v=4.2"></script>
+  <script src="servizi.js?v=4.2"></script>
+  <script src="animazioni.js?v=4.2"></script>
+  <script src="benvenuto.js?v=4.2"></script>
+  <script src="app.js?v=4.2"></script>
 </body>
 </html>
