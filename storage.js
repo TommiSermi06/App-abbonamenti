@@ -195,6 +195,18 @@ const Archivio = (function () {
     segnaDaEliminare([id]); // online lo segneremo come "eliminato"
   }
 
+  // Rimette un abbonamento appena eliminato, con lo stesso id ("Annulla" dopo Elimina).
+  // Online torna visibile: l'invio manda la riga con eliminato = false.
+  async function ripristina(abb) {
+    const lista = await tutti();
+    const recuperato = normalizza(abb);
+    if (!recuperato) throw new Error('I dati dell\'abbonamento non sono validi.');
+    if (!lista.some((a) => a.id === recuperato.id)) lista.push(recuperato);
+    scriviSulDisco(lista);
+    segnaDaInviare([recuperato.id]);
+    return recuperato;
+  }
+
   // Prepara il testo del file di backup.
   async function esportaBackup() {
     const backup = {
@@ -570,7 +582,7 @@ const Archivio = (function () {
 
   // Queste sono le sole funzioni "visibili" dall'esterno
   return {
-    tutti, aggiungi, aggiorna, elimina, esportaBackup, leggiBackup, sostituisciTutti,
+    tutti, aggiungi, aggiorna, elimina, ripristina, esportaBackup, leggiBackup, sostituisciTutti,
     leggiImpostazione, salvaImpostazione,
     account, accedi, creaAccount, esci, sincronizza, statoSincronizzazione,
     controllaLink,

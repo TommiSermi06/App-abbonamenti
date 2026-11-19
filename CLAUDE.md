@@ -28,8 +28,8 @@ Il proprietario del progetto **sta imparando a programmare**:
   (generate da `icon.svg`, con sfondo quadrato: gli angoli li arrotonda iOS).
 
 ## Numero di versione (da aggiornare a OGNI rilascio)
-- Versione attuale: **4.2**. In `index.html` i file hanno il numero di versione (`style.css?v=4.2`, `app.js?v=4.2`…)
-  e c'è la scritta "Abbonamenti · versione 4.2" in fondo alla pagina.
+- Versione attuale: **4.3**. In `index.html` i file hanno il numero di versione (`style.css?v=4.3`, `app.js?v=4.3`…)
+  e c'è la scritta "Abbonamenti · versione 4.3" in fondo alla pagina.
 - A ogni modifica di CSS, JavaScript o manifest **aumenta il numero in tutti i punti di `index.html`**
   (cerca la versione attuale), così l'iPhone scarica i file nuovi invece di usare la copia in memoria.
   Piccole modifiche: 3.0 → 3.1; una nuova versione grande dell'app: 3.x → 4.0.
@@ -64,7 +64,9 @@ Il proprietario del progetto **sta imparando a programmare**:
   (stessa tinta); `adattaLarghezza()` rimpicciolisce i numeri lunghi perché stiano interi.
 - Movimento: curve `--molla` (rimbalzo), `--molla-foglio`, `--uscita`. Animazioni solo con uno scopo:
   totali che contano (`Animazioni.conta`), goccia che scivola nel segmentato (CSS `:has`) e nei filtri
-  (`Animazioni.posizionaIndicatore`), barra in alto che diventa compatta (`Animazioni.barraCompatta`),
+  (`Animazioni.posizionaIndicatore`), barra in alto che diventa compatta seguendo lo scorrimento (`Animazioni.barraCompatta` scrive
+  `--avanzamento-barra` da 0 a 1: vetro `--vetro-alto` che sfuma in basso con una maschera, titolo piccolo che
+  sale, titolo grande che sbiadisce; niente cambio netto né riga di separazione),
   foglio con molla + pagina dietro che si allontana + chiusura trascinando la maniglia
   (`Animazioni.trascinaPerChiudere`), righe che entrano "mettendosi a fuoco", capsula "✓" dopo le azioni
   (`Animazioni.avviso`). Niente animazioni decorative continue tranne lo sfondo lentissimo.
@@ -106,6 +108,17 @@ Il proprietario del progetto **sta imparando a programmare**:
 - Entrata a cascata solo la prima volta (classe `entra` → `entrata` dopo 1 s); cambiando scheda il contenuto
   compare con `.appena-scelta` (0,32 s). Le colonne del grafico ricrescono aprendo Statistiche.
 - Mentre scrivi in un campo della pagina la barra scende fuori dalla vista (`body:has(.app input:focus)`).
+
+## Gesti sulle righe (versione 4.3)
+- Nella lista ogni riga è un `<li class="riga-scorrevole">` con dietro `.azioni-riga`: **Pausa** (o **Riattiva**
+  per chi non è attivo, blu) ed **Elimina** (rosso). `Animazioni.scorriRighe(el.gruppi, …)` gestisce il dito con i
+  pointer event (`touch-action: pan-y`: lo scorrimento verticale resta al browser) e scrive `--dx` sul `<li>`.
+  Lasciata oltre metà resta aperta; tirata oltre il 55% "Elimina" copre tutto ed elimina subito; un tocco su una
+  riga aperta o lo scorrimento della pagina la richiudono; il click dopo un trascinamento non apre il modulo.
+- `azioneRiga(azione, id)` in `app.js`: la riga si richiude in altezza, poi capsula con **Annulla** per 5 s
+  (`Animazioni.avviso(testo, { azione, suAzione })`). Annullare l'eliminazione usa `Archivio.ripristina(abb)`
+  (stesso id; online torna con `eliminato: false`). Dal modulo "Elimina" chiede ancora conferma.
+- Le azioni hanno `aria-hidden` e `tabindex -1`: con VoiceOver si usa il modulo (stato ed Elimina).
 
 ## Struttura dei file
 | File | Cosa contiene |

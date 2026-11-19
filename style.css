@@ -259,6 +259,83 @@ button:active {
   color: var(--blu);
 }
 
+/* --- Righe che scorrono verso sinistra (lista degli abbonamenti) ---
+   --dx è di quanto la riga è spostata (0 = al suo posto, negativo = verso sinistra):
+   lo scrive animazioni.js mentre trascini. Le azioni stanno dietro, a destra,
+   e sono larghe esattamente quanto lo spazio che la riga lascia scoperto. */
+.riga-scorrevole {
+  --dx: 0px;
+  overflow: hidden;
+}
+
+.riga-scorrevole > .riga {
+  transform: translateX(var(--dx));
+  transition: transform 0.4s var(--curva), opacity 0.2s var(--curva);
+  touch-action: pan-y;          /* il browser fa solo lo scorrimento in su e in giù: di lato pensiamo noi */
+  -webkit-user-select: none;    /* trascinando non si seleziona il testo */
+  user-select: none;
+  -webkit-touch-callout: none;  /* niente menu "Copia" tenendo premuto */
+}
+
+.azioni-riga {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: max(0px, calc(-1 * var(--dx)));
+  display: flex;
+  overflow: hidden;
+  transition: width 0.4s var(--curva);
+}
+
+/* Mentre il dito trascina, riga e azioni lo seguono senza ritardo */
+.riga-scorrevole.trascinando > .riga,
+.riga-scorrevole.trascinando .azioni-riga {
+  transition: none;
+}
+
+.riga-scorrevole.trascinando > .riga:active {
+  opacity: 1;
+}
+
+.azione-riga {
+  flex: 1 1 0;      /* i due pulsanti si dividono lo spazio a metà */
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  border: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+  transition: flex-grow 0.3s var(--curva);
+}
+
+.azione-pausa,
+.azione-riattiva {
+  background: var(--blu);
+  color: var(--su-blu);
+}
+
+.azione-elimina {
+  background: var(--rosso);
+  color: var(--su-colore);
+}
+
+/* Tirata fino in fondo: "Elimina" si allarga e copre tutto (lasciando, si elimina) */
+.oltre .azione-elimina {
+  flex-grow: 12;
+}
+
+/* La riga che se ne va si richiude in altezza */
+.riga-scorrevole.via {
+  opacity: 0;
+  transition: height 0.3s var(--curva), opacity 0.3s var(--curva);
+}
+
 .riga-elimina {
   color: var(--rosso);
   justify-content: center;
