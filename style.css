@@ -373,6 +373,11 @@ button:active {
   height: 19px;
 }
 
+/* Il logo arrivato dal catalogo (dopo l'iniziale) compare con una breve dissolvenza */
+.logo-arrivato .logo {
+  animation: compari var(--durata) var(--curva) both;
+}
+
 /* Abbonamento in pausa o disdetto: anche il pianetino si fa più tenue */
 .inattiva .pianetino {
   opacity: 0.5;

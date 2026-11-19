@@ -1,0 +1,1 @@
+Loghi.riceviDisegno('reflex', 'M17 15v9h5v-9zM2 0v24h5v-9h10v-5H7V5h10v5h5V0z');

@@ -498,8 +498,7 @@ function creaAzioneRiga(azione, testo, id) {
 function creaPianetino(nome) {
   const pianetino = crea('span', `pianetino ${Benvenuto.tinta(nome)}`);
   pianetino.setAttribute('aria-hidden', 'true'); // è solo decorazione: il nome c'è già accanto
-  const logo = logoPer(nome);
-  pianetino.append(logo ? creaSvgLogo(logo) : Benvenuto.iniziale(nome));
+  Loghi.riempi(pianetino, nome, Benvenuto.iniziale(nome)); // logo (anche dal catalogo) o iniziale
   return pianetino;
 }
 

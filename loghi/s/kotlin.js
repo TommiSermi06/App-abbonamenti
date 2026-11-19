@@ -1,0 +1,1 @@
+Loghi.riceviDisegno('kotlin', 'M24 24H0V0h24L12 12Z');
