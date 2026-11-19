@@ -68,7 +68,8 @@ function piegaRiga(riga) {
 }
 
 // Crea il testo del file .ics.
-// "pagamenti" è una lista di { abb, data } preparata da app.js.
+// "pagamenti" è una lista di { abb, data, fineProva } preparata da app.js
+// (fineProva = true se quel giorno finisce la prova gratuita).
 function creaFileCalendario(pagamenti) {
   const adesso = istanteICS(new Date());
   const righe = [
@@ -80,7 +81,7 @@ function creaFileCalendario(pagamenti) {
     'X-WR-CALNAME:Abbonamenti',
   ];
 
-  for (const { abb, data } of pagamenti) {
+  for (const { abb, data, fineProva } of pagamenti) {
     const categoria = trovaCategoria(abb.categoria);
     const costo = euroCalendario.format(abb.costo);
     const frequenza = abb.frequenza === 'annuale' ? 'annuale' : 'mensile';
@@ -88,15 +89,29 @@ function creaFileCalendario(pagamenti) {
     const giornoDopo = new Date(data.getFullYear(), data.getMonth(), data.getDate() + 1);
     const preavviso = GIORNI_PREAVVISO === 1 ? 'domani' : `tra ${GIORNI_PREAVVISO} giorni`;
 
+    // Testi dell'evento: un rinnovo normale oppure la fine di una prova gratuita
+    const titolo = fineProva
+      ? `🎁 Fine prova: ${abb.nome} · poi ${costo}`
+      : `${categoria.emoji} ${abb.nome} · ${costo}`;
+    const descrizione = fineProva
+      ? `Finisce la prova gratuita di ${abb.nome}: da oggi costa ${costo} (${frequenza}). Se non ti serve, disdici prima.\nCreato dall'app Abbonamenti.`
+      : `Rinnovo ${frequenza} di ${abb.nome}: ${costo}.\nCreato dall'app Abbonamenti.`;
+    const avvisoPrima = fineProva
+      ? `La prova gratuita di ${abb.nome} finisce ${preavviso}: poi costa ${costo}`
+      : `${abb.nome} si rinnova ${preavviso} (${costo})`;
+    const avvisoOggi = fineProva
+      ? `Oggi finisce la prova gratuita di ${abb.nome}: da oggi costa ${costo}`
+      : `${abb.nome} si rinnova oggi (${costo})`;
+
     righe.push(
       'BEGIN:VEVENT',
       // UID: codice unico dell'evento (id abbonamento + data)
-      `UID:${abb.id}-${dataICS(data)}@abbonamenti`,
+      `UID:${abb.id}-${dataICS(data)}${fineProva ? '-prova' : ''}@abbonamenti`,
       `DTSTAMP:${adesso}`,
       `DTSTART;VALUE=DATE:${dataICS(data)}`,
       `DTEND;VALUE=DATE:${dataICS(giornoDopo)}`,
-      `SUMMARY:${testoICS(`${categoria.emoji} ${abb.nome} · ${costo}`)}`,
-      `DESCRIPTION:${testoICS(`Rinnovo ${frequenza} di ${abb.nome}: ${costo}.\nCreato dall'app Abbonamenti.`)}`,
+      `SUMMARY:${testoICS(titolo)}`,
+      `DESCRIPTION:${testoICS(descrizione)}`,
       'TRANSP:TRANSPARENT', // l'evento non ti segna come "occupato"
 
       // Primo avviso: X giorni prima alle ORA_AVVISO.
@@ -104,14 +119,14 @@ function creaFileCalendario(pagamenti) {
       // alle 9:00 si torna indietro di 2×24 − 9 = 39 ore.
       'BEGIN:VALARM',
       'ACTION:DISPLAY',
-      `DESCRIPTION:${testoICS(`${abb.nome} si rinnova ${preavviso} (${costo})`)}`,
+      `DESCRIPTION:${testoICS(avvisoPrima)}`,
       `TRIGGER:-PT${GIORNI_PREAVVISO * 24 - ORA_AVVISO}H`,
       'END:VALARM',
 
       // Secondo avviso: il giorno stesso alle ORA_AVVISO (9 ore dopo la mezzanotte)
       'BEGIN:VALARM',
       'ACTION:DISPLAY',
-      `DESCRIPTION:${testoICS(`${abb.nome} si rinnova oggi (${costo})`)}`,
+      `DESCRIPTION:${testoICS(avvisoOggi)}`,
       `TRIGGER:PT${ORA_AVVISO}H`,
       'END:VALARM',
 

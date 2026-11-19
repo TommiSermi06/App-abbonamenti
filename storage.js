@@ -19,7 +19,8 @@
      giorno: 2,              // giorno del mese in cui si rinnova (1-31)
      mese: null,             // solo per gli annuali: mese del rinnovo (1-12)
      categoria: "musica",    // id di una categoria di categorie.js
-     stato: "attivo"         // "attivo", "pausa" oppure "disdetto"
+     stato: "attivo",        // "attivo", "pausa" oppure "disdetto"
+     fineProva: null         // se è in prova gratuita: il giorno in cui finisce, es. "2026-11-25"
    }
    ===================================================================== */
 
@@ -71,6 +72,10 @@ const Archivio = (function () {
     const categoria = categoriaEsiste(grezzo.categoria) ? grezzo.categoria : CATEGORIA_PREDEFINITA;
     // Stato mancante (dati delle versioni precedenti) o sconosciuto → "attivo"
     const stato = ['attivo', 'pausa', 'disdetto'].includes(grezzo.stato) ? grezzo.stato : 'attivo';
+    // Fine della prova gratuita: una data "anno-mese-giorno" valida, altrimenti null.
+    // (online la colonna si chiama fine_prova)
+    const testoProva = grezzo.fineProva ?? grezzo.fine_prova ?? null;
+    const fineProva = dataValida(testoProva) ? testoProva : null;
 
     if (!nome) return null;
     if (!(costo > 0)) return null;
@@ -87,7 +92,17 @@ const Archivio = (function () {
       mese: frequenza === 'annuale' ? mese : null,
       categoria,
       stato,
+      fineProva,
     };
+  }
+
+  // Controlla che un testo sia una data vera nel formato "2026-11-25"
+  // (per esempio "2026-02-30" non lo è: febbraio non ha 30 giorni)
+  function dataValida(testo) {
+    if (typeof testo !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(testo)) return false;
+    const [anno, mese, giorno] = testo.split('-').map(Number);
+    const data = new Date(anno, mese - 1, giorno);
+    return data.getFullYear() === anno && data.getMonth() === mese - 1 && data.getDate() === giorno;
   }
 
   // Legge la lista dal localStorage.
@@ -159,7 +174,8 @@ const Archivio = (function () {
       app: 'Abbonamenti',
       // versione 2 = categorie, versione 3 = stato (attivo/pausa/disdetto).
       // I backup delle versioni precedenti si importano lo stesso.
-      versione: 3,
+      // versione 4 = fine della prova gratuita (fineProva)
+      versione: 4,
       esportatoIl: new Date().toISOString(),
       abbonamenti: await tutti(),
     };
@@ -316,6 +332,7 @@ const Archivio = (function () {
       mese: abb.mese,
       categoria: abb.categoria,
       stato: abb.stato,
+      fine_prova: abb.fineProva,
       eliminato: false,
     };
   }
@@ -325,7 +342,7 @@ const Archivio = (function () {
     return String(nome).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
   }
 
-  const COLONNE = 'id,nome,costo,frequenza,giorno,mese,categoria,stato,eliminato,aggiornato_il';
+  const COLONNE = 'id,nome,costo,frequenza,giorno,mese,categoria,stato,fine_prova,eliminato,aggiornato_il';
 
   // La PRIMA volta che entri da questo dispositivo uniamo i dati:
   // - se online non c'è ancora niente, carichiamo tutto quello che c'è qui;

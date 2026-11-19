@@ -58,6 +58,11 @@ const el = {
   perCategoria: $('per-categoria'),
   campoCategoria: $('campo-categoria'),
   campoStato: $('campo-stato'),
+  campoProva: $('campo-prova'),
+  rigaFineProva: $('riga-fine-prova'),
+  campoFineProva: $('campo-fine-prova'),
+  notaProva: $('nota-prova'),
+  notaProve: $('nota-prove'),
   sezioneMesi: $('sezione-mesi'),
   graficoGriglia: $('grafico-griglia'),
   graficoColonne: $('grafico-colonne'),
@@ -154,11 +159,44 @@ function testoGiorni(giorni, conPrefisso) {
   return conPrefisso ? `Si rinnova ${frase}` : frase;
 }
 
-// Tutte le informazioni sul rinnovo di un abbonamento, in un colpo solo
+// --- Prova gratuita ---
+// "2026-11-25" → la data a mezzanotte (o null se non c'è)
+function dataDaTesto(testo) {
+  if (!testo) return null;
+  const [anno, mese, giorno] = testo.split('-').map(Number);
+  return new Date(anno, mese - 1, giorno);
+}
+
+// Al contrario: una data → "2026-11-25" (il formato dei campi data)
+function testoDaData(data) {
+  return `${data.getFullYear()}-${String(data.getMonth() + 1).padStart(2, '0')}-${String(data.getDate()).padStart(2, '0')}`;
+}
+
+function fineProvaDi(abb) {
+  return dataDaTesto(abb.fineProva);
+}
+
+// È ancora in prova gratuita? (il giorno in cui finisce, invece, si paga già)
+function inProva(abb, oggi) {
+  const fine = fineProvaDi(abb);
+  return Boolean(fine) && fine > oggi;
+}
+
+function stessoGiorno(a, b) {
+  return Boolean(a && b) && a.getTime() === b.getTime();
+}
+
+// Tutte le informazioni sul prossimo evento di un abbonamento, in un colpo solo.
+// Se la prova gratuita non è ancora finita, l'evento è la FINE DELLA PROVA.
 function infoRinnovo(abb, oggi) {
+  const fine = fineProvaDi(abb);
+  if (fine && fine >= oggi) {
+    const giorni = giorniTra(oggi, fine);
+    return { data: fine, giorni, stato: statoDaGiorni(giorni), prova: true };
+  }
   const data = prossimaData(abb, oggi);
   const giorni = giorniTra(oggi, data);
-  return { data, giorni, stato: statoDaGiorni(giorni) };
+  return { data, giorni, stato: statoDaGiorni(giorni), prova: false };
 }
 
 // Quanto pesa ogni mese: gli annuali contano costo / 12
@@ -181,8 +219,16 @@ function crea(tag, classe, testo) {
   return elemento;
 }
 
-function creaBadge(giorni, stato, conPrefisso) {
-  return crea('span', `badge stato-${stato}`, testoGiorni(giorni, conPrefisso));
+// L'etichetta con i giorni mancanti. Per una prova gratuita il testo cambia:
+// "Prova: tra 5 giorni" nella lista, "La prova gratuita finisce tra 5 giorni" in evidenza
+function creaBadge(info, conPrefisso) {
+  let testo = testoGiorni(info.giorni, conPrefisso);
+  if (info.prova) {
+    const frase = `tra ${info.giorni} ${info.giorni === 1 ? 'giorno' : 'giorni'}`;
+    if (info.giorni === 0) testo = conPrefisso ? 'La prova gratuita finisce oggi!' : 'Fine prova oggi!';
+    else testo = conPrefisso ? `La prova gratuita finisce ${frase}` : `Prova: ${frase}`;
+  }
+  return crea('span', `badge stato-${info.stato}`, testo);
 }
 
 // Ridisegna tutto: si chiama ogni volta che i dati cambiano
@@ -255,6 +301,12 @@ function attivi() {
   return abbonamenti.filter((abb) => abb.stato === 'attivo');
 }
 
+// Quelli che paghi ADESSO: attivi e non più in prova gratuita (contano nei totali)
+function paganti() {
+  const oggi = oggiAMezzanotte();
+  return attivi().filter((abb) => !inProva(abb, oggi));
+}
+
 // Le categorie che hanno almeno un abbonamento della lista, nell'ordine di categorie.js
 function categorieUsate(lista = abbonamenti) {
   return CATEGORIE.filter((cat) => lista.some((abb) => abb.categoria === cat.id));
@@ -269,9 +321,19 @@ function totaleAlMese(lista) {
 }
 
 function disegnaTotali() {
-  const alMese = totaleAlMese(attivi());
+  const alMese = totaleAlMese(paganti());
   el.totaleMese.textContent = formatoEuro.format(alMese);
   el.totaleAnno.textContent = formatoEuro.format(alMese * 12);
+
+  // Nota sotto i totali: quanto si aggiungerà quando finiscono le prove gratuite
+  const oggi = oggiAMezzanotte();
+  const inProvaOra = attivi().filter((abb) => inProva(abb, oggi));
+  el.notaProve.hidden = inProvaOra.length === 0;
+  if (inProvaOra.length > 0) {
+    const quanti = inProvaOra.length === 1 ? '1 abbonamento' : `${inProvaOra.length} abbonamenti`;
+    const finisce = inProvaOra.length === 1 ? 'quando finisce' : 'quando finiscono';
+    el.notaProve.textContent = `🎁 In prova gratuita: ${quanti}, +${formatoEuro.format(totaleAlMese(inProvaOra))} al mese ${finisce}.`;
+  }
 }
 
 function disegnaProssimo(primo) {
@@ -286,8 +348,9 @@ function disegnaProssimo(primo) {
   const data = formatoData.format(info.data); // es. "venerdì 20 novembre"
   el.prossimo.append(
     crea('span', 'prossimo-nome', abb.nome),
-    crea('span', 'prossimo-data', `${data} · ${formatoEuro.format(abb.costo)}`),
-    creaBadge(info.giorni, info.stato, true),
+    // In prova: "poi 13,99 €", perché fino a quel giorno è gratis
+    crea('span', 'prossimo-data', `${data} · ${info.prova ? 'poi ' : ''}${formatoEuro.format(abb.costo)}`),
+    creaBadge(info, true),
   );
 }
 
@@ -377,9 +440,15 @@ function creaRigaAbbonamento(abb, info, posizione) {
   pulsante.type = 'button';
   pulsante.dataset.id = abb.id;
 
-  const dettaglio = abb.frequenza === 'mensile'
+  let dettaglio = abb.frequenza === 'mensile'
     ? `${formatoEuro.format(abb.costo)} al mese · il ${abb.giorno}`
     : `${formatoEuro.format(abb.costo)} all'anno · ${abb.giorno} ${NOMI_MESI[abb.mese - 1]}`;
+  // Ancora in prova: "Gratis fino al 25 nov, poi 13,99 € al mese"
+  if (info.prova) {
+    const periodo = abb.frequenza === 'mensile' ? 'al mese' : 'all\'anno';
+    const fino = formatoGiornoMese.format(info.data).replace('.', '');
+    dettaglio = `Gratis fino al ${fino}, poi ${formatoEuro.format(abb.costo)} ${periodo}`;
+  }
 
   const testi = crea('span', 'abb-testi');
   testi.append(crea('span', 'abb-nome', abb.nome), crea('span', 'abb-dettaglio', dettaglio));
@@ -390,7 +459,7 @@ function creaRigaAbbonamento(abb, info, posizione) {
   // Attivo: etichetta dei giorni mancanti. In pausa o disdetto: etichetta con lo stato
   let etichetta;
   if (abb.stato === 'attivo') {
-    etichetta = creaBadge(info.giorni, info.stato, false);
+    etichetta = creaBadge(info, false);
   } else {
     riga.classList.add('inattiva'); // la riga diventa più tenue
     etichetta = crea('span', 'badge stato-inattivo', NOMI_STATI[abb.stato]);
@@ -403,7 +472,7 @@ function creaRigaAbbonamento(abb, info, posizione) {
 
 // --- Spesa al mese per ogni categoria, con una barra della proporzione ---
 function disegnaPerCategoria() {
-  const listaAttivi = attivi();
+  const listaAttivi = paganti(); // attivi e non in prova gratuita
   const totale = totaleAlMese(listaAttivi);
   el.perCategoria.replaceChildren();
   el.sezioneCategorie.hidden = listaAttivi.length === 0;
@@ -447,7 +516,11 @@ function pagamentiDelMese(anno, mese) {
   const pagamenti = [];
   for (const abb of attivi()) { // chi è in pausa o disdetto non paga
     const pagaQuestoMese = abb.frequenza === 'mensile' || abb.mese - 1 === mese;
-    if (pagaQuestoMese) pagamenti.push({ abb, data: dataSicura(anno, mese, abb.giorno) });
+    if (!pagaQuestoMese) continue;
+    const data = dataSicura(anno, mese, abb.giorno);
+    const fine = fineProvaDi(abb);
+    if (fine && data < fine) continue; // durante la prova gratuita non si paga
+    pagamenti.push({ abb, data });
   }
   return pagamenti.sort((a, b) => a.data - b.data || a.abb.nome.localeCompare(b.abb.nome, 'it'));
 }
@@ -562,6 +635,7 @@ function selezionaMese(indice) {
 
     const nome = crea('span', 'dettaglio-nome', `${trovaCategoria(abb.categoria).emoji} ${abb.nome}`);
     if (abb.frequenza === 'annuale') nome.append(crea('span', 'dettaglio-nota', ' · annuale'));
+    if (stessoGiorno(data, fineProvaDi(abb))) nome.append(crea('span', 'dettaglio-nota', ' · fine prova'));
     if (data < oggi) nome.append(crea('span', 'dettaglio-nota', ' · già pagato'));
 
     riga.append(
@@ -618,6 +692,12 @@ function nascondiFoglio() {
   }
 }
 
+// Il giorno di fine prova e la sua spiegazione si vedono solo con l'interruttore acceso
+function aggiornaRigaProva() {
+  el.rigaFineProva.hidden = !el.campoProva.checked;
+  el.notaProva.hidden = !el.campoProva.checked;
+}
+
 // Apre il foglio del modulo. Senza argomento = nuovo abbonamento; con un abbonamento = modifica.
 function apriFoglio(abb) {
   idInModifica = abb ? abb.id : null;
@@ -627,12 +707,18 @@ function apriFoglio(abb) {
   // Mostriamo la virgola italiana: 15.99 → "15,99"
   el.campoCosto.value = abb ? abb.costo.toFixed(2).replace('.', ',') : '';
   el.campoGiorno.value = abb ? String(abb.giorno) : '';
+  el.campoGiorno.dataset.automatico = 'no';
   el.campoMese.value = String(abb && abb.mese ? abb.mese : new Date().getMonth() + 1);
   // Nuovo abbonamento: se stai guardando una categoria, la proponiamo già scelta
   el.campoCategoria.value = abb ? abb.categoria
     : filtro !== 'tutte' ? filtro
     : CATEGORIA_PREDEFINITA;
   el.campoStato.value = abb ? abb.stato : 'attivo'; // un nuovo abbonamento è attivo
+  // Prova gratuita: l'interruttore è acceso solo se la prova non è ancora finita
+  const fine = abb ? fineProvaDi(abb) : null;
+  el.campoProva.checked = Boolean(fine) && fine >= oggiAMezzanotte();
+  el.campoFineProva.value = el.campoProva.checked ? abb.fineProva : '';
+  aggiornaRigaProva();
   impostaFrequenza(abb ? abb.frequenza : 'mensile');
   el.bloccoElimina.hidden = !abb;
   el.errore.textContent = '';
@@ -654,6 +740,7 @@ function leggiModulo() {
   const mese = Number(el.campoMese.value);
   const categoria = el.campoCategoria.value;
   const stato = el.campoStato.value;
+  const fineProva = el.campoProva.checked ? el.campoFineProva.value : null;
 
   if (!nome) return { errore: 'Scrivi il nome dell\'abbonamento.', campo: el.campoNome };
   if (!Number.isFinite(costo) || costo <= 0) {
@@ -663,7 +750,11 @@ function leggiModulo() {
     return { errore: 'Il giorno del rinnovo va da 1 a 31.', campo: el.campoGiorno };
   }
 
-  return { dati: { nome, costo, frequenza, giorno, mese: frequenza === 'annuale' ? mese : null, categoria, stato } };
+  if (el.campoProva.checked && !/^\d{4}-\d{2}-\d{2}$/.test(fineProva)) {
+    return { errore: 'Scegli il giorno in cui finisce la prova gratuita.', campo: el.campoFineProva };
+  }
+
+  return { dati: { nome, costo, frequenza, giorno, mese: frequenza === 'annuale' ? mese : null, categoria, stato, fineProva } };
 }
 
 async function salva(evento) {
@@ -772,7 +863,16 @@ function aggiungiAlCalendario() {
   const oggi = oggiAMezzanotte();
   const pagamenti = calcolaProssimi12Mesi()
     .flatMap((mese) => mese.pagamenti)
-    .filter(({ data }) => data >= oggi);
+    .filter(({ data }) => data >= oggi)
+    // Il pagamento nel giorno in cui finisce la prova diventa l'evento "Fine prova"
+    .map((p) => ({ ...p, fineProva: stessoGiorno(p.data, fineProvaDi(p.abb)) }));
+
+  // Se la prova finisce in un giorno senza pagamento, aggiungiamo un evento apposta
+  for (const abb of attivi()) {
+    const fine = fineProvaDi(abb);
+    const giaPresente = pagamenti.some((p) => p.abb.id === abb.id && p.fineProva);
+    if (fine && fine >= oggi && !giaPresente) pagamenti.push({ abb, data: fine, fineProva: true });
+  }
 
   if (pagamenti.length === 0) {
     alert('Non ci sono rinnovi da aggiungere al calendario.');
@@ -954,10 +1054,29 @@ el.modulo.addEventListener('submit', salva);
 el.btnElimina.addEventListener('click', eliminaAbbonamento);
 el.modulo.addEventListener('change', (e) => {
   if (e.target.name === 'frequenza') aggiornaRigaMese();
+  if (e.target === el.campoProva) {
+    // Appena accendi la prova, proponiamo una settimana da oggi (si può cambiare)
+    if (el.campoProva.checked && !el.campoFineProva.value) {
+      const traUnaSettimana = oggiAMezzanotte();
+      traUnaSettimana.setDate(traUnaSettimana.getDate() + 7);
+      el.campoFineProva.value = testoDaData(traUnaSettimana);
+    }
+    aggiornaRigaProva();
+  }
+  // Di solito si paga per la prima volta proprio il giorno in cui finisce la prova:
+  // se il giorno del rinnovo è vuoto (o l'avevamo riempito noi), lo facciamo seguire la data
+  const giornoNostro = !el.campoGiorno.value || el.campoGiorno.dataset.automatico === 'si';
+  if ((e.target === el.campoProva || e.target === el.campoFineProva)
+      && el.campoProva.checked && el.campoFineProva.value && giornoNostro) {
+    el.campoGiorno.value = String(Number(el.campoFineProva.value.slice(8, 10)));
+    el.campoGiorno.dataset.automatico = 'si';
+  }
 });
 // Appena l'utente ricomincia a scrivere, togliamo il messaggio di errore
-el.modulo.addEventListener('input', () => {
+el.modulo.addEventListener('input', (e) => {
   el.errore.textContent = '';
+  // Se scrivi tu il giorno del rinnovo, non lo cambiamo più in automatico
+  if (e.target === el.campoGiorno) el.campoGiorno.dataset.automatico = 'no';
 });
 
 // Un solo "ascoltatore" per tutti i gruppi: capiamo quale riga è stata toccata
