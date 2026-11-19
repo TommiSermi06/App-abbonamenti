@@ -10,6 +10,14 @@ All'inizio di ogni sessione ricordagli in breve queste cose ancora aperte, poi t
      `prova.altro.utente@example.com`, `prova.telefono@example.com` (NON il suo account con la sua email);
   2. Authentication → Sign In / Providers: spegnere "Allow new users to sign up" e salvare.
 
+## Idee da fare più avanti (scelte dal proprietario, da proporre quando chiede cosa fare)
+- **Storico dei prezzi**: quando cambia il costo, ricordare il prezzo vecchio e la data ("+2,00 € da marzo").
+- **Nuova icona**: la disegna la sua ragazza (PNG 1024×1024, angoli dritti, sfondo pieno); poi rigenerare
+  `icon-180.png`, `icon-512.png` e `icon.svg`.
+- **"Lo uso davvero?"**: segnare quanto si usa ogni abbonamento e suggerire dove risparmiare.
+- Altre idee già proposte: più frequenze (settimanale, trimestrale, semestrale), abbonamenti condivisi (quota),
+  notifiche vere sul telefono (serve una parte su Supabase), budget mensile, valute diverse, riepilogo annuale.
+
 ## Chi ci lavora
 Il proprietario del progetto **sta imparando a programmare**:
 - spiega sempre in italiano e in modo semplice cosa fai e perché;
