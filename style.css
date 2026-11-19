@@ -931,6 +931,49 @@ a.riga {
   color: var(--testo-terziario);
 }
 
+/* Guida "Come disdire": passi numerati, avvertenza e link alla pagina ufficiale */
+.guida {
+  padding: 14px 16px 6px;
+}
+
+.guida-titolo {
+  margin: 0 0 6px;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.guida-passi {
+  margin: 0;
+  padding-left: 22px;
+}
+
+.guida-passi li {
+  margin: 6px 0;
+  font-size: 15px;
+  line-height: 1.35;
+}
+
+.guida-passi li::marker {
+  color: var(--blu);
+  font-weight: 600;
+}
+
+.guida-nota {
+  margin: 10px 0 0;
+  font-size: 13px;
+  line-height: 1.35;
+  color: var(--testo-secondario);
+}
+
+.guida-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px; /* area tattile */
+  color: var(--blu);
+  font-size: 15px;
+  text-decoration: none;
+}
+
 /* "Gestisci l'abbonamento ↗" nel riquadro del prossimo rinnovo */
 .prossimo-link {
   display: inline-flex;

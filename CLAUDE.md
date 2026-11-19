@@ -3,13 +3,6 @@
 App web per tenere sotto controllo gli abbonamenti (costi e prossimi rinnovi),
 pensata per l'iPhone e installabile nella schermata Home.
 
-## Da ricordare al proprietario (finché non dice che l'ha fatto)
-All'inizio di ogni sessione ricordagli in breve queste cose ancora aperte, poi togli la voce quando conferma:
-- **Pulizia su Supabase** (dopo la versione 3.0):
-  1. Authentication → Users: eliminare i tre account di prova `prova.sincronizzazione@example.com`,
-     `prova.altro.utente@example.com`, `prova.telefono@example.com` (NON il suo account con la sua email);
-  2. Authentication → Sign In / Providers: spegnere "Allow new users to sign up" e salvare.
-
 ## Idee da fare più avanti (scelte dal proprietario, da proporre quando chiede cosa fare)
 - **Storico dei prezzi**: quando cambia il costo, ricordare il prezzo vecchio e la data ("+2,00 € da marzo").
 - **Nuova icona**: la disegna la sua ragazza (PNG 1024×1024, angoli dritti, sfondo pieno); poi rigenerare
@@ -35,8 +28,8 @@ Il proprietario del progetto **sta imparando a programmare**:
   (generate da `icon.svg`, con sfondo quadrato: gli angoli li arrotonda iOS).
 
 ## Numero di versione (da aggiornare a OGNI rilascio)
-- Versione attuale: **3.2**. In `index.html` i file hanno il numero di versione (`style.css?v=3.2`, `app.js?v=3.2`…)
-  e c'è la scritta "Abbonamenti · versione 3.2" in fondo alla pagina.
+- Versione attuale: **3.3**. In `index.html` i file hanno il numero di versione (`style.css?v=3.3`, `app.js?v=3.3`…)
+  e c'è la scritta "Abbonamenti · versione 3.3" in fondo alla pagina.
 - A ogni modifica di CSS, JavaScript o manifest **aumenta il numero in tutti i punti di `index.html`**
   (cerca la versione attuale), così l'iPhone scarica i file nuovi invece di usare la copia in memoria.
   Piccole modifiche: 3.0 → 3.1; una nuova versione grande dell'app: 3.x → 4.0.
@@ -66,6 +59,7 @@ Il proprietario del progetto **sta imparando a programmare**:
 | `style.css` | Tutto l'aspetto: variabili colore, liste, foglio, etichette, animazioni |
 | `categorie.js` | Elenco fisso delle categorie (`CATEGORIE`), unico punto dove modificarle |
 | `calendario.js` | Crea il file .ics dei promemoria (`creaFileCalendario`); impostazioni `GIORNI_PREAVVISO` e `ORA_AVVISO` |
+| `servizi.js` | Come disdire i servizi più diffusi (`SERVIZI`: alias, link ufficiale, passi, nota) e `guidaDisdetta(nome, pagamento)` |
 | `supabase.js` | `Supabase`: collegamento con il database online (account, sessione, richieste con `fetch`). Lo usa solo `storage.js` |
 | `storage.js` | `Archivio`: lettura/scrittura dati, dati iniziali, controllo e backup, impostazioni, account e sincronizzazione online |
 | `supabase/schema.sql` | Com'è fatto il database online (tabella, regole di protezione, permessi). Già eseguito: è documentazione |
@@ -135,6 +129,19 @@ I backup delle versioni precedenti si importano ancora (stato mancante → `atti
 - Il link si apre con `target="_blank"` e `rel="noopener noreferrer"`: nel modulo ("Apri la pagina per disdire ↗"),
   nel prossimo rinnovo ("Gestisci l'abbonamento ↗") e nel calendario (`URL:` e nella descrizione).
 - La ricerca cerca anche in pagamento e note (es. "1234" = tutti gli abbonamenti su quella carta).
+
+## Guida per disdire (versione 3.3)
+- `servizi.js` contiene i servizi conosciuti con il **link alla pagina ufficiale di aiuto** sulla disdetta
+  (verificati sui siti ufficiali il 19/11/2026: aggiungere solo link ufficiali), i passi in breve e una nota.
+  Il nome si riconosce con `chiaveNome()` (minuscole, senza accenti/spazi, "+" → "plus") e alias iniziali:
+  evitare alias troppo corti o generici (es. "ps", "amazon").
+- **Chi incassa decide dove si disdice** (`chiIncassa(pagamento)`): "App Store/iTunes/Apple" → impostazioni Apple,
+  "Google Play" → Play Store, "PayPal" → nota aggiuntiva. "Apple Pay" NON è l'App Store (è solo la carta).
+- Nel modulo: pulsante "Come disdire … ›" che apre la guida (passi, nota, "Apri la guida ufficiale ↗").
+  Il campo Link si riempie da solo con il link della guida finché è vuoto o l'aveva riempito l'app
+  (`dataset.automatico`); se l'utente lo scrive, non si tocca più. Servizio sconosciuto → guida generale, nessun link.
+- `linkPer(abb)`: link salvato oppure quello della guida; usato in "Gestisci l'abbonamento ↗" e nel calendario.
+- Nessuna colonna nuova nel database: le guide stanno nel codice.
 
 ## Ricerca e ordinamento
 - Barra di ricerca sopra la lista: filtra per nome, metodo di pagamento e note, senza badare a maiuscole e accenti (`semplifica()`),

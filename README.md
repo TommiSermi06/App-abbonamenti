@@ -16,6 +16,7 @@ quanto spendi al mese e all'anno, e quale rinnovo sta per arrivare.
 - Sincronizzazione online con account (Supabase): stessi dati su telefono, iPad e computer, anche offline
 - Prove gratuite: non contano nei totali finché durano, con avviso prima che diventino a pagamento
 - Per ogni abbonamento: link per disdire, metodo di pagamento e note
+- Guida "Come disdire" per i servizi più diffusi, con il link alla pagina ufficiale inserito in automatico
 - Esporta e importa un backup in formato JSON
 - Modalità scura automatica, installabile nella schermata Home dell'iPhone
 

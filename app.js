@@ -34,6 +34,7 @@ let idDaAnimare = null;   // la riga appena aggiunta, che compare con dissolvenz
 let primoDisegno = true;  // al primo avvio facciamo comparire tutte le righe
 let filtro = 'tutte';     // categoria mostrata nella lista: 'tutte' oppure l'id di una categoria
 let ordine = 'rinnovo';   // ordine della lista: 'rinnovo', 'prezzo' oppure 'nome'
+let guidaAperta = false; // la guida "Come disdire" nel modulo è aperta?
 let meseScelto = 0;       // colonna scelta nel grafico: 0 = questo mese, 11 = tra 11 mesi
 let mesiCalcolati = [];   // i 12 mesi del grafico, con i loro pagamenti
 let elementoPrimaDelFoglio = null; // dove tornare con il focus dopo aver chiuso
@@ -62,6 +63,9 @@ const el = {
   campoPagamento: $('campo-pagamento'),
   campoNote: $('campo-note'),
   linkDisdici: $('link-disdici'),
+  btnGuida: $('btn-guida'),
+  guidaDisdetta: $('guida-disdetta'),
+  notaLink: $('nota-link'),
   metodiPagamento: $('metodi-pagamento'),
   campoProva: $('campo-prova'),
   rigaFineProva: $('riga-fine-prova'),
@@ -359,9 +363,10 @@ function disegnaProssimo(primo) {
     creaBadge(info, true),
   );
   // Se c'è il link per disdire, lo mettiamo a portata di tocco
-  if (abb.link) {
+  const link = linkPer(abb);
+  if (link) {
     const gestisci = crea('a', 'prossimo-link', 'Gestisci l\'abbonamento ↗');
-    gestisci.href = abb.link;
+    gestisci.href = link;
     gestisci.target = '_blank';
     gestisci.rel = 'noopener noreferrer'; // la pagina aperta non può "controllare" la nostra
     el.prossimo.append(gestisci);
@@ -714,10 +719,53 @@ function aggiornaLinkDisdici() {
   if (link) el.linkDisdici.href = link;
 }
 
+// Il link di un abbonamento: quello salvato oppure, se manca, quello della guida per disdire
+function linkPer(abb) {
+  return abb.link || guidaDisdetta(abb.nome, abb.pagamento).link || '';
+}
+
+// Riempie da solo il campo del link con la pagina ufficiale per disdire,
+// ma solo se è vuoto o se l'avevamo riempito noi (quello scritto da te non si tocca)
+function suggerisciLink() {
+  const vuoto = !el.campoLink.value.trim();
+  const nostro = el.campoLink.dataset.automatico === 'si';
+  if (!vuoto && !nostro) return;
+
+  const guida = guidaDisdetta(el.campoNome.value, el.campoPagamento.value);
+  el.campoLink.value = guida.link;
+  el.campoLink.dataset.automatico = guida.link ? 'si' : 'no';
+  el.notaLink.hidden = !guida.link;
+  if (guida.link) el.notaLink.textContent = 'Link suggerito dall\'app: la pagina ufficiale che spiega come disdire. Puoi cambiarlo.';
+  aggiornaLinkDisdici();
+}
+
+// Disegna la guida "Come disdire" (passi, avvertenza e link alla pagina ufficiale)
+function disegnaGuida() {
+  const guida = guidaDisdetta(el.campoNome.value, el.campoPagamento.value);
+  el.btnGuida.textContent = guidaAperta ? 'Nascondi la guida' : `${guida.titolo} ›`;
+  el.btnGuida.setAttribute('aria-expanded', String(guidaAperta));
+  el.guidaDisdetta.hidden = !guidaAperta;
+  if (!guidaAperta) return;
+
+  const passi = crea('ol', 'guida-passi');
+  for (const passo of guida.passi) passi.append(crea('li', '', passo));
+  el.guidaDisdetta.replaceChildren(crea('h4', 'guida-titolo', guida.titolo), passi);
+  if (guida.nota) el.guidaDisdetta.append(crea('p', 'guida-nota', guida.nota));
+  if (guida.link) {
+    const ufficiale = crea('a', 'guida-link', 'Apri la guida ufficiale ↗');
+    ufficiale.href = guida.link;
+    ufficiale.target = '_blank';
+    ufficiale.rel = 'noopener noreferrer';
+    el.guidaDisdetta.append(ufficiale);
+  }
+}
+
 // Suggerimenti per il campo Pagamento: i metodi già usati negli altri abbonamenti
 // (così scrivi sempre "Visa •••• 1234" allo stesso modo e la ricerca li trova tutti)
 function preparaSuggerimentiPagamento() {
-  const metodi = [...new Set(abbonamenti.map((abb) => abb.pagamento).filter(Boolean))].sort();
+  const usati = [...new Set(abbonamenti.map((abb) => abb.pagamento).filter(Boolean))].sort();
+  // In più proponiamo sempre chi incassa più spesso: aiuta la guida per disdire
+  const metodi = [...usati, ...['Apple (App Store)', 'Google Play', 'PayPal'].filter((m) => !usati.includes(m))];
   el.metodiPagamento.replaceChildren(...metodi.map((metodo) => {
     const opzione = crea('option');
     opzione.value = metodo;
@@ -750,7 +798,10 @@ function apriFoglio(abb) {
   el.campoLink.value = abb ? abb.link : '';
   el.campoPagamento.value = abb ? abb.pagamento : '';
   el.campoNote.value = abb ? abb.note : '';
-  aggiornaLinkDisdici();
+  el.campoLink.dataset.automatico = 'no';
+  guidaAperta = false;
+  suggerisciLink();   // se il link è vuoto e il servizio è conosciuto, lo riempiamo noi
+  disegnaGuida();
   preparaSuggerimentiPagamento();
   // Prova gratuita: l'interruttore è acceso solo se la prova non è ancora finita
   const fine = abb ? fineProvaDi(abb) : null;
@@ -930,7 +981,8 @@ function aggiungiAlCalendario() {
     return;
   }
 
-  const testo = creaFileCalendario(pagamenti);
+  // Nel calendario mettiamo il link salvato oppure quello della guida per disdire
+  const testo = creaFileCalendario(pagamenti.map((p) => ({ ...p, abb: { ...p.abb, link: linkPer(p.abb) } })));
   const file = new Blob([testo], { type: 'text/calendar;charset=utf-8' });
   const indirizzo = URL.createObjectURL(file);
 
@@ -1103,6 +1155,11 @@ el.btnAnnulla.addEventListener('click', chiudiFoglio);
 el.velo.addEventListener('click', nascondiFoglio); // toccare fuori dal foglio lo chiude
 el.modulo.addEventListener('submit', salva);
 el.btnElimina.addEventListener('click', eliminaAbbonamento);
+// Tocco su "Come disdire": apre o chiude la guida
+el.btnGuida.addEventListener('click', () => {
+  guidaAperta = !guidaAperta;
+  disegnaGuida();
+});
 el.modulo.addEventListener('change', (e) => {
   if (e.target.name === 'frequenza') aggiornaRigaMese();
   if (e.target === el.campoProva) {
@@ -1128,7 +1185,16 @@ el.modulo.addEventListener('input', (e) => {
   el.errore.textContent = '';
   // Se scrivi tu il giorno del rinnovo, non lo cambiamo più in automatico
   if (e.target === el.campoGiorno) el.campoGiorno.dataset.automatico = 'no';
-  if (e.target === el.campoLink) aggiornaLinkDisdici();
+  if (e.target === el.campoLink) {
+    el.campoLink.dataset.automatico = 'no'; // l'hai scritto tu: non lo tocchiamo più
+    el.notaLink.hidden = true;
+    aggiornaLinkDisdici();
+  }
+  // Nome o pagamento cambiati: aggiorniamo link suggerito e guida
+  if (e.target === el.campoNome || e.target === el.campoPagamento) {
+    suggerisciLink();
+    disegnaGuida();
+  }
 });
 
 // Un solo "ascoltatore" per tutti i gruppi: capiamo quale riga è stata toccata
