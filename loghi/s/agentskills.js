@@ -1,0 +1,1 @@
+Loghi.riceviDisegno('agentskills', 'm12 0 10.392 6v12L12 24 1.608 18V6Z');

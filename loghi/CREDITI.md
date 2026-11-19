@@ -1,0 +1,164 @@
+# Crediti dei loghi
+
+I loghi vengono da [Simple Icons](https://simpleicons.org) 16.38.0. Sono marchi delle rispettive aziende e nell'app servono solo a riconoscere il servizio.
+
+Questi loghi hanno una licenza che chiede di essere citata:
+
+- .NET — licenza CC0-1.0 — https://github.com/dotnet/brand/blob/c7d0f51b8ec59531332d05fb27a5b758a7a3d689/logo/dotnet-logo.svg
+- 30 seconds of code — licenza CC-BY-4.0 — https://github.com/Chalarangelo/30-seconds-of-code/blob/44c0ba94857a7796026c6795c47e964126876d5a/logo/logo-resources/logo.svg
+- AB Download Manager — licenza Apache-2.0 — https://abdownloadmanager.com
+- AIOHTTP — licenza Apache-2.0 — https://github.com/aio-libs/aiohttp/blob/fb5fe72b1bca3b899af579d376f5fe45745410e4/docs/aiohttp-plain.svg
+- ActivityPub — licenza CC0-1.0 — https://activitypub.rocks
+- Ada — licenza CC0-1.0 — https://ada-lang-io.github.io/ada-logo-editor/
+- Airbrake — licenza Apache-2.0 — https://github.com/airbrake/slate/blob/c116f2968bcf4dfda126511de0a2d0f0dc8b6a8e/source/images/logo.svg
+- Ajv — licenza MIT — https://github.com/ajv-validator/ajv/blob/95b15b683dfb60f63c5129b0426629b968d53af8/docs/.vuepress/public/img/ajv.svg
+- Akaunting — licenza GPL-3.0-only — https://akaunting.com/logo
+- Alacritty — licenza Apache-2.0 — https://github.com/alacritty/alacritty/blob/6d8db6b9dfadd6164c4be7a053f25db8ef6b7998/extra/logo/alacritty-simple.svg
+- Android — licenza CC-BY-3.0 — https://partnermarketinghub.withgoogle.com/brands/android/visual-identity/visual-identity/logo-lock-ups
+- Angular — licenza CC-BY-4.0 — https://angular.dev/press-kit
+- Anki — licenza AGPL-3.0-only — https://commons.wikimedia.org/wiki/File:Anki-icon.svg
+- Apache Airflow — licenza Apache-2.0 — https://apache.org/logos
+- Apache Ant — licenza Apache-2.0 — https://apache.org/logos
+- Apache Arrow — licenza Apache-2.0 — https://arrow.apache.org/visual_identity
+- Apache Avro — licenza Apache-2.0 — https://apache.org/logos
+- Apache Cassandra — licenza Apache-2.0 — https://www.apache.org/logos
+- Apache CloudStack — licenza Apache-2.0 — https://apache.org/logos
+- Apache Cordova — licenza Apache-2.0 — https://cordova.apache.org/artwork
+- Apache CouchDB — licenza Apache-2.0 — https://apache.org/logos
+- Apache DolphinScheduler — licenza Apache-2.0 — https://apache.org/logos
+- Apache Doris — licenza Apache-2.0 — https://apache.org/logos
+- Apache Druid — licenza Apache-2.0 — https://apache.org/logos
+- Apache ECharts — licenza Apache-2.0 — https://apache.org/logos
+- Apache Flink — licenza Apache-2.0 — https://apache.org/logos
+- Apache FreeMarker — licenza Apache-2.0 — https://www.apache.org/logos
+- Apache Groovy — licenza Apache-2.0 — https://apache.org/logos
+- Apache Guacamole — licenza Apache-2.0 — https://apache.org/logos
+- Apache HBase — licenza Apache-2.0 — https://apache.org/logos
+- Apache Hadoop — licenza Apache-2.0 — https://apache.org/logos
+- Apache Hive — licenza Apache-2.0 — https://apache.org/logos
+- Apache JMeter — licenza Apache-2.0 — https://apache.org/logos
+- Apache Kafka — licenza Apache-2.0 — https://apache.org/logos
+- Apache Kylin — licenza Apache-2.0 — https://apache.org/logos
+- Apache Lucene — licenza Apache-2.0 — https://apache.org/logos
+- Apache Maven — licenza Apache-2.0 — https://apache.org/logos
+- Apache NetBeans IDE — licenza Apache-2.0 — https://apache.org/logos
+- Apache NiFi — licenza Apache-2.0 — https://apache.org/logos
+- Apache OpenOffice — licenza Apache-2.0 — https://apache.org/logos
+- Apache PDFBox — licenza Apache-2.0 — https://apache.org/logos
+- Apache Parquet — licenza Apache-2.0 — https://apache.org/logos
+- Apache Pulsar — licenza Apache-2.0 — https://apache.org/logos
+- Apache RocketMQ — licenza Apache-2.0 — https://apache.org/logos
+- Apache Solr — licenza Apache-2.0 — https://apache.org/logos
+- Apache Spark — licenza Apache-2.0 — https://apache.org/logos
+- Apache Storm — licenza Apache-2.0 — https://apache.org/logos
+- Apache Superset — licenza Apache-2.0 — https://apache.org/logos
+- Apache Tomcat — licenza Apache-2.0 — https://apache.org/logos
+- Apache — licenza Apache-2.0 — https://www.apache.org/foundation/press/kit
+- AppManager — licenza GPL-3.0-or-later — https://github.com/muntashirakon/AppManager/blob/1a46b0296dae1bc2cf62beedba44ed3bb5e89243/arts/icon_v2/icon.svg
+- Aspire — licenza CC0-1.0 — https://github.com/microsoft/aspire-brand/blob/f9eb464dec47870de23d55dd7b3c00d39122813d/logo/developer-tools/aspire-plain.svg
+- Authelia — licenza Apache-2.0 — https://github.com/authelia/authelia/blob/8316cd4eb7a6f0778c8f480c61ad76a88416fc3a/docs/static/images/branding/logo.svg
+- Backbone.js — licenza MIT — https://commons.wikimedia.org/wiki/File:Backbone.js_logo.svg
+- Bootstrap — licenza MIT — https://getbootstrap.com/docs/5.3/about/brand
+- Cheerio — licenza MIT — https://github.com/cheeriojs/cheerio/blob/60b538772c34f2dd93e9c62e410b2751d0a69ff3/website/static/img/orange-c.svg
+- CocoaPods — licenza CC-BY-NC-4.0 — https://github.com/CocoaPods/shared_resources/tree/3125baf19976bd240c86459645f45b68d2facd10
+- Codeberg — licenza CC0-1.0 — https://codeberg.org/Codeberg/Design/src/commit/ac514aa9aaa2457d4af3c3e13df3ab136d22a49a/logo/special/codeberg-logo_special_fake-transaprency.svg
+- Conventional Commits — licenza MIT — https://www.conventionalcommits.org
+- Deluge — licenza GPL-3.0-only — https://github.com/deluge-torrent/deluge/blob/0b5f45b486e8e974ba8a0b1d6e8edcd124fca62a/deluge/ui/data/pixmaps/deluge.svg
+- Deno — licenza MIT — https://github.com/denoland/docs/blob/5dee713844c7447f80acd4093caa9d350d80bf36/static/img/logo.svg
+- Development Containers — licenza CC-BY-4.0 — https://github.com/microsoft/fluentui-system-icons/blob/3e1e525f4499a22d46039ef54e9b9a86b809bc66/assets/Cube/SVG/ic_fluent_cube_24_regular.svg
+- Exercism — licenza CC-BY-3.0 — https://github.com/exercism/website-icons/blob/2ad12baa465acfaa74efc5da27a6a12f8b05e3d0/exercism/logo-icon.svg
+- Flatpak — licenza CC-BY-3.0 — https://flatpak.org/press
+- Fluentd — licenza Apache-2.0 — https://docs.fluentd.org/quickstart/logo
+- GNU Bash — licenza MIT — https://github.com/odb/official-bash-logo/tree/61eff022f2dad3c7468f5deb4f06652d15f2c143
+- GNU Emacs — licenza GPL-2.0-or-later — https://git.savannah.gnu.org/cgit/emacs.git/tree/etc/images/icons/hicolor/scalable/apps/emacs.svg
+- GNU Privacy Guard — licenza GPL-3.0-or-later — https://git.gnupg.org/cgi-bin/gitweb.cgi?p=gnupg.git;a=tree;f=artwork/icons
+- GNU social — licenza CC0-1.0 — https://www.gnu.org/graphics/social.html
+- GameBanana — licenza CC-BY-NC-ND-4.0 — https://gamebanana.com/tools/3474
+- Garuda Linux — licenza GPL-3.0-only — https://gitlab.com/garuda-linux/themes-and-settings/artwork/garuda-icons/-/blob/aab26625fe01479ebc3a252103fca723baca9e88/usr/share/icons/garuda/distributor-logo-garuda-outline.svg
+- Gin — licenza CC-BY-4.0 — https://github.com/gin-gonic/logo/blob/eecb3150aa7ce5a77b97fd834276b2b6958eaa9d/wb.svg
+- Git — licenza CC-BY-3.0 — https://git-scm.com/community/logos
+- GitHub Copilot — licenza MIT — https://primer.style/foundations/icons/copilot-24
+- Gleam — licenza Apache-2.0 — https://gleam.run
+- Godot Engine — licenza CC-BY-4.0 — https://godotengine.org/press
+- Gradle Play Publisher — licenza MIT — https://github.com/Triple-T/gradle-play-publisher/blob/df4eadf1ca6b5bad50e21be0b21816722ed50342/assets/logo.svg
+- Greasy Fork — licenza GPL-3.0-only — https://github.com/JasonBarnabe/greasyfork/blob/bfeb5f405e03fb32ebc86df7e11c83ca1cb79ddb/misc/logos/logo512.xcf
+- Hashcat — licenza CC0-1.0 — https://hashcat.net/s/i/hashcat-icon.png
+- Have I Been Pwned — licenza BSD-3-Clause — https://github.com/HaveIBeenPwned/Branding/blob/d5a5d3c252a461c6c7e2ae60942fc80e50d2755d/Logos/Icon/Icon.svg
+- HedgeDoc — licenza AGPL-3.0-or-later — https://github.com/hedgedoc/hedgedoc-logo/blob/ddc01f74e0260340fa7c2a9d59cf4f21d08aa2c4/LOGOTYPE/SVG/HedgeDoc-Logo%20Small%20size.svg
+- Iconify — licenza MIT — https://iconify.design
+- JHipster — licenza Apache-2.0 — https://github.com/jhipster/jhipster-artwork/blob/1085d85ab6d819b9ef7f6cc710ec8a4977b95e90/logos/JHipster%20bowtie.svg
+- JPEG — licenza CC-BY-ND-4.0 — https://jpeg.org/contact.html
+- Jabber — licenza CC-BY-2.5 — https://commons.wikimedia.org/wiki/File:Jabber-bulb.svg
+- JavaScript — licenza MIT — https://github.com/voodootikigod/logo.js/blob/1544bdeed6d618a6cfe4f0650d04ab8d9cfa76d9/js.svg
+- Jekyll — licenza CC-BY-4.0 — https://github.com/jekyll/brand/blob/8302ad3ecf045054a095020729a8d2cc7005faf8/jekyll-logo-black.svg
+- Kando — licenza CC-BY-4.0 — https://github.com/kando-menu/design/blob/6506e2656f791b710b49a4774e7ebeaf419a1236/icons/source/blossom_tiny.svg
+- KiCad — licenza GPL-3.0-or-later — https://www.kicad.org/about/kicad/
+- Let's Encrypt — licenza CC-BY-NC-4.0 — https://letsencrypt.org/trademarks/
+- Liberapay — licenza CC0-1.0 — https://en.liberapay.com/about/logos
+- LibreOffice Base — licenza MPL-2.0 — https://github.com/LibreOffice/help/blob/e3b1cce7dde7e964c7670dd24a167e750654685a/source/media/navigation/libo-base.svg
+- LibreOffice Calc — licenza MPL-2.0 — https://github.com/LibreOffice/help/blob/02faeab6e7b014ca97a8c452e829af4522dadfc8/source/media/navigation/libo-calc.svg
+- LibreOffice Draw — licenza MPL-2.0 — https://github.com/LibreOffice/help/blob/02faeab6e7b014ca97a8c452e829af4522dadfc8/source/media/navigation/libo-draw.svg
+- LibreOffice Impress — licenza MPL-2.0 — https://github.com/LibreOffice/help/blob/02faeab6e7b014ca97a8c452e829af4522dadfc8/source/media/navigation/libo-impress.svg
+- LibreOffice Math — licenza MPL-2.0 — https://github.com/LibreOffice/help/blob/02faeab6e7b014ca97a8c452e829af4522dadfc8/source/media/navigation/libo-math.svg
+- LibreOffice Writer — licenza MPL-2.0 — https://github.com/LibreOffice/help/blob/02faeab6e7b014ca97a8c452e829af4522dadfc8/source/media/navigation/libo-writer.svg
+- Lobsters — licenza BSD-3-Clause — https://github.com/lobsters/lobsters/blob/dcd56c1d3f7190e33a73b86b77e7feb2665ddc50/app/assets/images/logo-color.svg
+- MX Linux — licenza GPL-3.0-only — https://mxlinux.org/art/
+- Mantine — licenza MIT — https://github.com/mantinedev/mantine/blob/f2da0287bfcda19dcf7866f4d03a05d1ee7b49f7/docs/src/images/logo.svg
+- Markdown — licenza CC0-1.0 — https://github.com/dcurtis/markdown-mark/tree/360a3657fef7f6ad0b303296a95ad52985caa0d3
+- Material Design Icons — licenza Apache-2.0 — https://materialdesignicons.com/icon/vector-square
+- Mercurial — licenza GPL-2.0-or-later — https://www.mercurial-scm.org/hg-logo/
+- Misskey — licenza CC-BY-NC-SA-4.0 — https://misskey-hub.net/appendix/assets.html
+- Monkeytype — licenza GPL-3.0-only — https://github.com/monkeytypegame/monkeytype/blob/20a08d27ead851bbfd5ac557b4ea444ea8bddd79/frontend/static/html/top.html
+- Nano Stores — licenza MIT — https://github.com/nanostores/nanostores/blob/7fb5cd871fa00f484ebc866fdf330b56cab2aa20/img/logo-auto.svg
+- NgRx — licenza CC-BY-4.0 — https://ngrx.io
+- NixOS — licenza CC-BY-4.0 — https://brand.nixos.org/logos/nixos-logomark-black-flat-minimal.svg
+- NodeBB — licenza CC-BY-NC-4.0 — https://github.com/NodeBB/assets/blob/c59a6d8db0d1be9b2666419e49b330d7b780f2b3/bb-svg/bb.svg
+- OCaml — licenza Unlicense — https://ocaml.org/logo
+- OWASP Dependency-Check — licenza Apache-2.0 — https://github.com/jeremylong/DependencyCheck/blob/8ee82149179c6faeca78727e57039e987c387e26/src/site/resources/images/logo.svg
+- Omarchy — licenza MIT — https://omarchy.org
+- OpenJDK — licenza BSD-3-Clause — https://hg.openjdk.java.net/duke/duke/file/ca00f100dafc/vector/Agent.svg
+- OpenTelemetry — licenza CC-BY-4.0 — https://cncf-branding.netlify.app/projects/opentelemetry/
+- Packagist — licenza MIT — https://github.com/composer/packagist/issues/1147#issuecomment-747951608
+- Pelican — licenza CC-BY-4.0 — https://blog.getpelican.com/pages/gratitude.html
+- Phosphor Icons — licenza MIT — https://phosphoricons.com
+- PureScript — licenza CC-BY-4.0 — https://github.com/purescript/logo/tree/1e7a57affdaeaf88ff594c08bd2b5a78fe2ed13c
+- PyCQA — licenza CC-BY-NC-ND-4.0 — https://github.com/PyCQA/meta/blob/ac828d8d7eb55501addefb0ceb6496ab15e85ca5/logo/pycqa1-02.svg
+- QuickLook — licenza GPL-3.0-or-later — https://github.com/QL-Win/QuickLook/blob/f726841d99bbceafd5399e5777b4dba302bf1e51/QuickLook/Resources/app.svg
+- ROOT — licenza CC-BY-4.0 — https://root.cern/assets/images/logos/svg/ROOT.svg
+- Radiant Earth — licenza CC-BY-4.0 — https://radiant.earth
+- Robot Framework — licenza CC-BY-NC-SA-4.0 — https://github.com/robotframework/visual-identity/blob/fadf8cda9f79ea31987a214f0047cca9626327b7/logo/robot-framework.svg
+- RocksDB — licenza CC-BY-4.0 — https://github.com/facebook/rocksdb/blob/9ed96703d11a1cf4af0e1c1db0e4a6057a8e5d42/docs/static/logo.svg
+- Rook — licenza Apache-2.0 — https://github.com/rook/artwork/blob/d252db9f43753e6abf64db0ce12d38916a5de464/logo/Rook_Icon.svg
+- RuboCop — licenza CC-BY-NC-4.0 — https://github.com/rubocop-semver/rubocop-ruby2_0/blob/5302f93058f7b739a73a7a6c11c566a2b196b96e/docs/images/logo/rubocop-light.svg
+- SQLAlchemy — licenza MIT — https://commons.wikimedia.org/wiki/File:SQLAlchemy.svg
+- Salt Project — licenza Apache-2.0 — https://saltproject.io
+- Sanity — licenza MIT — https://github.com/sanity-io/logos/blob/e298a1ac2757c83910fe08b496a115bc9aef06bd/src/sanityMonogram.tsx
+- Sass — licenza CC-BY-NC-SA-3.0 — https://sass-lang.com/styleguide/brand
+- Setuptools — licenza MIT — https://github.com/pypa/setuptools/blob/c3f486f0f7ebf8fa141dfd7314cbcaba7370db0b/docs/images/logo.svg
+- Simple Icons — licenza CC0-1.0 — https://simpleicons.org
+- Slint — licenza CC-BY-ND-4.0 — https://github.com/slint-ui/slint/blob/10ae5cd60ab3fcd01ef89a300c97e2e0952bc750/logo/slint-logo-full-dark.png
+- Solidity — licenza CC-BY-4.0 — https://docs.soliditylang.org/en/v0.8.6/brand-guide.html
+- SourceHut — licenza CC0-1.0 — https://sourcehut.org/logo/
+- Sphinx — licenza BSD-3-Clause — https://github.com/sphinx-doc/sphinx/blob/ed84d63e6f2c4fd43b97fc43ee8be4156a13af9e/doc/_static/favicon.svg
+- SpiderMonkey — licenza MPL-2.0 — https://github.com/mozilla-spidermonkey/spidermonkey.dev/blob/b65d91dc571bf0646a36bc68fc648ee022164fab/favicon.svg
+- StopStalk — licenza MIT — https://github.com/stopstalk/media-resources/blob/265b728c26ba597b957e72134a3b49a10dc0c91d/stopstalk-small-black.svg
+- Storybook — licenza MIT — https://github.com/storybookjs/brand/tree/6f4d67f65f8275c53c310a73a8da6c6e96c8488c
+- Tauri — licenza CC-BY-NC-ND-4.0 — https://github.com/tauri-apps/tauri-docs/blob/b1cdfa9d7c6d0b17dae60a90266ddced40a7b384/static/img/tauri.svg
+- Textual — licenza MIT — https://github.com/Textualize/textual/blob/e66c098588360515864ce88982de494c64d2c097/docs/images/icons/logo%20light%20transparent.svg
+- TypeORM — licenza MIT — https://github.com/typeorm/typeorm/blob/e7649d2746f907ff36b1efb600402dedd5f5a499/resources/logo_big.png
+- Umami — licenza MIT — https://github.com/umami-software/umami/blob/3572df0a09503f357a06fe7f816295ba2c878325/assets/logo.svg
+- V — licenza MIT — https://github.com/vlang/v-logo/blob/eec050c901ed3afefce8cbe56092d55ed6770706/dist/v-logo.svg
+- Vala — licenza MIT — https://commons.wikimedia.org/wiki/File:Vala_Logo.svg
+- Vega — licenza BSD-3-Clause — https://github.com/vega/logos/blob/af32bc29f0c09c8de826aaafb037935fb69e960a/assets/VG_Black.svg
+- Vivaldi — licenza CC-BY-4.0 — https://vivaldi.com/press
+- Vue.js — licenza CC-BY-NC-SA-4.0 — https://github.com/vuejs/art/blob/a1c78b74569b70a25300925b4eacfefcc143b8f6/logo.svg
+- Vuetify — licenza MIT — https://vuetifyjs.com/resources/brand-kit
+- Wayland — licenza MIT — https://gitlab.freedesktop.org/wayland/weston/-/blob/77ede00a938b8137bd638ce67b6f58cb52b1d1b0/data/wayland.svg
+- WebGPU — licenza CC-BY-4.0 — https://www.w3.org/2023/02/webgpu-logos.html
+- Weblate — licenza GPL-3.0-only — https://github.com/WeblateOrg/graphics/blob/669e4f910abd9ec36fda172d2ea6f2f424a32ace/logo/weblate-black.svg
+- Yarn — licenza CC-BY-4.0 — https://github.com/yarnpkg/assets/blob/76d30ca2aebed5b73ea8131d972218fb860bd32d/yarn-kitten-circle.svg
+- Zod — licenza MIT — https://github.com/colinhacks/zod/blob/ff89187172ac6aa4a6264592980d1628ee785242/logo/Logo%20White.ai
+- fish shell — licenza GPL-2.0-only — https://github.com/fish-shell/fish-site/blob/1364b2e794c9aba7492c8962bae0f7fbe4886317/artwork/ascii%20fish.eps
+- freedesktop.org — licenza GPL-2.0-or-later — https://commons.wikimedia.org/wiki/File:Freedesktop-logo.svg
+- gulp — licenza CC0-1.0 — https://github.com/gulpjs/artwork/blob/4e14158817ac88e9a5c02b3b307e6f630fe222fb/gulp-white-text.svg
+- kitty — licenza GPL-3.0-only — https://sw.kovidgoyal.net/kitty

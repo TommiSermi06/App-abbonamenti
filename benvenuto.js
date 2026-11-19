@@ -48,9 +48,8 @@ const Benvenuto = (function () {
     const corpo = document.createElement('span');
     corpo.className = 'pianeta-corpo';
     // Dentro la luna: il logo del servizio (da loghi.js) oppure l'iniziale
-    const logo = vuoto ? null : logoPer(nome);
-    if (logo) corpo.append(creaSvgLogo(logo));
-    else corpo.textContent = vuoto ? '+' : iniziale(nome);
+    if (vuoto) corpo.textContent = '+';
+    else Loghi.riempi(corpo, nome, iniziale(nome));
     pianeta.append(corpo);
     return pianeta;
   }

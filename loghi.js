@@ -1,6 +1,15 @@
 /* =====================================================================
    loghi.js — I loghi dei servizi, da mettere dentro ai "pianetini" della lista.
 
+   Due livelli:
+   1. LOGHI (qui sotto): i servizi più diffusi, scritti direttamente in questo file.
+      Compaiono subito e riconoscono anche nomi "allungati" ("Spotify Family").
+   2. Il CATALOGO completo di Simple Icons (oltre 3400 loghi) nella cartella loghi/:
+      loghi/elenco.js dice quale file usare per ogni nome, e il disegno di ogni logo
+      sta in un file piccolo (loghi/s/netflix.js…) che si scarica SOLO se serve.
+      Così, se aggiungi un abbonamento nuovo, il logo lo troviamo dal nome.
+      Il catalogo si rigenera con strumenti/aggiorna-loghi.py.
+
    Da dove vengono: dalla raccolta Simple Icons (simpleicons.org, versione 16.38.0),
    che offre i loghi ufficiali dei marchi in un'unica forma semplice (un solo colore,
    un quadrato 24×24) proprio per indicare un servizio in un'app. I loghi restano
@@ -116,3 +125,96 @@ function creaSvgLogo(logo) {
   svg.append(percorso);
   return svg;
 }
+
+
+/* ---------- Il catalogo completo (cartella loghi/) ----------
+   Loghi.riempi(elemento, nome, riserva) mette dentro all'elemento il logo del servizio:
+   - se è tra i LOGHI di questo file, subito;
+   - altrimenti scrive la "riserva" (l'iniziale) e intanto cerca nel catalogo:
+     se trova il logo, scarica il suo file e sostituisce l'iniziale.
+   I file del catalogo si caricano come normali <script>: così funziona anche
+   aprendo index.html con un doppio clic. Il catalogo sta sul nostro stesso sito,
+   quindi nessun altro sa quali abbonamenti hai. */
+const Loghi = (function () {
+  // Cambia quando rigeneri il catalogo: l'iPhone scarica i file nuovi invece di quelli in memoria
+  const VERSIONE_CATALOGO = '16.38.0';
+
+  let elenco = null;          // nome semplificato → file del logo (arriva da loghi/elenco.js)
+  let attesaElenco = null;    // la "promessa" del caricamento dell'elenco (una volta sola)
+  const disegni = {};         // file del logo → disegno, per quelli già scaricati
+  const attese = {};          // file del logo → promessa del suo caricamento
+
+  // Carica un file .js aggiungendo un <script> alla pagina
+  function caricaScript(indirizzo) {
+    return new Promise((fatto, errore) => {
+      const script = document.createElement('script');
+      script.src = `${indirizzo}?v=${VERSIONE_CATALOGO}`;
+      script.onload = fatto;
+      script.onerror = errore;
+      document.head.append(script);
+    });
+  }
+
+  // Questi due li chiamano i file del catalogo quando arrivano
+  function riceviElenco(dati) { elenco = dati; }
+  function riceviDisegno(file, disegno) { disegni[file] = disegno; }
+
+  function caricaElenco() {
+    if (!attesaElenco) attesaElenco = caricaScript('loghi/elenco.js').catch(() => {});
+    return attesaElenco;
+  }
+
+  // Quale file del catalogo corrisponde al nome? Prima il nome intero ("Canva Pro" → "canvapro"),
+  // poi togliendo una parola alla volta dalla fine ("Canva Pro" → "canva").
+  // Per i pezzi accorciati servono almeno 4 lettere, così "Sky Go" non diventa "sky".
+  function fileDelCatalogo(nome) {
+    if (!elenco) return null;
+    const intero = chiaveNome(nome);
+    if (elenco[intero]) return elenco[intero];
+    const parole = String(nome).trim().split(/\s+/);
+    for (let quante = parole.length - 1; quante >= 1; quante -= 1) {
+      const chiave = chiaveNome(parole.slice(0, quante).join(' '));
+      if (chiave.length >= 4 && elenco[chiave]) return elenco[chiave];
+    }
+    return null;
+  }
+
+  function caricaDisegno(file) {
+    if (!/^[a-z0-9_]+$/.test(file)) return Promise.resolve(); // solo nomi di file "puliti"
+    if (!attese[file]) attese[file] = caricaScript(`loghi/s/${file}.js`).catch(() => {});
+    return attese[file];
+  }
+
+  function mettiLogo(elemento, disegno, conDissolvenza) {
+    elemento.replaceChildren(creaSvgLogo({ disegno }));
+    if (conDissolvenza) elemento.classList.add('logo-arrivato'); // compare morbido (vedi style.css)
+  }
+
+  function riempi(elemento, nome, riserva) {
+    // 1. Tra i loghi di questo file?
+    const conosciuto = logoPer(nome);
+    if (conosciuto) {
+      mettiLogo(elemento, conosciuto.disegno, false);
+      return;
+    }
+    // 2. Nel catalogo, già scaricato? Allora subito, senza far vedere l'iniziale
+    const file = fileDelCatalogo(nome);
+    if (file && disegni[file]) {
+      mettiLogo(elemento, disegni[file], false);
+      return;
+    }
+    // 3. Intanto l'iniziale; poi, se il catalogo ha il logo, lo mettiamo al suo posto
+    elemento.textContent = riserva;
+    caricaElenco()
+      .then(() => {
+        const trovato = fileDelCatalogo(nome);
+        return trovato ? caricaDisegno(trovato).then(() => trovato) : null;
+      })
+      .then((trovato) => {
+        // isConnected: la riga potrebbe essere stata ridisegnata nel frattempo
+        if (trovato && disegni[trovato] && elemento.isConnected) mettiLogo(elemento, disegni[trovato], true);
+      });
+  }
+
+  return { riempi, riceviElenco, riceviDisegno };
+})();

@@ -28,8 +28,8 @@ Il proprietario del progetto **sta imparando a programmare**:
   (generate da `icon.svg`, con sfondo quadrato: gli angoli li arrotonda iOS).
 
 ## Numero di versione (da aggiornare a OGNI rilascio)
-- Versione attuale: **4.4**. In `index.html` i file hanno il numero di versione (`style.css?v=4.4`, `app.js?v=4.4`…)
-  e c'è la scritta "Abbonamenti · versione 4.4" in fondo alla pagina.
+- Versione attuale: **4.5**. In `index.html` i file hanno il numero di versione (`style.css?v=4.5`, `app.js?v=4.5`…)
+  e c'è la scritta "Abbonamenti · versione 4.5" in fondo alla pagina.
 - A ogni modifica di CSS, JavaScript o manifest **aumenta il numero in tutti i punti di `index.html`**
   (cerca la versione attuale), così l'iPhone scarica i file nuovi invece di usare la copia in memoria.
   Piccole modifiche: 3.0 → 3.1; una nuova versione grande dell'app: 3.x → 4.0.
@@ -133,6 +133,18 @@ Il proprietario del progetto **sta imparando a programmare**:
 - Alias come in `servizi.js` (`chiaveNome`, basta l'inizio del nome); gli alias di 3 lettere o meno valgono solo
   per il nome esatto ("sky" sì, "Skype" no). Nomi più specifici prima ("applemusic" prima di "apple").
 - I colori `--mono-1…5`, `--lettera-pianeta`, `--ombra-pianeta` stanno in `style.css` (servono a lista e benvenuto).
+- **Catalogo completo (versione 4.5)**: cartella `loghi/` con TUTTI i loghi di Simple Icons utilizzabili (~3400).
+  `loghi/elenco.js` (~80 KB: nome semplificato → file) e un file piccolo per logo, `loghi/s/<file>.js`
+  (`Loghi.riceviDisegno('netflix', '…')`), che si scarica **solo se serve**. Si caricano come `<script>` aggiunti
+  dal codice (funziona anche con il doppio clic su `index.html`); `?v=VERSIONE_CATALOGO` (in `loghi.js`) per la cache.
+- `Loghi.riempi(elemento, nome, riserva)`: 1) `LOGHI` di `loghi.js` (subito, alias con l'inizio del nome);
+  2) catalogo già scaricato (subito); 3) intanto l'iniziale, poi il logo con una dissolvenza (`.logo-arrivato`).
+  Nel catalogo il nome deve corrispondere intero, oppure togliendo parole dalla fine con almeno 4 lettere
+  ("Revolut Premium" → revolut; "Sky Go" non diventa "sky").
+- Esclusi dal catalogo: licenze `custom` e CC-BY-SA, e le parole generiche (`PAROLE_GENERICHE`: "metro", "box"…).
+  Crediti delle licenze che lo chiedono in `loghi/CREDITI.md`.
+- **Aggiornare il catalogo**: `strumenti/aggiorna-loghi.py` (istruzioni in cima al file; NON è un passaggio di build:
+  l'app usa i file già pronti), poi aggiornare `VERSIONE_CATALOGO` in `loghi.js`.
 
 ## Struttura dei file
 | File | Cosa contiene |
@@ -144,7 +156,9 @@ Il proprietario del progetto **sta imparando a programmare**:
 | `vetro.css` | Stile "Liquid Glass": vetro, sfondo vivo, molle e animazioni CSS (riveste `style.css`) |
 | `animazioni.js` | `Animazioni`: numeri che contano, goccia dei filtri, barra compatta, foglio da trascinare, capsula di avviso |
 | `benvenuto.js`, `benvenuto.css` | Benvenuto "Orbita" al primo avvio, saluto lampo a ogni apertura, iniziali e colori dei "pianeti" |
-| `loghi.js` | I loghi dei servizi (da Simple Icons) per i pianetini: `LOGHI`, `logoPer(nome)`, `creaSvgLogo(logo)` |
+| `loghi.js` | I loghi dei servizi (da Simple Icons) per i pianetini: `LOGHI`, `logoPer(nome)`, `creaSvgLogo(logo)`, `Loghi.riempi` (catalogo) |
+| `loghi/` | Catalogo completo dei loghi: `elenco.js`, `s/<file>.js` (uno per logo), `CREDITI.md` |
+| `strumenti/aggiorna-loghi.py` | Rigenera `loghi/` da una nuova versione di Simple Icons (solo manutenzione) |
 | `servizi.js` | Come disdire i servizi più diffusi (`SERVIZI`: alias, link ufficiale, passi, nota) e `guidaDisdetta(nome, pagamento)` |
 | `supabase.js` | `Supabase`: collegamento con il database online (account, sessione, richieste con `fetch`). Lo usa solo `storage.js` |
 | `storage.js` | `Archivio`: lettura/scrittura dati, dati iniziali, controllo e backup, impostazioni, account e sincronizzazione online |
