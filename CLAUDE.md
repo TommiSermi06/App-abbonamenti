@@ -28,8 +28,8 @@ Il proprietario del progetto **sta imparando a programmare**:
   (generate da `icon.svg`, con sfondo quadrato: gli angoli li arrotonda iOS).
 
 ## Numero di versione (da aggiornare a OGNI rilascio)
-- Versione attuale: **4.1**. In `index.html` i file hanno il numero di versione (`style.css?v=4.1`, `app.js?v=4.1`…)
-  e c'è la scritta "Abbonamenti · versione 4.1" in fondo alla pagina.
+- Versione attuale: **4.2**. In `index.html` i file hanno il numero di versione (`style.css?v=4.2`, `app.js?v=4.2`…)
+  e c'è la scritta "Abbonamenti · versione 4.2" in fondo alla pagina.
 - A ogni modifica di CSS, JavaScript o manifest **aumenta il numero in tutti i punti di `index.html`**
   (cerca la versione attuale), così l'iPhone scarica i file nuovi invece di usare la copia in memoria.
   Piccole modifiche: 3.0 → 3.1; una nuova versione grande dell'app: 3.x → 4.0.
@@ -92,6 +92,20 @@ Il proprietario del progetto **sta imparando a programmare**:
   sempre nella tinta blu/azzurrino; riutilizzabili per le icone della lista).
 - **Prove automatiche**: per saltare benvenuto e saluto impostare `abbonamenti:impostazioni` =
   `{"benvenutoVisto": true}` prima di aprire la pagina (il saluto lampo dura comunque < 1 s).
+
+## Barra delle schede in basso (versione 4.2)
+- Tre schede (`.scheda` con `data-scheda` dentro a `<main>`): **Abbonamenti** (totali, prossimo rinnovo, lista),
+  **Statistiche** (spesa per categoria, grafico; messaggio `#statistiche-vuote` se non c'è niente da mostrare),
+  **Impostazioni** (Profilo, Sincronizzazione, Promemoria, Backup, versione). Si vede solo quella scelta (`hidden`).
+- Barra `#barra-schede` (`nav`, capsula di vetro che galleggia in basso) FUORI da `<main>`: con il foglio aperto
+  `.app` ha un `transform` e un elemento `fixed` dentro si sposterebbe. Scheda scelta = `aria-current="page"`,
+  goccia con `Animazioni.posizionaIndicatore`.
+- `mostraScheda(nome)` in `app.js`: cambia titolo grande e compatto, saluto solo nella prima scheda, "+" nascosto
+  nelle Impostazioni, ricorda lo scorrimento di ogni scheda; toccando la scheda in cui sei torni in cima.
+  All'avvio si apre sempre Abbonamenti (la scelta non si salva).
+- Entrata a cascata solo la prima volta (classe `entra` → `entrata` dopo 1 s); cambiando scheda il contenuto
+  compare con `.appena-scelta` (0,32 s). Le colonne del grafico ricrescono aprendo Statistiche.
+- Mentre scrivi in un campo della pagina la barra scende fuori dalla vista (`body:has(.app input:focus)`).
 
 ## Struttura dei file
 | File | Cosa contiene |

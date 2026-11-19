@@ -11,6 +11,7 @@
    7. Foglio che sale dal basso e modulo
    7b. Categorie: filtro, gruppi e spesa per categoria
    7c. Grafico "Spese mese per mese"
+   7d. Barra delle schede in basso (Abbonamenti, Statistiche, Impostazioni)
    8. Animazioni e "movimento ridotto"
    ===================================================================== */
 
@@ -53,6 +54,7 @@
   --velo: rgba(20, 32, 56, 0.35);  /* oscura la pagina quando il foglio è aperto */
   --sfondo-foglio: #F8F3E6;
   --card-foglio: #FFFDF6;
+  --ombra-barra: rgba(31, 79, 168, 0.14); /* ombra sotto la barra delle schede */
 
   /* Movimento: durata e curva morbida stile Apple */
   --durata: 0.3s;
@@ -93,6 +95,7 @@
     --velo: rgba(0, 0, 0, 0.6);
     --sfondo-foglio: #1F1D18;
     --card-foglio: #2A2721;
+    --ombra-barra: rgba(0, 0, 0, 0.45);
   }
 }
 
@@ -131,7 +134,8 @@ body.bloccato {
   margin: 0 auto;
   padding-top: env(safe-area-inset-top);
   padding-right: env(safe-area-inset-right);
-  padding-bottom: calc(40px + env(safe-area-inset-bottom));
+  /* 40px di respiro + 76px per la barra delle schede che "galleggia" in basso */
+  padding-bottom: calc(40px + 76px + env(safe-area-inset-bottom));
   padding-left: env(safe-area-inset-left);
 }
 
@@ -1194,6 +1198,81 @@ a.riga {
   margin: 8px 0 0;
   font-size: 15px;
   color: var(--testo-secondario);
+}
+
+
+/* ---------- 7d. Barra delle schede in basso ----------
+   Una capsula che "galleggia" sopra la pagina, con tre pulsanti:
+   icona + nome piccolo. La scheda scelta è blu; le altre sono grigie. */
+.barra-schede {
+  position: fixed;
+  z-index: 8; /* sopra la pagina, sotto il velo (10) e i fogli (11) */
+  left: calc(16px + env(safe-area-inset-left));
+  right: calc(16px + env(safe-area-inset-right));
+  /* Sull'iPhone con la lineetta in basso stiamo appena sopra; altrimenti 10px dal bordo */
+  bottom: max(10px, calc(env(safe-area-inset-bottom) - 6px));
+  max-width: 420px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr); /* tre colonne uguali */
+  padding: 5px;
+  border-radius: 999px;
+  background: var(--sfondo-card);
+  box-shadow: 0 0 0 0.5px var(--separatore), 0 8px 24px var(--ombra-barra);
+}
+
+.scheda-btn {
+  position: relative;
+  z-index: 1; /* sopra la goccia che indica la scheda scelta */
+  min-height: 54px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: var(--testo-secondario);
+  font: inherit;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent; /* niente rettangolo grigio al tocco */
+  transition: color var(--durata) var(--curva);
+}
+
+.scheda-btn[aria-current="page"] {
+  color: var(--blu);
+}
+
+/* I tre pallini dell'icona "Impostazioni" sono pieni, del colore del testo */
+.scheda-btn .pomello {
+  fill: currentColor;
+}
+
+/* La goccia sotto la scheda scelta (la crea e la sposta animazioni.js) */
+.barra-schede .indicatore {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 999px;
+  background: var(--azzurro-tenue);
+  pointer-events: none;
+}
+
+/* Mentre scrivi in un campo della pagina la barra si fa da parte,
+   così non finisce in mezzo alla tastiera */
+body:has(.app input:focus) .barra-schede {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Messaggio della scheda Statistiche quando non c'è niente da mostrare */
+.nota-scheda-vuota {
+  margin-top: 24px;
+  text-align: center;
 }
 
 
