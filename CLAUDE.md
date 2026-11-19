@@ -28,8 +28,8 @@ Il proprietario del progetto **sta imparando a programmare**:
   (generate da `icon.svg`, con sfondo quadrato: gli angoli li arrotonda iOS).
 
 ## Numero di versione (da aggiornare a OGNI rilascio)
-- Versione attuale: **4.0**. In `index.html` i file hanno il numero di versione (`style.css?v=4.0`, `app.js?v=4.0`…)
-  e c'è la scritta "Abbonamenti · versione 4.0" in fondo alla pagina.
+- Versione attuale: **4.1**. In `index.html` i file hanno il numero di versione (`style.css?v=4.1`, `app.js?v=4.1`…)
+  e c'è la scritta "Abbonamenti · versione 4.1" in fondo alla pagina.
 - A ogni modifica di CSS, JavaScript o manifest **aumenta il numero in tutti i punti di `index.html`**
   (cerca la versione attuale), così l'iPhone scarica i file nuovi invece di usare la copia in memoria.
   Piccole modifiche: 3.0 → 3.1; una nuova versione grande dell'app: 3.x → 4.0.
@@ -73,6 +73,26 @@ Il proprietario del progetto **sta imparando a programmare**:
   **Riduci trasparenza** (o browser senza `backdrop-filter`) superfici piene e niente macchie.
   I colori dei giorni mancanti restano quelli di sempre.
 
+## Benvenuto "Orbita" e saluto (versione 4.1)
+- `benvenuto.js` (oggetto `Benvenuto`) + `benvenuto.css`. Markup in `index.html` (`#benvenuto`, `#saluto-avvio`).
+- **Primo avvio** (impostazione `benvenutoVisto` assente): scena "Orbita" con il totale al mese al centro e
+  le iniziali degli abbonamenti su due anelli che girano (`Benvenuto.mostra`), poi "Come ti chiami?",
+  poi "atterraggio" e l'app entra. "Ho già un account" → alla fine apre l'accesso.
+  Gli anelli girano **piano** (interno 70 s per giro, esterno 84 s: le lune esterne sembrano solo un po' più
+  veloci): scelta del proprietario, le lune veloci disturbano. L'**accelerazione** c'è solo nell'atterraggio
+  (gli anelli prendono velocità mentre vengono risucchiati verso il pianeta, curva ease-in, ~1 s).
+- **Ogni apertura dopo**: saluto lampo con la goccia e "Buongiorno/Buon pomeriggio/Buonasera, Nome"
+  (`Benvenuto.salutoLampo`, < 1 s, un tocco lo salta). Nella Home il saluto sta sopra il titolo (`#saluto`).
+- Il nome (impostazione `nome`) si cambia dalla sezione "Profilo"; resta SOLO sul dispositivo (non va online).
+- L'entrata a cascata della Home parte quando `app.js` aggiunge la classe `entra` a `.app` (`entraNellApp()`).
+- Il **pianeta** (`pianeta.webp`, 520×520 con trasparenza, ~59 KB) è un'immagine generata con Higgsfield
+  (modello Z Image) e scontornata tenendo l'alone dell'atmosfera; sta al centro dell'orbita (le iniziali
+  girano intorno come lune) e nel saluto lampo. Il totale è nella capsula di vetro sotto l'orbita.
+- Iniziale e colore di un abbonamento: `Benvenuto.iniziale(nome)` e `Benvenuto.tinta(nome)` (`mono-1…5`,
+  sempre nella tinta blu/azzurrino; riutilizzabili per le icone della lista).
+- **Prove automatiche**: per saltare benvenuto e saluto impostare `abbonamenti:impostazioni` =
+  `{"benvenutoVisto": true}` prima di aprire la pagina (il saluto lampo dura comunque < 1 s).
+
 ## Struttura dei file
 | File | Cosa contiene |
 | --- | --- |
@@ -82,6 +102,7 @@ Il proprietario del progetto **sta imparando a programmare**:
 | `calendario.js` | Crea il file .ics dei promemoria (`creaFileCalendario`); impostazioni `GIORNI_PREAVVISO` e `ORA_AVVISO` |
 | `vetro.css` | Stile "Liquid Glass": vetro, sfondo vivo, molle e animazioni CSS (riveste `style.css`) |
 | `animazioni.js` | `Animazioni`: numeri che contano, goccia dei filtri, barra compatta, foglio da trascinare, capsula di avviso |
+| `benvenuto.js`, `benvenuto.css` | Benvenuto "Orbita" al primo avvio, saluto lampo a ogni apertura, iniziali e colori dei "pianeti" |
 | `servizi.js` | Come disdire i servizi più diffusi (`SERVIZI`: alias, link ufficiale, passi, nota) e `guidaDisdetta(nome, pagamento)` |
 | `supabase.js` | `Supabase`: collegamento con il database online (account, sessione, richieste con `fetch`). Lo usa solo `storage.js` |
 | `storage.js` | `Archivio`: lettura/scrittura dati, dati iniziali, controllo e backup, impostazioni, account e sincronizzazione online |

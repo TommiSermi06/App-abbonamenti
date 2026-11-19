@@ -18,18 +18,22 @@
 
   <link rel="apple-touch-icon" href="icon-180.png">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <!-- NUMERO DI VERSIONE: "?v=4.0" in fondo ai nomi dei file.
-       Per il browser "app.js?v=4.0" e "app.js?v=4.1" sono file diversi:
+  <!-- NUMERO DI VERSIONE: "?v=4.1" in fondo ai nomi dei file.
+       Per il browser "app.js?v=4.1" e "app.js?v=4.2" sono file diversi:
        cambiando il numero, l'iPhone è costretto a scaricare il codice nuovo
        invece di usare la copia vecchia che tiene in memoria.
        A ogni modifica di CSS o JavaScript aumenta il numero in TUTTI i punti
        di questo file (cerca il numero attuale), anche nella scritta in fondo alla pagina. -->
-  <link rel="manifest" href="manifest.json?v=4.0">
+  <link rel="manifest" href="manifest.json?v=4.1">
 
   <title>Abbonamenti</title>
-  <link rel="stylesheet" href="style.css?v=4.0">
+  <link rel="stylesheet" href="style.css?v=4.1">
   <!-- Lo stile "Liquid Glass": va DOPO style.css perché lo riveste -->
-  <link rel="stylesheet" href="vetro.css?v=4.0">
+  <link rel="stylesheet" href="vetro.css?v=4.1">
+  <!-- La schermata di benvenuto "Orbita" e il saluto all'apertura -->
+  <link rel="stylesheet" href="benvenuto.css?v=4.1">
+  <!-- Il pianeta serve subito (benvenuto e saluto): il browser lo scarica in anticipo -->
+  <link rel="preload" as="image" href="pianeta.webp?v=4.1" type="image/webp">
 </head>
 <body>
   <!-- Sfondo vivo: macchie di luce sfumate dietro al vetro (solo decorazione) -->
@@ -49,6 +53,8 @@
       </button>
     </div>
     <header class="barra">
+      <!-- "Buonasera, Tommaso": lo scrive app.js se conosce il tuo nome -->
+      <p id="saluto" class="saluto" hidden></p>
       <h1 class="titolo-grande" id="titolo-grande">Abbonamenti</h1>
     </header>
 
@@ -142,6 +148,16 @@
     <!-- Il testo lo scrive app.js, così resta uguale alle impostazioni di calendario.js -->
     <p id="nota-calendario" class="nota"></p>
 
+    <!-- ===== Profilo: il nome con cui l'app ti saluta ===== -->
+    <h2 class="titolo-sezione">Profilo</h2>
+    <div class="lista card">
+      <label class="riga campo">
+        <span>Il tuo nome</span>
+        <input id="campo-nome-utente" type="text" maxlength="30" autocomplete="given-name" placeholder="Come ti chiami?">
+      </label>
+    </div>
+    <p class="nota">Serve solo per salutarti quando apri l'app. Resta su questo dispositivo.</p>
+
     <!-- ===== Sincronizzazione online (il contenuto lo disegna app.js) ===== -->
     <h2 class="titolo-sezione">Sincronizzazione</h2>
     <div id="card-account" class="lista card"></div>
@@ -156,7 +172,7 @@
     <p class="nota">Il backup è un file .json con tutti i tuoi abbonamenti. Importarlo sostituisce i dati attuali.</p>
 
     <!-- Versione dell'app: utile per capire se l'iPhone ha già l'ultima -->
-    <p class="versione">Abbonamenti · versione 4.0</p>
+    <p class="versione">Abbonamenti · versione 4.1</p>
     <!-- Campo per scegliere il file: è nascosto, lo apre il pulsante "Importa backup" -->
     <input type="file" id="file-importa" accept=".json,application/json" hidden>
   </main>
@@ -313,6 +329,48 @@
     </form>
   </section>
 
+  <!-- ===== Benvenuto "Orbita" (solo al primo avvio): lo anima benvenuto.js ===== -->
+  <section id="benvenuto" class="benvenuto" role="dialog" aria-modal="true" aria-labelledby="benvenuto-titolo" tabindex="-1" hidden>
+    <!-- La scena: due anelli di "pianeti" (le iniziali) che girano intorno al totale -->
+    <div class="orbita" aria-hidden="true">
+      <div class="anello-scala esterno"><div class="anello" id="anello-esterno"></div></div>
+      <div class="anello-scala interno"><div class="anello" id="anello-interno"></div></div>
+      <!-- Al centro il pianeta (immagine creata con Higgsfield) -->
+      <div class="orbita-centro">
+        <img class="pianeta-immagine" src="pianeta.webp?v=4.1" alt="" width="520" height="520" decoding="async">
+      </div>
+      <!-- Sotto l'orbita, la capsula di vetro con il totale al mese -->
+      <span class="orbita-capsula">
+        <span id="benvenuto-totale" class="orbita-totale">0,00 €</span>
+        <span class="orbita-etichetta">al mese</span>
+      </span>
+    </div>
+
+    <!-- Passo 1: il messaggio di benvenuto -->
+    <div class="benvenuto-testi" id="benvenuto-passo-1">
+      <h2 id="benvenuto-titolo" class="benvenuto-titolo">I tuoi abbonamenti,<br>tutti in orbita.</h2>
+      <p class="benvenuto-sottotitolo">Costi chiari, avvisi prima dei rinnovi e la strada per disdire, sempre a portata di mano.</p>
+      <button type="button" id="benvenuto-inizia" class="btn-principale">Inizia</button>
+      <button type="button" id="benvenuto-account" class="btn-testo benvenuto-link">Ho già un account</button>
+    </div>
+
+    <!-- Passo 2: il nome -->
+    <form class="benvenuto-testi" id="benvenuto-passo-2" hidden>
+      <h2 class="benvenuto-titolo">Come ti chiami?</h2>
+      <p class="benvenuto-sottotitolo">Così l'app ti saluta quando la apri. Il nome resta solo su questo dispositivo.</p>
+      <input id="benvenuto-nome" class="benvenuto-campo" type="text" maxlength="30" autocomplete="given-name"
+             placeholder="Il tuo nome" enterkeyhint="done" aria-label="Il tuo nome">
+      <button type="submit" class="btn-principale">Continua</button>
+      <button type="button" id="benvenuto-salta" class="btn-testo benvenuto-link">Salta</button>
+    </form>
+  </section>
+
+  <!-- Saluto lampo a ogni apertura: goccia + "Buonasera, Tommaso" (si salta toccando) -->
+  <div id="saluto-avvio" class="saluto-avvio" role="status" hidden>
+    <img class="goccia" src="pianeta.webp?v=4.1" alt="" width="520" height="520" decoding="async">
+    <p id="saluto-avvio-testo" class="saluto-avvio-testo"></p>
+  </div>
+
   <!-- Freccia ">" delle righe: app.js la copia da qui -->
   <template id="tpl-freccia">
     <svg class="freccia" viewBox="0 0 8 14" width="8" height="14" aria-hidden="true">
@@ -322,12 +380,13 @@
 
   <!-- L'ordine conta: prima le categorie, poi supabase.js (il collegamento online),
        storage.js (i dati), calendario.js e servizi.js (le guide per disdire), infine app.js che li usa tutti -->
-  <script src="categorie.js?v=4.0"></script>
-  <script src="supabase.js?v=4.0"></script>
-  <script src="storage.js?v=4.0"></script>
-  <script src="calendario.js?v=4.0"></script>
-  <script src="servizi.js?v=4.0"></script>
-  <script src="animazioni.js?v=4.0"></script>
-  <script src="app.js?v=4.0"></script>
+  <script src="categorie.js?v=4.1"></script>
+  <script src="supabase.js?v=4.1"></script>
+  <script src="storage.js?v=4.1"></script>
+  <script src="calendario.js?v=4.1"></script>
+  <script src="servizi.js?v=4.1"></script>
+  <script src="animazioni.js?v=4.1"></script>
+  <script src="benvenuto.js?v=4.1"></script>
+  <script src="app.js?v=4.1"></script>
 </body>
 </html>
