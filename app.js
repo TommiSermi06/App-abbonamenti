@@ -474,9 +474,29 @@ function disegnaGruppi(conInfo) {
   idDaAnimare = null;
 }
 
-// Crea la riga di un abbonamento (un pulsante che apre il modulo di modifica)
+// Le icone delle azioni che compaiono facendo scorrere una riga (disegnate con SVG)
+const ICONE_AZIONI = {
+  pausa: '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M8 5v14M16 5v14" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg>',
+  riattiva: '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg>',
+  elimina: '<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M4.5 7h15M9.5 7V4.5h5V7M6.5 7l1 12.5h9l1-12.5M10.2 10.5v6M13.8 10.5v6" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+};
+
+// Un pulsante d'azione dietro la riga: "Pausa", "Riattiva" o "Elimina"
+function creaAzioneRiga(azione, testo, id) {
+  const pulsante = crea('button', `azione-riga azione-${azione}`);
+  pulsante.type = 'button';
+  pulsante.dataset.azione = azione;
+  pulsante.dataset.per = id;     // l'id dell'abbonamento su cui agire
+  pulsante.tabIndex = -1;        // nascosto finché la riga non è aperta
+  pulsante.innerHTML = ICONE_AZIONI[azione];
+  pulsante.append(crea('span', '', testo));
+  return pulsante;
+}
+
+// Crea la riga di un abbonamento (un pulsante che apre il modulo di modifica).
+// Dietro la riga ci sono le azioni che compaiono facendola scorrere a sinistra.
 function creaRigaAbbonamento(abb, info, posizione) {
-  const riga = crea('li');
+  const riga = crea('li', 'riga-scorrevole');
 
   // Animazione: tutte le righe al primo avvio, poi solo quella nuova
   if (primoDisegno || abb.id === idDaAnimare) {
@@ -514,8 +534,68 @@ function creaRigaAbbonamento(abb, info, posizione) {
   }
 
   pulsante.append(testi, etichetta, freccia);
-  riga.append(pulsante);
+
+  // Le azioni dietro la riga: chi è attivo si mette in pausa, gli altri si riattivano
+  const azioni = crea('div', 'azioni-riga');
+  azioni.setAttribute('aria-hidden', 'true'); // con VoiceOver si usa il modulo
+  azioni.append(
+    abb.stato === 'attivo' ? creaAzioneRiga('pausa', 'Pausa', abb.id) : creaAzioneRiga('riattiva', 'Riattiva', abb.id),
+    creaAzioneRiga('elimina', 'Elimina', abb.id),
+  );
+
+  riga.append(azioni, pulsante);
   return riga;
+}
+
+// Fa l'azione scelta facendo scorrere la riga, poi mostra la capsula con "Annulla".
+// Pausa/Riattiva cambia solo lo stato; Elimina toglie l'abbonamento (senza chiedere conferma:
+// se hai sbagliato, "Annulla" lo rimette com'era).
+async function azioneRiga(azione, id) {
+  const abb = abbonamenti.find((a) => a.id === id);
+  if (!abb) return;
+  const prima = { ...abb }; // la copia per poter annullare
+
+  // La riga si richiude in altezza (gli altri scivolano su), poi ridisegniamo
+  const riga = el.gruppi.querySelector(`button.riga[data-id="${CSS.escape(id)}"]`)?.closest('li');
+  if (riga) {
+    riga.style.height = `${riga.offsetHeight}px`;
+    riga.getBoundingClientRect(); // "fotografa" l'altezza di partenza
+    riga.classList.add('via');
+    riga.style.height = '0px';
+    const movimentoRidotto = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    await new Promise((fatto) => setTimeout(fatto, movimentoRidotto ? 0 : 300));
+  }
+
+  let testo;
+  let annulla;
+  try {
+    if (azione === 'elimina') {
+      await Archivio.elimina(id);
+      testo = `${abb.nome} eliminato`;
+      annulla = () => Archivio.ripristina(prima);
+    } else {
+      const stato = azione === 'pausa' ? 'pausa' : 'attivo';
+      await Archivio.aggiorna(id, { ...abb, stato });
+      testo = stato === 'pausa' ? `${abb.nome} in pausa` : `${abb.nome} riattivato`;
+      annulla = () => Archivio.aggiorna(id, prima);
+    }
+  } catch (e) {
+    alert(`Non sono riuscito a farlo: ${e.message}`);
+  }
+  abbonamenti = await Archivio.tutti();
+  disegna();
+  if (!annulla) return;
+
+  Animazioni.avviso(testo, {
+    azione: 'Annulla',
+    suAzione: async () => {
+      await annulla();
+      idDaAnimare = id; // la riga ricompare con la sua dissolvenza
+      abbonamenti = await Archivio.tutti();
+      disegna();
+      Animazioni.avviso('Annullato');
+    },
+  });
 }
 
 // --- Spesa al mese per ogni categoria, con una barra della proporzione ---
@@ -1236,6 +1316,12 @@ el.modulo.addEventListener('input', (e) => {
 
 // Un solo "ascoltatore" per tutti i gruppi: capiamo quale riga è stata toccata
 el.gruppi.addEventListener('click', (e) => {
+  // Un'azione dietro la riga ("Pausa", "Riattiva", "Elimina")
+  const azione = e.target.closest('[data-azione]');
+  if (azione) {
+    azioneRiga(azione.dataset.azione, azione.dataset.per);
+    return;
+  }
   const pulsante = e.target.closest('button[data-id]');
   if (!pulsante) return;
   const abb = abbonamenti.find((a) => a.id === pulsante.dataset.id);
@@ -1474,6 +1560,11 @@ function entraNellApp() {
   Animazioni.barraCompatta($('barra-fissa'), $('titolo-grande'));
   Animazioni.trascinaPerChiudere(el.foglio, nascondiFoglio);
   Animazioni.trascinaPerChiudere(el.foglioAccount, nascondiFoglio);
+  // Righe della lista: scorrendo a sinistra compaiono "Pausa" ed "Elimina"
+  Animazioni.scorriRighe(el.gruppi, {
+    larghezzaAzioni: 156, // due pulsanti da 78px
+    suCompleta: (riga) => azioneRiga('elimina', riga.querySelector('button.riga').dataset.id),
+  });
 }
 
 // "Buonasera, Tommaso" sopra il titolo (nascosto se non conosciamo il nome)

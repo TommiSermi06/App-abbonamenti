@@ -27,7 +27,8 @@
   /* Vetro: avorio semitrasparente, con bordo e riflesso bianchi */
   --vetro: rgba(255, 253, 246, 0.58);
   --vetro-forte: rgba(255, 253, 246, 0.78);      /* barra in alto e foglio: più coprenti */
-  --vetro-barra: rgba(255, 253, 246, 0.86);      /* barra compatta: il testo sotto non deve disturbare */
+  --vetro-barra: rgba(255, 253, 246, 0.86);      /* maniglia e barra "Annulla / Salva" del foglio */
+  --vetro-alto: rgba(255, 253, 246, 0.62);       /* barra in alto quando scorri: vetro leggero, non bianco pieno */
   --vetro-card-foglio: rgba(255, 255, 255, 0.7);  /* card dentro al foglio */
   --vetro-bordo: rgba(255, 255, 255, 0.75);
   --vetro-riflesso: rgba(255, 255, 255, 0.95);
@@ -58,6 +59,7 @@
     --vetro: rgba(34, 36, 46, 0.5);
     --vetro-forte: rgba(26, 28, 36, 0.78);
     --vetro-barra: rgba(22, 24, 32, 0.86);
+    --vetro-alto: rgba(18, 20, 28, 0.6);
     --vetro-card-foglio: rgba(255, 255, 255, 0.07);
     --vetro-bordo: rgba(255, 255, 255, 0.13);
     --vetro-riflesso: rgba(255, 255, 255, 0.22);
@@ -180,7 +182,8 @@ body {
   -webkit-backdrop-filter: var(--vetro-sfocatura);
   backdrop-filter: var(--vetro-sfocatura);
   box-shadow: inset 0 1px 0 var(--vetro-riflesso), inset 0 0 0 1px var(--vetro-bordo), var(--vetro-ombra);
-  transition: transform 0.35s var(--molla), opacity 0.2s;
+  transition: transform 0.35s var(--molla), opacity 0.2s,
+    background-color 0.3s var(--curva), box-shadow 0.3s var(--curva); /* la bolla sparisce morbida */
 }
 
 .btn-icona:active {
@@ -190,38 +193,59 @@ body {
 
 
 /* ---------- 4. Barra in alto compatta ----------
-   La barra con il "+" resta attaccata in alto. Quando il titolo grande
-   sparisce scorrendo, diventa di vetro e mostra il titolo piccolo. */
+   La barra con il "+" resta attaccata in alto. Mentre scorri, animazioni.js scrive
+   in --avanzamento-barra quanto il titolo grande è finito dietro la barra (da 0 a 1).
+   Con quel numero, POCO A POCO e seguendo il dito:
+   - compare il vetro della barra (opacità da 0 a 1), che in basso sfuma
+     nella pagina invece di finire con una riga netta;
+   - il titolo grande sbiadisce mentre ci passa sotto;
+   - il titolo piccolo sale al suo posto e compare. */
+:root {
+  --avanzamento-barra: 0;
+}
+
 .barra-fissa {
   position: sticky;
   top: env(safe-area-inset-top);
   z-index: 5;
+  isolation: isolate; /* il vetro (::before) resta dietro al titolo e al "+" */
   display: flex;
   align-items: center;
   justify-content: space-between;
   min-height: 52px;
   padding: 4px 10px 4px 16px;
-  transition: background-color 0.3s var(--curva), box-shadow 0.3s var(--curva);
 }
 
-.barra-fissa.compatta {
-  background: var(--vetro-barra);
+/* Il vetro della barra: sale anche dietro al notch e scende 22px più in basso,
+   dove sfuma (la "maschera" lo rende trasparente verso il fondo) */
+.barra-fissa::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  top: calc(-1 * env(safe-area-inset-top));
+  right: 0;
+  bottom: -22px;
+  left: 0;
+  background: var(--vetro-alto);
   -webkit-backdrop-filter: var(--vetro-sfocatura);
   backdrop-filter: var(--vetro-sfocatura);
-  box-shadow: 0 0.5px 0 var(--separatore);
+  -webkit-mask-image: linear-gradient(to bottom, #000 calc(100% - 34px), transparent);
+  mask-image: linear-gradient(to bottom, #000 calc(100% - 34px), transparent);
+  opacity: var(--avanzamento-barra);
+  pointer-events: none;
 }
 
+/* Il titolo piccolo comincia a comparire a metà strada e sale di 10px fino al suo posto */
 .titolo-compatto {
   font-size: 17px;
   font-weight: 600;
-  opacity: 0;
-  transform: translateY(8px);
-  transition: opacity 0.25s var(--curva), transform 0.4s var(--molla);
+  opacity: clamp(0, calc((var(--avanzamento-barra) - 0.45) * 2.5), 1);
+  transform: translateY(calc((1 - var(--avanzamento-barra)) * 10px));
 }
 
-.compatta .titolo-compatto {
-  opacity: 1;
-  transform: none;
+/* Il titolo grande sbiadisce un po' mentre passa sotto la barra */
+.titolo-grande {
+  opacity: calc(1 - var(--avanzamento-barra) * 0.7);
 }
 
 /* Nella barra compatta il "+" perde la bolla: resta solo l'icona */
@@ -240,7 +264,8 @@ body {
   right: 0;
   z-index: 6;
   height: env(safe-area-inset-top);
-  background: var(--vetro-forte);
+  background: var(--vetro-alto);
+  opacity: clamp(0, calc(var(--avanzamento-barra) * 4), 1); /* compare appena scorri */
   -webkit-backdrop-filter: var(--vetro-sfocatura);
   backdrop-filter: var(--vetro-sfocatura);
 }
@@ -400,6 +425,34 @@ body {
   opacity: 1;
   transform: scale(0.98);
   background: var(--evidenzia);
+}
+
+/* Righe che scorrono: tornano al loro posto (o si aprono) con una molla.
+   Il tocco "morbido" (scale) va insieme allo spostamento, altrimenti la riga salterebbe */
+.lista .riga-scorrevole > .riga {
+  transition: transform 0.5s var(--molla-foglio), background-color 0.2s var(--curva);
+}
+
+.lista .riga-scorrevole > .riga:active {
+  transform: translateX(var(--dx)) scale(0.98);
+}
+
+.lista .riga-scorrevole.trascinando > .riga {
+  transform: translateX(var(--dx));
+  transition: none;
+}
+
+.azioni-riga {
+  transition: width 0.5s var(--molla-foglio);
+}
+
+.azione-riga svg {
+  transition: transform 0.35s var(--molla);
+}
+
+/* Mentre l'azione rossa copre tutto, l'icona del cestino si ingrandisce un po' */
+.oltre .azione-elimina svg {
+  transform: scale(1.15);
 }
 
 
@@ -604,6 +657,26 @@ body.bloccato .app {
   font-size: 13px;
 }
 
+/* Capsula con un pulsante ("Annulla"): si può toccare solo mentre è visibile */
+.capsula-avviso.con-azione.visibile {
+  pointer-events: auto;
+  padding-right: 6px;
+}
+
+.capsula-azione {
+  margin-left: 6px;
+  padding: 6px 12px;
+  border: 0;
+  border-left: 0.5px solid var(--separatore);
+  border-radius: 0 999px 999px 0;
+  background: none;
+  color: var(--blu);
+  font: inherit;
+  font-weight: 700;
+  min-height: 34px;
+  cursor: pointer;
+}
+
 
 /* ---------- 10b. Barra delle schede di vetro ----------
    Come su iOS 26: una capsula di vetro che galleggia in basso, con una goccia
@@ -671,13 +744,13 @@ body:has(.app input:focus) .barra-schede {
 
 /* "Riduci trasparenza" (o browser senza vetro): superfici piene, niente macchie */
 @media (prefers-reduced-transparency: reduce) {
-  .card, .ricerca, .pillola, .btn-icona, .barra-fissa.compatta, .striscia-alto, .foglio, .capsula-avviso,
+  .card, .ricerca, .pillola, .btn-icona, .barra-fissa::before, .striscia-alto, .foglio, .capsula-avviso,
   .barra-schede {
     background: var(--sfondo-card);
     -webkit-backdrop-filter: none;
     backdrop-filter: none;
   }
-  .foglio, .barra-fissa.compatta, .striscia-alto {
+  .foglio, .barra-fissa::before, .striscia-alto {
     background: var(--sfondo-foglio);
   }
   .sfondo-vivo {
@@ -686,8 +759,11 @@ body:has(.app input:focus) .barra-schede {
 }
 
 @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  .card, .ricerca, .btn-icona, .barra-fissa.compatta, .striscia-alto, .capsula-avviso, .barra-schede {
+  .card, .ricerca, .btn-icona, .striscia-alto, .capsula-avviso, .barra-schede {
     background: var(--sfondo-card);
+  }
+  .barra-fissa::before {
+    background: var(--sfondo-foglio);
   }
   .foglio {
     background: var(--sfondo-foglio);

@@ -5,9 +5,10 @@
    Qui ci sono:
    1. conta()                 — i numeri dei totali "contano" fino al valore nuovo
    2. posizionaIndicatore()   — la goccia di vetro che scivola sotto il filtro scelto
-   3. barraCompatta()         — la barra in alto diventa di vetro quando scorri
+   3. barraCompatta()         — la barra in alto diventa di vetro poco a poco, mentre scorri
    4. trascinaPerChiudere()   — il foglio si chiude tirandolo giù con il dito
-   5. avviso()                — la capsula "Salvato ✓" che scende dall'alto
+   5. avviso()                — la capsula "Salvato ✓" che scende dall'alto (anche con "Annulla")
+   6. scorriRighe()           — fai scorrere una riga verso sinistra: compaiono le azioni
 
    Tutte rispettano "Riduci movimento": se è attivo, niente animazioni.
    ===================================================================== */
@@ -90,14 +91,32 @@ const Animazioni = (function () {
   }
 
   // ---------- 3. Barra in alto compatta ----------
-  // Un "osservatore" ci avvisa quando il titolo grande esce dallo schermo
-  // (finisce sotto la barra): allora la barra diventa di vetro con il titolo piccolo.
+  // Mentre scorri calcoliamo "quanto" il titolo grande è finito dietro la barra:
+  // 0 = ancora tutto visibile, 1 = tutto nascosto. Il numero va nella variabile CSS
+  // --avanzamento-barra e il CSS lo usa per far comparire il vetro, il titolo piccolo
+  // e sfumare il titolo grande POCO A POCO, seguendo il dito (non più di colpo).
   function barraCompatta(barra, titoloGrande) {
-    if (!('IntersectionObserver' in window)) return;
-    const osservatore = new IntersectionObserver(([voce]) => {
-      barra.classList.toggle('compatta', !voce.isIntersecting);
-    }, { rootMargin: `-${barra.offsetHeight || 52}px 0px 0px 0px` });
-    osservatore.observe(titoloGrande);
+    let inAttesa = false;
+
+    const aggiorna = () => {
+      inAttesa = false;
+      const fondoBarra = barra.getBoundingClientRect().bottom;
+      const titolo = titoloGrande.getBoundingClientRect();
+      const avanzamento = Math.min(1, Math.max(0, (fondoBarra - titolo.top) / (titolo.height || 1)));
+      document.documentElement.style.setProperty('--avanzamento-barra', avanzamento.toFixed(3));
+      // Oltre metà: il "+" perde la bolla (questo cambio invece è un passaggio animato)
+      barra.classList.toggle('compatta', avanzamento > 0.6);
+    };
+
+    // Lo scorrimento manda tantissimi eventi: ricalcoliamo al massimo una volta per fotogramma
+    const chiedi = () => {
+      if (inAttesa) return;
+      inAttesa = true;
+      requestAnimationFrame(aggiorna);
+    };
+    window.addEventListener('scroll', chiedi, { passive: true });
+    window.addEventListener('resize', chiedi);
+    aggiorna();
   }
 
   // ---------- 4. Tirare giù il foglio per chiuderlo ----------
@@ -150,10 +169,13 @@ const Animazioni = (function () {
   }
 
   // ---------- 5. Capsula di avviso ----------
+  // avviso('Salvato')  → capsula con la spunta, per meno di 2 secondi.
+  // avviso('Spotify eliminato', { azione: 'Annulla', suAzione: funzione })
+  //   → capsula con un pulsante, che resta 5 secondi per darti il tempo di toccarlo.
   let capsula = null;
   let timer = null;
 
-  function avviso(testo) {
+  function avviso(testo, opzioni = {}) {
     if (!capsula) {
       capsula = document.createElement('div');
       capsula.className = 'capsula-avviso';
@@ -166,12 +188,142 @@ const Animazioni = (function () {
     spunta.textContent = '✓';
     capsula.replaceChildren(spunta, document.createTextNode(testo));
 
+    const nascondi = () => capsula.classList.remove('visibile', 'con-azione');
+
+    if (opzioni.azione) {
+      const pulsante = document.createElement('button');
+      pulsante.type = 'button';
+      pulsante.className = 'capsula-azione';
+      pulsante.textContent = opzioni.azione;
+      pulsante.addEventListener('click', () => {
+        clearTimeout(timer);
+        nascondi();
+        opzioni.suAzione();
+      }, { once: true });
+      capsula.append(pulsante);
+    }
+
     clearTimeout(timer);
     capsula.classList.remove('visibile');
     capsula.getBoundingClientRect(); // riparte da capo anche se era già visibile
     capsula.classList.add('visibile');
-    timer = setTimeout(() => capsula.classList.remove('visibile'), 1900);
+    capsula.classList.toggle('con-azione', Boolean(opzioni.azione)); // con un pulsante si può toccare
+    timer = setTimeout(nascondi, opzioni.azione ? 5000 : 1900);
   }
 
-  return { conta, posizionaIndicatore, barraCompatta, trascinaPerChiudere, avviso };
+  // ---------- 6. Righe che scorrono verso sinistra ----------
+  // Ogni riga (<li class="riga-scorrevole">) ha dietro le sue azioni (.azioni-riga).
+  // Trascinandola a sinistra le azioni compaiono e si allargano con il dito:
+  //   - la lasci a metà strada o più → resta aperta, con le azioni da toccare;
+  //   - la tiri fino in fondo (oltre il 55% della larghezza) → azione completa ("Elimina");
+  //   - altrimenti torna al suo posto.
+  // Se il dito si muove prima in verticale, è uno scorrimento della pagina: non facciamo niente.
+  // opzioni: { larghezzaAzioni: 160, suCompleta: (li) => ... }
+  let rigaAperta = null;
+
+  function chiudiRighe() {
+    if (!rigaAperta) return;
+    rigaAperta.style.setProperty('--dx', '0px');
+    rigaAperta.classList.remove('aperta', 'oltre');
+    rigaAperta = null;
+  }
+
+  function scorriRighe(contenitore, opzioni) {
+    const larghezza = opzioni.larghezzaAzioni;
+    let gesto = null; // il trascinamento in corso: { li, inizioX, inizioY, base, direzione, ... }
+    let ultimoTrascinamento = 0;
+
+    const sposta = (li, dx) => li.style.setProperty('--dx', `${dx}px`);
+
+    contenitore.addEventListener('pointerdown', (e) => {
+      const li = e.target.closest('.riga-scorrevole');
+      if (!li || e.button !== 0 || e.target.closest('.azioni-riga')) return;
+      // Tocchi un'altra riga mentre una è aperta: la chiudiamo
+      if (rigaAperta && rigaAperta !== li) chiudiRighe();
+      gesto = {
+        li,
+        id: e.pointerId,
+        inizioX: e.clientX,
+        inizioY: e.clientY,
+        base: li.classList.contains('aperta') ? -larghezza : 0, // da dove parte la riga
+        direzione: null,  // ancora da capire: 'orizzontale' o 'verticale'
+        dx: 0,
+        velocita: 0,
+        ultimaX: e.clientX,
+        ultimoTempo: performance.now(),
+      };
+    });
+
+    contenitore.addEventListener('pointermove', (e) => {
+      if (!gesto || e.pointerId !== gesto.id) return;
+      const mossoX = e.clientX - gesto.inizioX;
+      const mossoY = e.clientY - gesto.inizioY;
+
+      // Nei primi 8 pixel capiamo se il dito va di lato o in su/giù
+      if (!gesto.direzione) {
+        if (Math.abs(mossoX) < 8 && Math.abs(mossoY) < 8) return;
+        gesto.direzione = Math.abs(mossoX) > Math.abs(mossoY) ? 'orizzontale' : 'verticale';
+        if (gesto.direzione === 'verticale') { gesto = null; return; }
+        gesto.li.classList.add('trascinando'); // niente transizioni: segue il dito
+        try { gesto.li.setPointerCapture(e.pointerId); } catch (errore) { /* non indispensabile */ }
+      }
+
+      const adesso = performance.now();
+      gesto.velocita = (e.clientX - gesto.ultimaX) / Math.max(1, adesso - gesto.ultimoTempo);
+      gesto.ultimaX = e.clientX;
+      gesto.ultimoTempo = adesso;
+
+      let dx = gesto.base + mossoX;
+      if (dx > 0) dx /= 5; // verso destra non c'è niente: un po' di "resistenza"
+      gesto.dx = dx;
+      sposta(gesto.li, dx);
+      // Oltre il 55%: l'azione rossa si allarga a tutta la riga (lasciando si elimina)
+      gesto.li.classList.toggle('oltre', -dx > gesto.li.offsetWidth * 0.55);
+    });
+
+    const lascia = (e) => {
+      if (!gesto || e.pointerId !== gesto.id) return;
+      const { li, direzione, dx, velocita } = gesto;
+      gesto = null;
+      if (direzione !== 'orizzontale') return; // era solo un tocco
+      ultimoTrascinamento = performance.now();
+      li.classList.remove('trascinando'); // da qui in poi il CSS anima fino alla posizione finale
+
+      if (e.type !== 'pointercancel' && li.classList.contains('oltre')) {
+        sposta(li, -li.offsetWidth); // la riga esce tutta a sinistra...
+        rigaAperta = null;
+        opzioni.suCompleta(li);      // ...e app.js fa l'azione
+      } else if (e.type !== 'pointercancel' && (dx < -larghezza / 2 || velocita < -0.5)) {
+        sposta(li, -larghezza);      // resta aperta
+        li.classList.add('aperta');
+        rigaAperta = li;
+      } else {
+        sposta(li, 0);               // torna al suo posto
+        li.classList.remove('aperta', 'oltre');
+        if (rigaAperta === li) rigaAperta = null;
+      }
+    };
+    contenitore.addEventListener('pointerup', lascia);
+    contenitore.addEventListener('pointercancel', lascia);
+
+    // Dopo un trascinamento il browser manda comunque un "click": lo ignoriamo,
+    // così non si apre il modulo. Anche toccare una riga aperta la chiude e basta.
+    contenitore.addEventListener('click', (e) => {
+      const appenaTrascinato = performance.now() - ultimoTrascinamento < 400;
+      const suRigaAperta = rigaAperta && e.target.closest('.riga-scorrevole') === rigaAperta
+        && !e.target.closest('.azioni-riga');
+      if (appenaTrascinato || suRigaAperta) {
+        e.stopPropagation();
+        e.preventDefault();
+        if (suRigaAperta && !appenaTrascinato) chiudiRighe();
+      }
+    }, true); // "true": questo controllo arriva prima degli altri
+
+    // Scorrendo la pagina la riga aperta si richiude
+    window.addEventListener('scroll', () => {
+      if (rigaAperta && !gesto) chiudiRighe();
+    }, { passive: true });
+  }
+
+  return { conta, posizionaIndicatore, barraCompatta, trascinaPerChiudere, avviso, scorriRighe, chiudiRighe };
 })();
