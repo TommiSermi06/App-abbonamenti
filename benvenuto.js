@@ -112,10 +112,11 @@ const Benvenuto = (function () {
       const finisci = async (nome) => {
         campoNome.blur();
         schermata.classList.add('atterra');
-        // Avvisiamo app.js poco dopo l'inizio, così l'app entra mentre la scena svanisce
-        await aspetta(movimentoRidotto() ? 0 : 280);
+        // Avvisiamo app.js quando le lune stanno per raggiungere il pianeta:
+        // l'app comincia a entrare mentre la scena svanisce
+        await aspetta(movimentoRidotto() ? 0 : 750);
         risolvi({ nome: nome.trim().slice(0, 30), account });
-        await aspetta(movimentoRidotto() ? 150 : 600);
+        await aspetta(movimentoRidotto() ? 150 : 650);
         schermata.hidden = true;
         schermata.classList.remove('visibile', 'passo-nome', 'atterra');
         passo1.hidden = false;

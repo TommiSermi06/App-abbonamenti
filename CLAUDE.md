@@ -77,7 +77,10 @@ Il proprietario del progetto **sta imparando a programmare**:
 - `benvenuto.js` (oggetto `Benvenuto`) + `benvenuto.css`. Markup in `index.html` (`#benvenuto`, `#saluto-avvio`).
 - **Primo avvio** (impostazione `benvenutoVisto` assente): scena "Orbita" con il totale al mese al centro e
   le iniziali degli abbonamenti su due anelli che girano (`Benvenuto.mostra`), poi "Come ti chiami?",
-  poi "atterraggio" (anelli che si raccolgono) e l'app entra. "Ho già un account" → alla fine apre l'accesso.
+  poi "atterraggio" e l'app entra. "Ho già un account" → alla fine apre l'accesso.
+  Gli anelli girano **piano** (interno 70 s per giro, esterno 84 s: le lune esterne sembrano solo un po' più
+  veloci): scelta del proprietario, le lune veloci disturbano. L'**accelerazione** c'è solo nell'atterraggio
+  (gli anelli prendono velocità mentre vengono risucchiati verso il pianeta, curva ease-in, ~1 s).
 - **Ogni apertura dopo**: saluto lampo con la goccia e "Buongiorno/Buon pomeriggio/Buonasera, Nome"
   (`Benvenuto.salutoLampo`, < 1 s, un tocco lo salta). Nella Home il saluto sta sopra il titolo (`#saluto`).
 - Il nome (impostazione `nome`) si cambia dalla sezione "Profilo"; resta SOLO sul dispositivo (non va online).
