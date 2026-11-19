@@ -1,0 +1,407 @@
+/* =====================================================================
+   benvenuto.css — La schermata di benvenuto "Orbita" e il saluto lampo.
+
+   Usa i colori e le "molle" di vetro.css (si carica dopo).
+   Indice:
+   1. Colori dei "pianeti" (le iniziali)
+   2. La schermata di benvenuto
+   3. La scena: anelli che girano e pianeti
+   4. Testi, pulsanti e campo del nome
+   5. Passo 2 (il nome) e "atterraggio" finale
+   6. Saluto nella Home e saluto lampo all'apertura
+   7. Riduci movimento
+   ===================================================================== */
+
+
+/* ---------- 1. Colori dei pianeti ----------
+   Cinque sfumature, tutte nella tinta blu/azzurrino della palette.
+   Ogni abbonamento ne riceve sempre la stessa (la sceglie benvenuto.js dal nome). */
+:root {
+  --mono-1: linear-gradient(135deg, #1F4FA8, #3B7DDD);
+  --mono-2: linear-gradient(135deg, #2B6CC4, #7DB8E8);
+  --mono-3: linear-gradient(135deg, #173E85, #2E6FD0);
+  --mono-4: linear-gradient(135deg, #3A86D9, #9DD0F7);
+  --mono-5: linear-gradient(135deg, #4F78D8, #A9C8F8);
+  --lettera-pianeta: #FFFFFF;
+  --velo-benvenuto: rgba(248, 243, 230, 0.55); /* velo sfocato sopra l'app */
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --mono-1: linear-gradient(135deg, #2D5FC0, #7EA6F2);
+    --mono-2: linear-gradient(135deg, #3A7BD0, #9DD0F7);
+    --mono-3: linear-gradient(135deg, #22489A, #5B8DEF);
+    --mono-4: linear-gradient(135deg, #4C93E0, #B7DDFB);
+    --mono-5: linear-gradient(135deg, #5A82E0, #C3D7FA);
+    --velo-benvenuto: rgba(14, 15, 20, 0.6);
+  }
+}
+
+
+/* ---------- 2. La schermata di benvenuto ----------
+   Copre tutta l'app; dietro si intravedono, sfocate, le macchie di luce. */
+.benvenuto {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: calc(env(safe-area-inset-top) + 40px) 24px calc(env(safe-area-inset-bottom) + 28px);
+  overflow-y: auto;
+  background: var(--velo-benvenuto);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  backdrop-filter: blur(24px) saturate(160%);
+  opacity: 0;
+  transition: opacity 0.5s var(--curva);
+}
+
+.benvenuto.visibile {
+  opacity: 1;
+}
+
+.benvenuto:focus {
+  outline: none;
+}
+
+.benvenuto .btn-principale:focus-visible {
+  outline: 2px solid var(--blu);
+  outline-offset: 3px;
+}
+
+
+/* ---------- 3. La scena ---------- */
+.orbita {
+  --lato: min(80vw, 340px);
+  --raggio-esterno: calc(var(--lato) / 2 - 30px);
+  --raggio-interno: calc(var(--lato) * 0.27);
+  position: relative;
+  flex: none;
+  width: var(--lato);
+  height: var(--lato);
+  margin-top: 4vh;
+  transition: transform 0.6s var(--molla-foglio);
+}
+
+/* I due anelli: tracce sottili e circolari */
+.anello-scala {
+  position: absolute;
+  inset: 0;
+  transition: transform 0.7s var(--uscita), opacity 0.5s var(--curva);
+}
+
+.anello-scala.interno {
+  inset: calc(var(--lato) / 2 - var(--raggio-interno));
+}
+
+.anello-scala.esterno {
+  inset: calc(var(--lato) / 2 - var(--raggio-esterno));
+}
+
+.anello-scala::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1px dashed var(--separatore);
+}
+
+/* L'anello gira su sé stesso; quello interno più in fretta e al contrario */
+.anello {
+  position: absolute;
+  inset: 0;
+  animation: rotazione var(--durata, 60s) linear infinite;
+}
+
+.interno .anello {
+  --durata: 38s;
+  animation-direction: reverse;
+}
+
+@keyframes rotazione {
+  to { transform: rotate(360deg); }
+}
+
+/* Un pianeta: si mette sull'anello all'angolo giusto
+   (ruota di "angolo", si sposta in fuori del raggio, poi ritorna dritto) */
+.pianeta {
+  --dim: 50px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: var(--dim);
+  height: var(--dim);
+  margin: calc(var(--dim) / -2);
+  transform: rotate(var(--angolo)) translate(var(--raggio)) rotate(calc(-1 * var(--angolo)));
+  /* All'inizio esce dal centro e "spunta" con un rimbalzo */
+  animation: spunta 0.7s var(--molla) var(--ritardo) both;
+}
+
+.esterno .pianeta { --raggio: var(--raggio-esterno); --dim: 54px; }
+.interno .pianeta { --raggio: var(--raggio-interno); --dim: 46px; }
+
+@keyframes spunta {
+  from { scale: 0; opacity: 0; }
+  to   { scale: 1; opacity: 1; }
+}
+
+/* Il corpo del pianeta: una bolla di vetro colorata con l'iniziale.
+   Gira al contrario dell'anello, così la lettera resta sempre dritta. */
+.pianeta-corpo {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  color: var(--lettera-pianeta);
+  font-size: calc(var(--dim) * 0.42);
+  font-weight: 700;
+  box-shadow: 0 6px 18px var(--alone-blu), inset 0 1px 0 rgba(255, 255, 255, 0.5), inset 0 -6px 12px rgba(0, 0, 0, 0.12);
+  animation: rotazione var(--durata, 60s) linear infinite reverse;
+}
+
+.interno .pianeta-corpo {
+  animation-direction: normal; /* l'anello interno gira al contrario, quindi qui si inverte */
+}
+
+.mono-1 .pianeta-corpo { background: var(--mono-1); }
+.mono-2 .pianeta-corpo { background: var(--mono-2); }
+.mono-3 .pianeta-corpo { background: var(--mono-3); }
+.mono-4 .pianeta-corpo { background: var(--mono-4); }
+.mono-5 .pianeta-corpo { background: var(--mono-5); }
+
+/* Pianeta "vuoto" se non c'è ancora nessun abbonamento */
+.pianeta.vuoto .pianeta-corpo {
+  background: var(--vetro);
+  color: var(--blu);
+  box-shadow: inset 0 0 0 1px var(--vetro-bordo);
+}
+
+/* Al centro: la bolla di vetro con il totale al mese, che "respira" piano */
+.orbita-centro {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: calc(var(--raggio-interno) * 1.35);
+  height: calc(var(--raggio-interno) * 1.35);
+  margin: calc(var(--raggio-interno) * -0.675);
+  border-radius: 50%;
+  background: var(--vetro-forte);
+  -webkit-backdrop-filter: var(--vetro-sfocatura);
+  backdrop-filter: var(--vetro-sfocatura);
+  box-shadow: inset 0 1px 0 var(--vetro-riflesso), inset 0 0 0 1px var(--vetro-bordo), 0 12px 40px var(--alone-blu);
+  animation: respira 4s ease-in-out infinite;
+  transition: transform 0.6s var(--uscita), opacity 0.45s var(--curva);
+}
+
+@keyframes respira {
+  0%, 100% { scale: 1; }
+  50%      { scale: 1.04; }
+}
+
+.orbita-totale {
+  font-size: 22px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  background: linear-gradient(120deg, var(--blu) 10%, var(--blu-chiaro) 95%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.orbita-etichetta {
+  font-size: 12px;
+  color: var(--testo-secondario);
+}
+
+
+/* ---------- 4. Testi, pulsanti e campo ---------- */
+.benvenuto-testi {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
+  max-width: 420px;
+  text-align: center;
+  animation: entrata 0.7s var(--uscita) 0.35s both; /* "entrata" è in vetro.css */
+}
+
+.benvenuto-titolo {
+  margin: 0 0 10px;
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+}
+
+.benvenuto-sottotitolo {
+  margin: 0 0 24px;
+  font-size: 17px;
+  line-height: 1.4;
+  color: var(--testo-secondario);
+}
+
+.benvenuto .btn-principale {
+  width: 100%;
+  margin: 0;
+}
+
+.benvenuto-link {
+  justify-self: center;
+  margin: 6px auto 0;
+  min-height: 44px;
+}
+
+/* Campo del nome: una capsula di vetro grande e centrata */
+.benvenuto-campo {
+  width: 100%;
+  min-height: 52px;
+  margin: 0 0 14px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--vetro);
+  box-shadow: inset 0 1px 0 var(--vetro-riflesso), inset 0 0 0 1px var(--vetro-bordo);
+  color: var(--testo);
+  caret-color: var(--blu);
+  font: inherit;
+  font-size: 20px;
+  text-align: center;
+  outline: none;
+}
+
+.benvenuto-campo:focus {
+  box-shadow: inset 0 0 0 1.5px var(--blu), 0 0 0 4px var(--evidenzia);
+}
+
+.benvenuto-campo::placeholder {
+  color: var(--testo-terziario);
+}
+
+
+/* ---------- 5. Passo 2 e atterraggio ---------- */
+
+/* Passo del nome: l'orbita si fa più piccola e sale, per lasciare spazio alla tastiera */
+.benvenuto.passo-nome .orbita {
+  transform: scale(0.62) translateY(-14%);
+}
+
+/* Atterraggio: gli anelli si raccolgono al centro, la bolla si allarga e svanisce */
+.benvenuto.atterra .anello-scala {
+  transform: scale(0.1);
+  opacity: 0;
+}
+
+.benvenuto.atterra .anello-scala.esterno {
+  transition-delay: 0.08s;
+}
+
+.benvenuto.atterra .orbita-centro {
+  animation: none;
+  transform: scale(1.7);
+  opacity: 0;
+  transition-delay: 0.25s;
+}
+
+.benvenuto.atterra .benvenuto-testi {
+  animation: none; /* altrimenti l'entrata "terrebbe fermi" i testi visibili */
+  opacity: 0;
+  transform: translateY(16px);
+  transition: opacity 0.3s var(--curva), transform 0.4s var(--curva);
+}
+
+.benvenuto.atterra {
+  opacity: 0;
+  transition: opacity 0.45s var(--curva) 0.35s;
+}
+
+
+/* ---------- 6. Saluti ---------- */
+
+/* Nella Home, sopra il titolo grande: "Buonasera, Tommaso" */
+.saluto {
+  margin: 0 0 2px;
+  font-size: 17px;
+  font-weight: 500;
+  color: var(--testo-secondario);
+  animation: entrata 0.6s var(--uscita) both;
+}
+
+/* Saluto lampo a ogni apertura: goccia di vetro + testo, su un velo sfocato */
+.saluto-avvio {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  background: var(--velo-benvenuto);
+  -webkit-backdrop-filter: blur(28px) saturate(160%);
+  backdrop-filter: blur(28px) saturate(160%);
+  opacity: 0;
+  transition: opacity 0.35s var(--curva);
+}
+
+.saluto-avvio.visibile {
+  opacity: 1;
+}
+
+/* La goccia: una sfera di vetro blu con un riflesso, che compare con una molla */
+.goccia {
+  width: 92px;
+  height: 92px;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 32% 28%, rgba(255, 255, 255, 0.85) 0%, rgba(255, 255, 255, 0) 32%),
+    linear-gradient(135deg, var(--blu), var(--blu-chiaro) 70%, var(--azzurro));
+  box-shadow: 0 14px 40px var(--alone-blu), inset 0 -10px 18px rgba(0, 0, 0, 0.15), inset 0 2px 0 rgba(255, 255, 255, 0.4);
+  scale: 0.6;
+  transition: scale 0.6s var(--molla);
+}
+
+.saluto-avvio.visibile .goccia {
+  scale: 1;
+}
+
+.saluto-avvio-testo {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 600;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.4s var(--curva) 0.1s, transform 0.5s var(--molla) 0.1s;
+}
+
+.saluto-avvio.visibile .saluto-avvio-testo {
+  opacity: 1;
+  transform: none;
+}
+
+
+/* ---------- 7. Riduci movimento ----------
+   Niente rotazioni, rimbalzi o "respiri": solo dissolvenze brevi. */
+@media (prefers-reduced-motion: reduce) {
+  .anello, .pianeta, .pianeta-corpo, .orbita-centro, .benvenuto-testi, .saluto {
+    animation: none !important;
+  }
+  .goccia, .saluto-avvio .goccia {
+    scale: 1;
+  }
+}
+
+/* Riduci trasparenza: velo pieno invece che sfocato */
+@media (prefers-reduced-transparency: reduce) {
+  .benvenuto, .saluto-avvio {
+    background: var(--sfondo);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+}

@@ -34,6 +34,7 @@ let idDaAnimare = null;   // la riga appena aggiunta, che compare con dissolvenz
 let primoDisegno = true;  // al primo avvio facciamo comparire tutte le righe
 let filtro = 'tutte';     // categoria mostrata nella lista: 'tutte' oppure l'id di una categoria
 let ordine = 'rinnovo';   // ordine della lista: 'rinnovo', 'prezzo' oppure 'nome'
+let nomeUtente = '';      // il nome con cui l'app ti saluta (resta sul dispositivo)
 let guidaAperta = false; // la guida "Come disdire" nel modulo è aperta?
 let meseScelto = 0;       // colonna scelta nel grafico: 0 = questo mese, 11 = tra 11 mesi
 let mesiCalcolati = [];   // i 12 mesi del grafico, con i loro pagamenti
@@ -64,6 +65,8 @@ const el = {
   campoNote: $('campo-note'),
   linkDisdici: $('link-disdici'),
   btnGuida: $('btn-guida'),
+  saluto: $('saluto'),
+  campoNomeUtente: $('campo-nome-utente'),
   guidaDisdetta: $('guida-disdetta'),
   notaLink: $('nota-link'),
   metodiPagamento: $('metodi-pagamento'),
@@ -1272,6 +1275,16 @@ el.graficoColonne.addEventListener('click', (e) => {
 });
 
 el.btnCalendario.addEventListener('click', aggiungiAlCalendario);
+
+// Profilo: il saluto si aggiorna mentre scrivi, il nome si salva quando hai finito
+el.campoNomeUtente.addEventListener('input', () => {
+  nomeUtente = el.campoNomeUtente.value.trim().slice(0, 30);
+  disegnaSaluto();
+});
+el.campoNomeUtente.addEventListener('change', async () => {
+  await Archivio.salvaImpostazione('nome', nomeUtente);
+  Animazioni.avviso(nomeUtente ? `Ciao, ${nomeUtente}!` : 'Nome tolto');
+});
 el.btnEsporta.addEventListener('click', esportaBackup);
 el.btnImporta.addEventListener('click', () => el.fileImporta.click());
 el.fileImporta.addEventListener('change', importaBackup);
@@ -1336,14 +1349,55 @@ async function avvia() {
     alert('Non riesco a leggere i dati salvati. Controlla che il browser permetta di salvare i dati dei siti.');
     abbonamenti = [];
   }
-  disegna();         // prima mostriamo subito i dati del dispositivo...
+  // Il nome con cui salutarti e se hai già visto il benvenuto
+  nomeUtente = await Archivio.leggiImpostazione('nome', '');
+  const benvenutoVisto = await Archivio.leggiImpostazione('benvenutoVisto', false);
+  el.campoNomeUtente.value = nomeUtente;
+
+  Archivio.sincronizza(); // intanto, se sei entrato, controlliamo le novità online
+
+  let apriAccesso = false;
+  try {
+    if (!benvenutoVisto) {
+      // Primo avvio: la scena "Orbita" con le iniziali dei tuoi abbonamenti
+      const scelta = await Benvenuto.mostra({
+        nomi: abbonamenti.map((abb) => abb.nome),
+        totale: totaleAlMese(paganti()),
+        formatta: (v) => formatoEuro.format(v),
+      });
+      nomeUtente = scelta.nome;
+      el.campoNomeUtente.value = nomeUtente;
+      await Archivio.salvaImpostazione('nome', nomeUtente);
+      await Archivio.salvaImpostazione('benvenutoVisto', true);
+      apriAccesso = scelta.account && !Archivio.account();
+    } else {
+      // Le altre volte: il saluto lampo ("Buonasera, Tommaso")
+      await Benvenuto.salutoLampo(Benvenuto.testoSaluto(nomeUtente));
+    }
+  } finally {
+    // Qualunque cosa succeda, l'app deve comparire
+    entraNellApp();
+  }
+  if (apriAccesso) setTimeout(apriFoglioAccount, 500); // "Ho già un account": apriamo l'accesso
+}
+
+// Mostra la Home con l'entrata a cascata e i totali che contano
+function entraNellApp() {
+  disegnaSaluto();
+  document.querySelector('.app').classList.add('entra');
+  disegna();
   disegnaAccount();
-  Archivio.sincronizza(); // ...poi, se sei entrato, controlliamo le novità online
 
   // Animazioni: barra in alto che diventa compatta, fogli che si chiudono tirandoli giù
   Animazioni.barraCompatta($('barra-fissa'), $('titolo-grande'));
   Animazioni.trascinaPerChiudere(el.foglio, nascondiFoglio);
   Animazioni.trascinaPerChiudere(el.foglioAccount, nascondiFoglio);
+}
+
+// "Buonasera, Tommaso" sopra il titolo (nascosto se non conosciamo il nome)
+function disegnaSaluto() {
+  el.saluto.hidden = !nomeUtente;
+  el.saluto.textContent = Benvenuto.testoSaluto(nomeUtente);
 }
 
 avvia();
