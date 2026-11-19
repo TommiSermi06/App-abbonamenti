@@ -56,6 +56,17 @@
   --card-foglio: #FFFDF6;
   --ombra-barra: rgba(31, 79, 168, 0.14); /* ombra sotto la barra delle schede */
 
+  /* --- Pianeti: lune del benvenuto e pianetini con il logo nella lista ---
+     Cinque sfumature, tutte nella tinta blu/azzurrino della palette.
+     Ogni abbonamento ne riceve sempre la stessa (Benvenuto.tinta sceglie dal nome). */
+  --mono-1: linear-gradient(135deg, #1F4FA8, #3B7DDD);
+  --mono-2: linear-gradient(135deg, #2B6CC4, #7DB8E8);
+  --mono-3: linear-gradient(135deg, #173E85, #2E6FD0);
+  --mono-4: linear-gradient(135deg, #3A86D9, #9DD0F7);
+  --mono-5: linear-gradient(135deg, #4F78D8, #A9C8F8);
+  --lettera-pianeta: #FFFFFF;   /* iniziale e logo, sopra il pianeta */
+  --ombra-pianeta: rgba(31, 79, 168, 0.28);
+
   /* Movimento: durata e curva morbida stile Apple */
   --durata: 0.3s;
   --curva: cubic-bezier(0.25, 0.1, 0.25, 1);
@@ -96,6 +107,12 @@
     --sfondo-foglio: #1F1D18;
     --card-foglio: #2A2721;
     --ombra-barra: rgba(0, 0, 0, 0.45);
+    --mono-1: linear-gradient(135deg, #2D5FC0, #7EA6F2);
+    --mono-2: linear-gradient(135deg, #3A7BD0, #9DD0F7);
+    --mono-3: linear-gradient(135deg, #22489A, #5B8DEF);
+    --mono-4: linear-gradient(135deg, #4C93E0, #B7DDFB);
+    --mono-5: linear-gradient(135deg, #5A82E0, #C3D7FA);
+    --ombra-pianeta: rgba(0, 0, 0, 0.4);
   }
 }
 
@@ -328,6 +345,37 @@ button:active {
 /* Tirata fino in fondo: "Elimina" si allarga e copre tutto (lasciando, si elimina) */
 .oltre .azione-elimina {
   flex-grow: 12;
+}
+
+/* --- Il "pianetino" a sinistra di ogni abbonamento: logo del servizio o iniziale --- */
+.pianetino {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--mono-1);
+  color: var(--lettera-pianeta);
+  font-size: 17px;
+  font-weight: 700;
+  /* luce in alto, ombra in basso: sembra una piccola sfera */
+  box-shadow: 0 3px 10px var(--ombra-pianeta), inset 0 1px 0 rgba(255, 255, 255, 0.45), inset 0 -4px 8px rgba(0, 0, 0, 0.12);
+}
+
+.pianetino.mono-2 { background: var(--mono-2); }
+.pianetino.mono-3 { background: var(--mono-3); }
+.pianetino.mono-4 { background: var(--mono-4); }
+.pianetino.mono-5 { background: var(--mono-5); }
+
+.pianetino .logo {
+  width: 19px;
+  height: 19px;
+}
+
+/* Abbonamento in pausa o disdetto: anche il pianetino si fa più tenue */
+.inattiva .pianetino {
+  opacity: 0.5;
 }
 
 /* La riga che se ne va si richiude in altezza */

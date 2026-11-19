@@ -493,6 +493,16 @@ function creaAzioneRiga(azione, testo, id) {
   return pulsante;
 }
 
+// Il pianetino a sinistra della riga: il logo del servizio (loghi.js) se lo conosciamo,
+// altrimenti l'iniziale del nome. Il colore lo sceglie Benvenuto.tinta, sempre uguale per lo stesso nome.
+function creaPianetino(nome) {
+  const pianetino = crea('span', `pianetino ${Benvenuto.tinta(nome)}`);
+  pianetino.setAttribute('aria-hidden', 'true'); // è solo decorazione: il nome c'è già accanto
+  const logo = logoPer(nome);
+  pianetino.append(logo ? creaSvgLogo(logo) : Benvenuto.iniziale(nome));
+  return pianetino;
+}
+
 // Crea la riga di un abbonamento (un pulsante che apre il modulo di modifica).
 // Dietro la riga ci sono le azioni che compaiono facendola scorrere a sinistra.
 function creaRigaAbbonamento(abb, info, posizione) {
@@ -508,9 +518,10 @@ function creaRigaAbbonamento(abb, info, posizione) {
   pulsante.type = 'button';
   pulsante.dataset.id = abb.id;
 
+  // "\u00a0" è uno spazio che non va a capo: se la riga è stretta, "il 20" scende intero
   let dettaglio = abb.frequenza === 'mensile'
-    ? `${formatoEuro.format(abb.costo)} al mese · il ${abb.giorno}`
-    : `${formatoEuro.format(abb.costo)} all'anno · ${abb.giorno} ${NOMI_MESI[abb.mese - 1]}`;
+    ? `${formatoEuro.format(abb.costo)} al\u00a0mese · il\u00a0${abb.giorno}`
+    : `${formatoEuro.format(abb.costo)} all'anno · ${abb.giorno}\u00a0${NOMI_MESI[abb.mese - 1]}`;
   // Ancora in prova: "Gratis fino al 25 nov, poi 13,99 € al mese"
   if (info.prova) {
     const periodo = abb.frequenza === 'mensile' ? 'al mese' : 'all\'anno';
@@ -533,7 +544,7 @@ function creaRigaAbbonamento(abb, info, posizione) {
     etichetta = crea('span', 'badge stato-inattivo', NOMI_STATI[abb.stato]);
   }
 
-  pulsante.append(testi, etichetta, freccia);
+  pulsante.append(creaPianetino(abb.nome), testi, etichetta, freccia);
 
   // Le azioni dietro la riga: chi è attivo si mette in pausa, gli altri si riattivano
   const azioni = crea('div', 'azioni-riga');
