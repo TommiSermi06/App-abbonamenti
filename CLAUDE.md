@@ -28,8 +28,8 @@ Il proprietario del progetto **sta imparando a programmare**:
   (generate da `icon.svg`, con sfondo quadrato: gli angoli li arrotonda iOS).
 
 ## Numero di versione (da aggiornare a OGNI rilascio)
-- Versione attuale: **4.3**. In `index.html` i file hanno il numero di versione (`style.css?v=4.3`, `app.js?v=4.3`…)
-  e c'è la scritta "Abbonamenti · versione 4.3" in fondo alla pagina.
+- Versione attuale: **4.4**. In `index.html` i file hanno il numero di versione (`style.css?v=4.4`, `app.js?v=4.4`…)
+  e c'è la scritta "Abbonamenti · versione 4.4" in fondo alla pagina.
 - A ogni modifica di CSS, JavaScript o manifest **aumenta il numero in tutti i punti di `index.html`**
   (cerca la versione attuale), così l'iPhone scarica i file nuovi invece di usare la copia in memoria.
   Piccole modifiche: 3.0 → 3.1; una nuova versione grande dell'app: 3.x → 4.0.
@@ -120,6 +120,20 @@ Il proprietario del progetto **sta imparando a programmare**:
   (stesso id; online torna con `eliminato: false`). Dal modulo "Elimina" chiede ancora conferma.
 - Le azioni hanno `aria-hidden` e `tabindex -1`: con VoiceOver si usa il modulo (stato ed Elimina).
 
+## Pianetini con il logo (versione 4.4)
+- A sinistra di ogni riga della lista c'è un "pianetino" (`.pianetino`, 36px, sfumatura `--mono-1…5` scelta da
+  `Benvenuto.tinta(nome)`): dentro il **logo del servizio** in bianco (`currentColor` = `--lettera-pianeta`),
+  oppure l'**iniziale** se il servizio non è conosciuto. Anche le lune del benvenuto mostrano il logo.
+- I loghi stanno in **`loghi.js`** (`LOGHI`: nome, alias, `disegno` = il `d` del path SVG 24×24; `logoPer(nome)`,
+  `creaSvgLogo(logo)`), presi da **Simple Icons** (raccolta di loghi ufficiali dei marchi in forma monocromatica,
+  pensata per indicare i servizi). Scritti nel codice: niente richieste online, funzionano offline e per tutti.
+- **Non ridisegnare loghi "simili"** a quelli che mancano (Disney+, ChatGPT/OpenAI, Amazon Prime, Microsoft, Xbox,
+  Adobe: tolti da Simple Icons su richiesta delle aziende): sarebbero imitazioni di un marchio. Per loro c'è l'iniziale.
+- Niente colori dei marchi: il logo è sempre bianco sul pianetino blu/azzurrino (palette dell'app).
+- Alias come in `servizi.js` (`chiaveNome`, basta l'inizio del nome); gli alias di 3 lettere o meno valgono solo
+  per il nome esatto ("sky" sì, "Skype" no). Nomi più specifici prima ("applemusic" prima di "apple").
+- I colori `--mono-1…5`, `--lettera-pianeta`, `--ombra-pianeta` stanno in `style.css` (servono a lista e benvenuto).
+
 ## Struttura dei file
 | File | Cosa contiene |
 | --- | --- |
@@ -130,6 +144,7 @@ Il proprietario del progetto **sta imparando a programmare**:
 | `vetro.css` | Stile "Liquid Glass": vetro, sfondo vivo, molle e animazioni CSS (riveste `style.css`) |
 | `animazioni.js` | `Animazioni`: numeri che contano, goccia dei filtri, barra compatta, foglio da trascinare, capsula di avviso |
 | `benvenuto.js`, `benvenuto.css` | Benvenuto "Orbita" al primo avvio, saluto lampo a ogni apertura, iniziali e colori dei "pianeti" |
+| `loghi.js` | I loghi dei servizi (da Simple Icons) per i pianetini: `LOGHI`, `logoPer(nome)`, `creaSvgLogo(logo)` |
 | `servizi.js` | Come disdire i servizi più diffusi (`SERVIZI`: alias, link ufficiale, passi, nota) e `guidaDisdetta(nome, pagamento)` |
 | `supabase.js` | `Supabase`: collegamento con il database online (account, sessione, richieste con `fetch`). Lo usa solo `storage.js` |
 | `storage.js` | `Archivio`: lettura/scrittura dati, dati iniziali, controllo e backup, impostazioni, account e sincronizzazione online |

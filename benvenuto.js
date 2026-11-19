@@ -47,7 +47,10 @@ const Benvenuto = (function () {
     pianeta.style.setProperty('--ritardo', `${ritardo}ms`);
     const corpo = document.createElement('span');
     corpo.className = 'pianeta-corpo';
-    corpo.textContent = vuoto ? '+' : iniziale(nome);
+    // Dentro la luna: il logo del servizio (da loghi.js) oppure l'iniziale
+    const logo = vuoto ? null : logoPer(nome);
+    if (logo) corpo.append(creaSvgLogo(logo));
+    else corpo.textContent = vuoto ? '+' : iniziale(nome);
     pianeta.append(corpo);
     return pianeta;
   }

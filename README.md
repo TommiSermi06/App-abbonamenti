@@ -18,6 +18,7 @@ quanto spendi al mese e all'anno, e quale rinnovo sta per arrivare.
 - Per ogni abbonamento: link per disdire, metodo di pagamento e note
 - Guida "Come disdire" per i servizi più diffusi, con il link alla pagina ufficiale inserito in automatico
 - Esporta e importa un backup in formato JSON
+- Ogni abbonamento ha il suo "pianetino" con il logo del servizio (loghi da [Simple Icons](https://simpleicons.org)) o l'iniziale
 - Gesti: fai scorrere un abbonamento verso sinistra per metterlo in pausa o eliminarlo, con "Annulla"
 - Barra di vetro in basso con tre schede: Abbonamenti, Statistiche, Impostazioni
 - Benvenuto "Orbita" al primo avvio e saluto personale a ogni apertura
