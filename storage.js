@@ -20,7 +20,10 @@
      mese: null,             // solo per gli annuali: mese del rinnovo (1-12)
      categoria: "musica",    // id di una categoria di categorie.js
      stato: "attivo",        // "attivo", "pausa" oppure "disdetto"
-     fineProva: null         // se è in prova gratuita: il giorno in cui finisce, es. "2026-11-25"
+     fineProva: null,        // se è in prova gratuita: il giorno in cui finisce, es. "2026-11-25"
+     link: "",               // pagina dove gestire o disdire l'abbonamento (https://...)
+     pagamento: "",          // come lo paghi, es. "Visa •••• 1234" (MAI il numero intero della carta)
+     note: ""                // appunti liberi
    }
    ===================================================================== */
 
@@ -76,6 +79,10 @@ const Archivio = (function () {
     // (online la colonna si chiama fine_prova)
     const testoProva = grezzo.fineProva ?? grezzo.fine_prova ?? null;
     const fineProva = dataValida(testoProva) ? testoProva : null;
+    // Gestione: link (solo se è un indirizzo web valido), pagamento e note (testi brevi)
+    const link = controllaLink(grezzo.link) || '';
+    const pagamento = String(grezzo.pagamento ?? '').trim().slice(0, 40);
+    const note = String(grezzo.note ?? '').trim().slice(0, 500);
 
     if (!nome) return null;
     if (!(costo > 0)) return null;
@@ -93,7 +100,27 @@ const Archivio = (function () {
       categoria,
       stato,
       fineProva,
+      link,
+      pagamento,
+      note,
     };
+  }
+
+  // Controlla un link e lo sistema: "netflix.com/account" → "https://netflix.com/account".
+  // Restituisce "" se il testo è vuoto, null se non è un indirizzo web valido.
+  // Accettiamo solo http e https: altri tipi di link (es. "javascript:") potrebbero essere pericolosi.
+  function controllaLink(testo) {
+    const pulito = String(testo ?? '').trim();
+    if (!pulito) return '';
+    const conProtocollo = /^https?:\/\//i.test(pulito) ? pulito : `https://${pulito}`;
+    try {
+      const indirizzo = new URL(conProtocollo);
+      if (indirizzo.protocol !== 'https:' && indirizzo.protocol !== 'http:') return null;
+      if (!indirizzo.hostname.includes('.')) return null; // serve almeno "nome.it"
+      return indirizzo.href.length <= 300 ? indirizzo.href : null;
+    } catch (e) {
+      return null;
+    }
   }
 
   // Controlla che un testo sia una data vera nel formato "2026-11-25"
@@ -174,8 +201,8 @@ const Archivio = (function () {
       app: 'Abbonamenti',
       // versione 2 = categorie, versione 3 = stato (attivo/pausa/disdetto).
       // I backup delle versioni precedenti si importano lo stesso.
-      // versione 4 = fine della prova gratuita (fineProva)
-      versione: 4,
+      // versione 4 = fine della prova gratuita (fineProva), versione 5 = link, pagamento e note
+      versione: 5,
       esportatoIl: new Date().toISOString(),
       abbonamenti: await tutti(),
     };
@@ -333,6 +360,9 @@ const Archivio = (function () {
       categoria: abb.categoria,
       stato: abb.stato,
       fine_prova: abb.fineProva,
+      link: abb.link || null, // online i campi vuoti si salvano come "niente" (null)
+      pagamento: abb.pagamento || null,
+      note: abb.note || null,
       eliminato: false,
     };
   }
@@ -342,7 +372,7 @@ const Archivio = (function () {
     return String(nome).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
   }
 
-  const COLONNE = 'id,nome,costo,frequenza,giorno,mese,categoria,stato,fine_prova,eliminato,aggiornato_il';
+  const COLONNE = 'id,nome,costo,frequenza,giorno,mese,categoria,stato,fine_prova,link,pagamento,note,eliminato,aggiornato_il';
 
   // La PRIMA volta che entri da questo dispositivo uniamo i dati:
   // - se online non c'è ancora niente, carichiamo tutto quello che c'è qui;
@@ -543,5 +573,6 @@ const Archivio = (function () {
     tutti, aggiungi, aggiorna, elimina, esportaBackup, leggiBackup, sostituisciTutti,
     leggiImpostazione, salvaImpostazione,
     account, accedi, creaAccount, esci, sincronizza, statoSincronizzazione,
+    controllaLink,
   };
 })();

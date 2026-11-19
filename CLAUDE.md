@@ -27,8 +27,8 @@ Il proprietario del progetto **sta imparando a programmare**:
   (generate da `icon.svg`, con sfondo quadrato: gli angoli li arrotonda iOS).
 
 ## Numero di versione (da aggiornare a OGNI rilascio)
-- Versione attuale: **3.1**. In `index.html` i file hanno il numero di versione (`style.css?v=3.1`, `app.js?v=3.1`…)
-  e c'è la scritta "Abbonamenti · versione 3.1" in fondo alla pagina.
+- Versione attuale: **3.2**. In `index.html` i file hanno il numero di versione (`style.css?v=3.2`, `app.js?v=3.2`…)
+  e c'è la scritta "Abbonamenti · versione 3.2" in fondo alla pagina.
 - A ogni modifica di CSS, JavaScript o manifest **aumenta il numero in tutti i punti di `index.html`**
   (cerca la versione attuale), così l'iPhone scarica i file nuovi invece di usare la copia in memoria.
   Piccole modifiche: 3.0 → 3.1; una nuova versione grande dell'app: 3.x → 4.0.
@@ -71,10 +71,11 @@ Il proprietario del progetto **sta imparando a programmare**:
   giorno: 1-31, mese: 1-12 (solo annuali, altrimenti null),
   categoria: "streaming" | "musica" | … (id di categorie.js),
   stato: "attivo" | "pausa" | "disdetto",
-  fineProva: "2026-11-25" | null }   // online: colonna fine_prova (date)
+  fineProva: "2026-11-25" | null,    // online: colonna fine_prova (date)
+  link: "https://…" | "", pagamento: "Visa •••• 1234" | "", note: "…" | "" }  // online: null se vuoti
 ```
 Chiave nel localStorage: `abbonamenti:v1` (invariata: i dati della versione 1 restano compatibili).
-Backup: file JSON `{ app, versione: 4, esportatoIl, abbonamenti: [...] }`.
+Backup: file JSON `{ app, versione: 5, esportatoIl, abbonamenti: [...] }`.
 I backup delle versioni precedenti si importano ancora (stato mancante → `attivo`, categoria mancante → `altro`).
 
 ## Categorie (versione 2)
@@ -118,8 +119,17 @@ I backup delle versioni precedenti si importano ancora (stato mancante → `atti
   (etichetta "Prova: tra X giorni", con gli stessi colori dei giorni mancanti; riga "Gratis fino al …, poi …").
 - Calendario: evento "🎁 Fine prova: Nome · poi costo" con gli stessi avvisi dei rinnovi.
 
+## Gestione: link per disdire, pagamento e note (versione 3.2)
+- Nel modulo, riquadro "Gestione": `link` (controllato da `Archivio.controllaLink`: aggiunge `https://`,
+  accetta solo http/https, max 300 caratteri), `pagamento` (max 40, con suggerimenti dei metodi già usati
+  tramite `<datalist>`), `note` (max 500, campo su più righe).
+- **Sicurezza**: il campo Pagamento rifiuta 12 o più cifre (numero intero della carta): solo circuito + ultime 4.
+- Il link si apre con `target="_blank"` e `rel="noopener noreferrer"`: nel modulo ("Apri la pagina per disdire ↗"),
+  nel prossimo rinnovo ("Gestisci l'abbonamento ↗") e nel calendario (`URL:` e nella descrizione).
+- La ricerca cerca anche in pagamento e note (es. "1234" = tutti gli abbonamenti su quella carta).
+
 ## Ricerca e ordinamento
-- Barra di ricerca sopra la lista: filtra per nome, senza badare a maiuscole e accenti (`semplifica()`),
+- Barra di ricerca sopra la lista: filtra per nome, metodo di pagamento e note, senza badare a maiuscole e accenti (`semplifica()`),
   insieme al filtro per categoria. Scrivendo si ridisegna solo la lista (`disegnaLista()`), non totali e grafico.
 - "Ordina" accanto al titolo: `rinnovo` (predefinito), `prezzo` (costo al mese, dal più caro), `nome` (A-Z).
   I gruppi per categoria restano; cambia l'ordine dentro ogni gruppo (i non attivi in ordine "rinnovo" vanno per nome).

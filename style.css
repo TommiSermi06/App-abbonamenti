@@ -903,6 +903,45 @@ button:active {
   outline-offset: 2px;
 }
 
+/* ----- Gestione: link, pagamento e note ----- */
+
+/* Un link che ha l'aspetto di una riga (es. "Apri la pagina per disdire ↗") */
+a.riga {
+  text-decoration: none;
+}
+
+/* Campo note su più righe, largo quanto la card */
+.campo-note {
+  display: block;
+  width: 100%;
+  min-height: 88px;
+  padding: 12px 16px;
+  border: 0;
+  background: none;
+  color: var(--testo);
+  caret-color: var(--blu);
+  font: inherit;
+  font-size: 17px; /* almeno 16px: niente zoom automatico sull'iPhone */
+  line-height: 1.35;
+  resize: none;
+  outline: none;
+}
+
+.campo-note::placeholder {
+  color: var(--testo-terziario);
+}
+
+/* "Gestisci l'abbonamento ↗" nel riquadro del prossimo rinnovo */
+.prossimo-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px; /* area tattile */
+  margin-bottom: -10px;
+  color: var(--blu);
+  font-size: 15px;
+  text-decoration: none;
+}
+
 /* Scritta con la versione, in fondo alla pagina */
 .versione {
   margin: 32px 16px 0;
