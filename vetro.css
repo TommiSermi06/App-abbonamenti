@@ -1,0 +1,628 @@
+/* =====================================================================
+   vetro.css — Lo stile "Liquid Glass" futuristico.
+
+   Si carica DOPO style.css e lo "riveste": style.css resta la base
+   (misure, colori, componenti), qui aggiungiamo vetro, luce e movimento.
+   Per tornare all'aspetto di prima basterebbe togliere questo file
+   (e animazioni.js) da index.html.
+
+   Indice:
+   1. Colori del vetro e della luce (chiaro e scuro)
+   2. Sfondo vivo: le macchie di luce dietro al vetro
+   3. Superfici di vetro: card, ricerca, pillole, pulsante "+"
+   4. Barra in alto che diventa compatta scorrendo
+   5. Totali "eroe" con bordo di luce
+   6. Goccia di vetro che scivola (controllo segmentato e filtri)
+   7. Righe: entrata a cascata e tocco "morbido"
+   8. Foglio dal basso: vetro, molla, maniglia, pagina che si allontana
+   9. Interruttore "liquido", pulsante principale, grafico e barre
+   10. Capsula di avviso ("Salvato ✓")
+   11. Accessibilità: Riduci trasparenza e Riduci movimento
+   ===================================================================== */
+
+
+/* ---------- 1. Colori del vetro e della luce ---------- */
+:root {
+  /* Vetro: avorio semitrasparente, con bordo e riflesso bianchi */
+  --vetro: rgba(255, 253, 246, 0.58);
+  --vetro-forte: rgba(255, 253, 246, 0.78);      /* barra in alto e foglio: più coprenti */
+  --vetro-barra: rgba(255, 253, 246, 0.86);      /* barra compatta: il testo sotto non deve disturbare */
+  --vetro-card-foglio: rgba(255, 255, 255, 0.7);  /* card dentro al foglio */
+  --vetro-bordo: rgba(255, 255, 255, 0.75);
+  --vetro-riflesso: rgba(255, 255, 255, 0.95);
+  --vetro-diagonale: rgba(255, 255, 255, 0.32);   /* il "lampo" di luce in alto a sinistra */
+  --vetro-ombra: 0 10px 30px rgba(31, 79, 168, 0.10), 0 1px 2px rgba(31, 79, 168, 0.06);
+  --vetro-sfocatura: blur(24px) saturate(170%);
+  --evidenzia: rgba(125, 184, 232, 0.2);          /* riga toccata */
+
+  /* Luce dello sfondo: azzurrino, blu e un avorio più caldo */
+  --luce-1: rgba(125, 184, 232, 0.55);
+  --luce-2: rgba(31, 79, 168, 0.20);
+  --luce-3: rgba(238, 214, 160, 0.55);
+
+  /* Blu più chiaro per le sfumature (stessa tinta del blu) */
+  --blu-chiaro: #3B7DDD;
+  --alone-blu: rgba(31, 79, 168, 0.32);
+
+  /* Movimento: "molle" con un piccolo rimbalzo, come su iPhone */
+  --molla: cubic-bezier(0.34, 1.45, 0.64, 1);         /* cose piccole: pillole, pallini */
+  --molla-foglio: cubic-bezier(0.22, 1.12, 0.36, 1);  /* il foglio: rimbalzo appena accennato */
+  --uscita: cubic-bezier(0.16, 1, 0.3, 1);            /* entrate morbide, senza rimbalzo */
+
+  --raggio-card: 20px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --vetro: rgba(34, 36, 46, 0.5);
+    --vetro-forte: rgba(26, 28, 36, 0.78);
+    --vetro-barra: rgba(22, 24, 32, 0.86);
+    --vetro-card-foglio: rgba(255, 255, 255, 0.07);
+    --vetro-bordo: rgba(255, 255, 255, 0.13);
+    --vetro-riflesso: rgba(255, 255, 255, 0.22);
+    --vetro-diagonale: rgba(255, 255, 255, 0.07);
+    --vetro-ombra: 0 12px 34px rgba(0, 0, 0, 0.38);
+    --evidenzia: rgba(157, 208, 247, 0.12);
+
+    --luce-1: rgba(80, 140, 230, 0.34);
+    --luce-2: rgba(40, 70, 170, 0.45);
+    --luce-3: rgba(157, 208, 247, 0.16);
+
+    --blu-chiaro: #A9C8F8;
+    --alone-blu: rgba(126, 166, 242, 0.35);
+  }
+}
+
+
+/* ---------- 2. Sfondo vivo ----------
+   Tre grandi macchie di luce sfumate, ferme dietro alla pagina,
+   che si spostano lentissime. Il vetro ha bisogno di qualcosa dietro
+   da sfocare: senza, sembrerebbe solo bianco. */
+.sfondo-vivo {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.sfondo-vivo span {
+  position: absolute;
+  width: 75vmax;
+  height: 75vmax;
+  border-radius: 50%;
+  will-change: transform; /* il telefono le prepara per muoverle senza fatica */
+  animation: deriva 46s ease-in-out infinite alternate;
+}
+
+.sfondo-vivo span:nth-child(1) {
+  top: -30vmax;
+  left: -25vmax;
+  background: radial-gradient(circle, var(--luce-1) 0%, transparent 68%);
+}
+
+.sfondo-vivo span:nth-child(2) {
+  top: 25vh;
+  right: -40vmax;
+  background: radial-gradient(circle, var(--luce-2) 0%, transparent 68%);
+  animation-duration: 58s;
+  animation-direction: alternate-reverse;
+}
+
+.sfondo-vivo span:nth-child(3) {
+  bottom: -40vmax;
+  left: -10vmax;
+  background: radial-gradient(circle, var(--luce-3) 0%, transparent 68%);
+  animation-duration: 64s;
+}
+
+@keyframes deriva {
+  0%   { transform: translate(0, 0) scale(1); }
+  50%  { transform: translate(8vmax, 6vmax) scale(1.08); }
+  100% { transform: translate(-6vmax, 10vmax) scale(0.95); }
+}
+
+/* Lo sfondo di base resta avorio: le macchie ci stanno sopra */
+body {
+  background: var(--sfondo);
+}
+
+
+/* ---------- 3. Superfici di vetro ----------
+   Ricetta del vetro:
+   - sfondo semitrasparente + backdrop-filter (sfoca ciò che c'è dietro);
+   - un bordo sottile chiaro e una riga di luce in alto (il riflesso);
+   - un'ombra morbida che lo "solleva" dalla pagina;
+   - un lampo di luce diagonale in alto a sinistra (::after). */
+.card {
+  position: relative;
+  border-radius: var(--raggio-card);
+  background: var(--vetro);
+  -webkit-backdrop-filter: var(--vetro-sfocatura);
+  backdrop-filter: var(--vetro-sfocatura);
+  box-shadow:
+    inset 0 1px 0 var(--vetro-riflesso),
+    inset 0 0 0 1px var(--vetro-bordo),
+    var(--vetro-ombra);
+}
+
+.card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none; /* non ruba i tocchi */
+  background: linear-gradient(135deg, var(--vetro-diagonale) 0%, transparent 38%);
+}
+
+/* Barra di ricerca e pillole del filtro: vetro più leggero */
+.ricerca {
+  border-radius: 14px;
+  background: var(--vetro);
+  -webkit-backdrop-filter: var(--vetro-sfocatura);
+  backdrop-filter: var(--vetro-sfocatura);
+  box-shadow: inset 0 1px 0 var(--vetro-riflesso), inset 0 0 0 1px var(--vetro-bordo);
+}
+
+.ricerca:focus-within {
+  box-shadow: inset 0 0 0 1.5px var(--blu), 0 0 0 4px var(--evidenzia);
+}
+
+.pillola {
+  background: var(--vetro);
+  box-shadow: inset 0 1px 0 var(--vetro-riflesso), inset 0 0 0 1px var(--vetro-bordo);
+}
+
+/* Pulsante "+": una bolla di vetro rotonda */
+.btn-icona {
+  background: var(--vetro);
+  -webkit-backdrop-filter: var(--vetro-sfocatura);
+  backdrop-filter: var(--vetro-sfocatura);
+  box-shadow: inset 0 1px 0 var(--vetro-riflesso), inset 0 0 0 1px var(--vetro-bordo), var(--vetro-ombra);
+  transition: transform 0.35s var(--molla), opacity 0.2s;
+}
+
+.btn-icona:active {
+  opacity: 1;
+  transform: scale(0.88);
+}
+
+
+/* ---------- 4. Barra in alto compatta ----------
+   La barra con il "+" resta attaccata in alto. Quando il titolo grande
+   sparisce scorrendo, diventa di vetro e mostra il titolo piccolo. */
+.barra-fissa {
+  position: sticky;
+  top: env(safe-area-inset-top);
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 52px;
+  padding: 4px 10px 4px 16px;
+  transition: background-color 0.3s var(--curva), box-shadow 0.3s var(--curva);
+}
+
+.barra-fissa.compatta {
+  background: var(--vetro-barra);
+  -webkit-backdrop-filter: var(--vetro-sfocatura);
+  backdrop-filter: var(--vetro-sfocatura);
+  box-shadow: 0 0.5px 0 var(--separatore);
+}
+
+.titolo-compatto {
+  font-size: 17px;
+  font-weight: 600;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.25s var(--curva), transform 0.4s var(--molla);
+}
+
+.compatta .titolo-compatto {
+  opacity: 1;
+  transform: none;
+}
+
+/* Nella barra compatta il "+" perde la bolla: resta solo l'icona */
+.compatta .btn-icona {
+  background: transparent;
+  box-shadow: none;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* Striscia sotto il notch (alta 0 se il telefono non ne ha bisogno) */
+.striscia-alto {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 6;
+  height: env(safe-area-inset-top);
+  background: var(--vetro-forte);
+  -webkit-backdrop-filter: var(--vetro-sfocatura);
+  backdrop-filter: var(--vetro-sfocatura);
+}
+
+.titolo-grande {
+  margin-top: 0;
+  letter-spacing: -0.01em;
+}
+
+
+/* ---------- 5. Totali "eroe" ----------
+   Il riquadro più importante: bordo di luce sfumato blu → azzurrino
+   e numeri con una sfumatura nella stessa tinta. */
+.totali::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.5px; /* spessore del bordo */
+  background: linear-gradient(135deg, var(--blu) 0%, var(--azzurro) 45%, transparent 80%);
+  /* Trucco della "maschera": mostra il gradiente solo nel bordo, non al centro */
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  pointer-events: none;
+}
+
+.numero-grande {
+  background: linear-gradient(120deg, var(--blu) 10%, var(--blu-chiaro) 95%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent; /* il testo prende il colore dello sfondo sfumato */
+}
+
+
+/* ---------- 6. La goccia di vetro che scivola ----------
+   Nel controllo "Mensile / Annuale" (e "Accedi / Crea account") e nei
+   filtri, l'opzione scelta è indicata da una "goccia" blu che scivola
+   con un piccolo rimbalzo, invece di comparire di colpo. */
+.segmentato {
+  position: relative;
+  border-radius: 14px;
+  background: var(--evidenzia);
+  box-shadow: inset 0 0 0 1px var(--vetro-bordo);
+}
+
+/* La goccia: metà larghezza, si sposta a destra se è scelta la seconda opzione */
+.segmentato::before {
+  content: "";
+  position: absolute;
+  top: 2px;
+  bottom: 2px;
+  left: 2px;
+  width: calc(50% - 2px);
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--blu), var(--blu-chiaro));
+  box-shadow: 0 4px 14px var(--alone-blu), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  transition: transform 0.5s var(--molla);
+}
+
+.segmentato:has(label:nth-child(2) input:checked)::before {
+  transform: translateX(100%);
+}
+
+.segmentato span {
+  position: relative; /* sopra la goccia */
+  z-index: 1;
+  border-radius: 12px;
+  transition: color 0.3s var(--curva);
+}
+
+.segmentato input:checked + span {
+  background: transparent; /* il colore ora lo dà la goccia */
+  box-shadow: none;
+}
+
+/* Filtri: la goccia la posiziona animazioni.js sotto la pillola scelta */
+.filtri {
+  position: relative;
+}
+
+.filtri .indicatore {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--blu), var(--blu-chiaro));
+  box-shadow: 0 4px 14px var(--alone-blu), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  transition: transform 0.55s var(--molla), width 0.45s var(--molla);
+  pointer-events: none;
+}
+
+.filtro {
+  position: relative;
+  z-index: 1;
+}
+
+.filtro[aria-pressed="true"] .pillola {
+  background: transparent;
+  box-shadow: none;
+}
+
+
+/* ---------- 7. Righe: entrata e tocco ---------- */
+
+/* Le sezioni della pagina entrano una dopo l'altra al primo avvio */
+.app > * {
+  animation: entrata 0.6s var(--uscita) both;
+}
+
+.app > :nth-child(2) { animation-delay: 0.03s; }
+.app > :nth-child(3) { animation-delay: 0.06s; }
+.app > :nth-child(4) { animation-delay: 0.09s; }
+.app > :nth-child(5) { animation-delay: 0.12s; }
+.app > :nth-child(6) { animation-delay: 0.15s; }
+.app > :nth-child(n + 7) { animation-delay: 0.18s; }
+
+@keyframes entrata {
+  from { opacity: 0; transform: translateY(14px); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* Le righe compaiono "mettendosi a fuoco" (da sfocate a nitide) */
+@keyframes compari {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); filter: blur(4px); }
+  to   { opacity: 1; transform: none; filter: none; }
+}
+
+.compari {
+  animation-duration: 0.5s;
+  animation-timing-function: var(--uscita);
+}
+
+/* Al tocco la riga si "schiaccia" appena e si illumina */
+.lista .riga {
+  transition: transform 0.3s var(--molla), background-color 0.2s var(--curva);
+}
+
+.lista .riga:active {
+  opacity: 1;
+  transform: scale(0.98);
+  background: var(--evidenzia);
+}
+
+
+/* ---------- 8. Il foglio dal basso ---------- */
+
+/* Vetro più coprente, angoli grandi, ombra verso l'alto */
+.foglio {
+  --sfondo-card: var(--vetro-card-foglio);
+  background: var(--vetro-forte);
+  -webkit-backdrop-filter: blur(30px) saturate(180%);
+  backdrop-filter: blur(30px) saturate(180%);
+  border-radius: 28px 28px 0 0;
+  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.14), inset 0 1px 0 var(--vetro-riflesso);
+  transition: transform 0.55s var(--molla-foglio), visibility 0.55s;
+}
+
+/* Il foglio continua per 80px sotto il bordo dello schermo:
+   così, quando rimbalza verso l'alto, sotto non si vede il vuoto */
+.foglio {
+  bottom: -80px;
+  max-height: calc(100% - env(safe-area-inset-top) - 16px + 80px);
+  padding-bottom: calc(24px + 80px + env(safe-area-inset-bottom));
+}
+
+/* Mentre lo trascini con il dito, segue il dito senza ritardo */
+.foglio.trascinando {
+  transition: none;
+}
+
+/* Dentro al foglio le card non sfocano di nuovo (sarebbe pesante per il telefono) */
+.foglio .card {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* La maniglia in alto: si tira giù per chiudere.
+   La lineetta visibile è piccola (38×5px), ma la zona da toccare è una
+   fascia larga quanto il foglio e alta 20px, così si prende facilmente col dito. */
+.maniglia {
+  position: relative;
+  height: 20px;
+  touch-action: none;
+}
+
+.maniglia::before {
+  content: "";
+  position: absolute;
+  top: 8px;
+  left: 50%;
+  width: 38px;
+  height: 5px;
+  margin-left: -19px;
+  border-radius: 3px;
+  background: var(--testo-terziario);
+}
+
+/* Maniglia e barra "Annulla / Salva" restano sempre in cima al foglio,
+   anche quando scorri il modulo (come nelle app Apple): il contenuto scorre sotto, nel vetro */
+.foglio .maniglia {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--vetro-barra);
+}
+
+.foglio-barra {
+  position: sticky;
+  top: 20px; /* subito sotto la maniglia */
+  z-index: 3;
+  background: var(--vetro-barra);
+  box-shadow: 0 0.5px 0 var(--separatore);
+  touch-action: none; /* il trascinamento lo gestiamo noi */
+}
+
+/* La pagina dietro "si allontana" mentre il foglio è aperto */
+.app {
+  transform-origin: 50% var(--centro-vista, 50vh);
+  transition: transform 0.5s var(--molla-foglio), filter 0.5s var(--curva);
+}
+
+body.bloccato .app {
+  transform: scale(0.94);
+  filter: saturate(0.85);
+}
+
+.velo {
+  background: var(--velo);
+  transition: opacity 0.45s var(--curva);
+}
+
+
+/* ---------- 9. Interruttore, pulsante, grafico ---------- */
+
+/* Interruttore "liquido": il pallino si allunga mentre lo tieni premuto */
+.campo .interruttore:checked {
+  background: linear-gradient(135deg, var(--blu), var(--blu-chiaro));
+}
+
+.campo .interruttore::after {
+  transition: transform 0.45s var(--molla), width 0.3s var(--molla);
+}
+
+.campo .interruttore:active::after {
+  width: 33px;
+}
+
+.campo .interruttore:checked:active::after {
+  transform: translateX(14px); /* 51 − 2 − 33 − 2: resta attaccato a destra */
+}
+
+/* Pulsante principale: blu sfumato con un alone, si schiaccia al tocco */
+.btn-principale {
+  background: linear-gradient(135deg, var(--blu), var(--blu-chiaro));
+  box-shadow: 0 8px 22px var(--alone-blu), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transition: transform 0.35s var(--molla), opacity 0.2s;
+}
+
+.btn-principale:active {
+  opacity: 1;
+  transform: scale(0.97);
+}
+
+/* Grafico: colonne nella stessa tinta, più chiare in cima; crescono con una molla */
+.colonna-barra {
+  background: linear-gradient(to top, var(--blu), var(--blu-chiaro));
+  animation-duration: 0.7s;
+  animation-timing-function: var(--molla);
+}
+
+.colonna[aria-pressed="true"] {
+  background: var(--evidenzia);
+  box-shadow: inset 0 0 0 1px var(--vetro-bordo);
+}
+
+/* Barre della spesa per categoria: stessa sfumatura e un riflesso che passa una volta */
+.categoria-barra > span {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(90deg, var(--blu), var(--blu-chiaro));
+  animation-duration: 0.8s;
+  animation-timing-function: var(--uscita);
+}
+
+.categoria-barra > span::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.55), transparent);
+  transform: translateX(-100%);
+  animation: riflesso 1.4s 0.5s var(--curva) both;
+}
+
+@keyframes riflesso {
+  to { transform: translateX(100%); }
+}
+
+/* Etichette dei giorni: stessi colori di sempre, con un filo di luce sopra */
+.badge {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+
+/* ---------- 10. Capsula di avviso ("Salvato ✓") ----------
+   Scende dall'alto dopo un'azione, resta un attimo e risale. */
+.capsula-avviso {
+  position: fixed;
+  top: calc(env(safe-area-inset-top) + 62px); /* appena sotto la barra in alto */
+  left: 50%;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px 10px 12px;
+  border-radius: 999px;
+  background: var(--vetro-forte);
+  -webkit-backdrop-filter: var(--vetro-sfocatura);
+  backdrop-filter: var(--vetro-sfocatura);
+  box-shadow: inset 0 1px 0 var(--vetro-riflesso), inset 0 0 0 1px var(--vetro-bordo), var(--vetro-ombra);
+  font-size: 15px;
+  font-weight: 600;
+  white-space: nowrap;
+  transform: translate(-50%, calc(-100% - 30px));
+  opacity: 0;
+  transition: transform 0.55s var(--molla), opacity 0.3s var(--curva);
+  pointer-events: none;
+}
+
+.capsula-avviso.visibile {
+  transform: translate(-50%, 0);
+  opacity: 1;
+}
+
+/* Il segno di spunta in un cerchio blu */
+.capsula-avviso .spunta {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--blu), var(--blu-chiaro));
+  color: var(--su-blu);
+  font-size: 13px;
+}
+
+
+/* ---------- 11. Accessibilità ---------- */
+
+/* "Riduci trasparenza" (o browser senza vetro): superfici piene, niente macchie */
+@media (prefers-reduced-transparency: reduce) {
+  .card, .ricerca, .pillola, .btn-icona, .barra-fissa.compatta, .striscia-alto, .foglio, .capsula-avviso {
+    background: var(--sfondo-card);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+  .foglio, .barra-fissa.compatta, .striscia-alto {
+    background: var(--sfondo-foglio);
+  }
+  .sfondo-vivo {
+    display: none;
+  }
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  .card, .ricerca, .btn-icona, .barra-fissa.compatta, .striscia-alto, .capsula-avviso {
+    background: var(--sfondo-card);
+  }
+  .foglio {
+    background: var(--sfondo-foglio);
+  }
+}
+
+/* "Riduci movimento": niente macchie che si muovono, niente rimbalzi né sfocature in entrata
+   (le altre animazioni le spegne già la regola in fondo a style.css) */
+@media (prefers-reduced-motion: reduce) {
+  .sfondo-vivo span,
+  .app > *,
+  .categoria-barra > span::after {
+    animation: none !important;
+  }
+  body.bloccato .app {
+    transform: none;
+    filter: none;
+  }
+}

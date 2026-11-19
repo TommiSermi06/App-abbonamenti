@@ -330,10 +330,26 @@ function totaleAlMese(lista) {
   return lista.reduce((somma, abb) => somma + costoMensile(abb), 0);
 }
 
+// Se un testo non ci sta nel suo spazio, rimpicciolisce il carattere quanto basta
+function adattaLarghezza(elemento, testoFinale) {
+  const testoPrima = elemento.textContent;
+  elemento.style.fontSize = ''; // si riparte dalla grandezza normale
+  elemento.textContent = testoFinale;
+  if (elemento.scrollWidth > elemento.clientWidth) {
+    const grandezza = parseFloat(getComputedStyle(elemento).fontSize);
+    elemento.style.fontSize = `${Math.floor(grandezza * (elemento.clientWidth / elemento.scrollWidth) * 0.98)}px`;
+  }
+  elemento.textContent = testoPrima; // il testo vero lo scrive poi l'animazione
+}
+
 function disegnaTotali() {
   const alMese = totaleAlMese(paganti());
-  el.totaleMese.textContent = formatoEuro.format(alMese);
-  el.totaleAnno.textContent = formatoEuro.format(alMese * 12);
+  // Prima adattiamo la grandezza al numero finale (es. "1161,84 €" deve starci tutto)...
+  adattaLarghezza(el.totaleMese, formatoEuro.format(alMese));
+  adattaLarghezza(el.totaleAnno, formatoEuro.format(alMese * 12));
+  // ...poi i numeri "contano" fino al valore nuovo (vedi animazioni.js)
+  Animazioni.conta(el.totaleMese, alMese, (v) => formatoEuro.format(v));
+  Animazioni.conta(el.totaleAnno, alMese * 12, (v) => formatoEuro.format(v));
 
   // Nota sotto i totali: quanto si aggiungerà quando finiscono le prove gratuite
   const oggi = oggiAMezzanotte();
@@ -394,6 +410,8 @@ function disegnaFiltri() {
     pulsante.append(crea('span', 'pillola', testo));
     el.filtri.append(pulsante);
   }
+  // La goccia di vetro scivola sotto la pillola scelta
+  Animazioni.posizionaIndicatore(el.filtri, el.filtri.querySelector('[aria-pressed="true"] .pillola'));
 }
 
 // --- Lista divisa in gruppi: un titoletto e una card per ogni categoria ---
@@ -693,6 +711,8 @@ let foglioAperto = null; // il foglio aperto in questo momento, oppure null
 function mostraFoglio(foglio) {
   elementoPrimaDelFoglio = document.activeElement;
   foglioAperto = foglio;
+  // La pagina dietro "si allontana" verso il punto che stai guardando (vedi vetro.css)
+  document.documentElement.style.setProperty('--centro-vista', `${window.scrollY + window.innerHeight / 2}px`);
   el.velo.classList.add('aperto');
   foglio.classList.add('aperto');
   foglio.scrollTop = 0;
@@ -870,6 +890,7 @@ async function salva(evento) {
   }
 
   try {
+    const eraNuovo = !idInModifica;
     if (idInModifica) {
       await Archivio.aggiorna(idInModifica, dati);
     } else {
@@ -882,6 +903,7 @@ async function salva(evento) {
     abbonamenti = await Archivio.tutti();
     chiudiFoglio();
     disegna();
+    Animazioni.avviso(eraNuovo ? 'Abbonamento aggiunto' : 'Modifiche salvate');
   } catch (e) {
     el.errore.textContent = `Non sono riuscito a salvare: ${e.message}`;
   }
@@ -897,6 +919,7 @@ async function eliminaAbbonamento() {
     abbonamenti = await Archivio.tutti();
     chiudiFoglio();
     disegna();
+    Animazioni.avviso(`${abb.nome} eliminato`);
   } catch (e) {
     el.errore.textContent = `Non sono riuscito a eliminare: ${e.message}`;
   }
@@ -924,6 +947,7 @@ async function esportaBackup() {
     link.remove();
     // Liberiamo la memoria un attimo dopo
     setTimeout(() => URL.revokeObjectURL(indirizzo), 1000);
+    Animazioni.avviso('Backup esportato');
   } catch (e) {
     alert(`Esportazione non riuscita: ${e.message}`);
   }
@@ -944,6 +968,7 @@ async function importaBackup() {
     abbonamenti = await Archivio.tutti();
     primoDisegno = true; // facciamo ricomparire tutte le righe
     disegna();
+    Animazioni.avviso(`Importati ${quanti}`);
   } catch (e) {
     alert(`Importazione non riuscita: ${e.message}`);
   }
@@ -1136,6 +1161,7 @@ async function inviaAccount(evento) {
     el.campoPassword.value = '';
     nascondiFoglio();
     disegnaAccount();
+    Animazioni.avviso(nuovo ? 'Account creato' : 'Accesso eseguito');
     await Archivio.sincronizza(); // la prima sincronizzazione unisce i dati
   } catch (e) {
     el.erroreAccount.textContent = e.message;
@@ -1313,6 +1339,11 @@ async function avvia() {
   disegna();         // prima mostriamo subito i dati del dispositivo...
   disegnaAccount();
   Archivio.sincronizza(); // ...poi, se sei entrato, controlliamo le novità online
+
+  // Animazioni: barra in alto che diventa compatta, fogli che si chiudono tirandoli giù
+  Animazioni.barraCompatta($('barra-fissa'), $('titolo-grande'));
+  Animazioni.trascinaPerChiudere(el.foglio, nascondiFoglio);
+  Animazioni.trascinaPerChiudere(el.foglioAccount, nascondiFoglio);
 }
 
 avvia();
