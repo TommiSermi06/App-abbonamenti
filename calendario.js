@@ -96,6 +96,12 @@ function creaFileCalendario(pagamenti) {
     const descrizione = fineProva
       ? `Finisce la prova gratuita di ${abb.nome}: da oggi costa ${costo} (${frequenza}). Se non ti serve, disdici prima.\nCreato dall'app Abbonamenti.`
       : `Rinnovo ${frequenza} di ${abb.nome}: ${costo}.\nCreato dall'app Abbonamenti.`;
+    // In fondo alla descrizione: come lo paghi e dove disdirlo (se li hai scritti)
+    const extra = [
+      abb.pagamento ? `Pagamento: ${abb.pagamento}` : '',
+      abb.link ? `Gestisci o disdici: ${abb.link}` : '',
+    ].filter(Boolean).join('\n');
+    const descrizioneCompleta = extra ? `${descrizione}\n${extra}` : descrizione;
     const avvisoPrima = fineProva
       ? `La prova gratuita di ${abb.nome} finisce ${preavviso}: poi costa ${costo}`
       : `${abb.nome} si rinnova ${preavviso} (${costo})`;
@@ -111,7 +117,9 @@ function creaFileCalendario(pagamenti) {
       `DTSTART;VALUE=DATE:${dataICS(data)}`,
       `DTEND;VALUE=DATE:${dataICS(giornoDopo)}`,
       `SUMMARY:${testoICS(titolo)}`,
-      `DESCRIPTION:${testoICS(descrizione)}`,
+      `DESCRIPTION:${testoICS(descrizioneCompleta)}`,
+      // URL: il Calendario dell'iPhone lo mostra come link da toccare
+      ...(abb.link ? [`URL:${abb.link}`] : []),
       'TRANSP:TRANSPARENT', // l'evento non ti segna come "occupato"
 
       // Primo avviso: X giorni prima alle ORA_AVVISO.

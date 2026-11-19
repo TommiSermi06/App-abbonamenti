@@ -58,6 +58,11 @@ const el = {
   perCategoria: $('per-categoria'),
   campoCategoria: $('campo-categoria'),
   campoStato: $('campo-stato'),
+  campoLink: $('campo-link'),
+  campoPagamento: $('campo-pagamento'),
+  campoNote: $('campo-note'),
+  linkDisdici: $('link-disdici'),
+  metodiPagamento: $('metodi-pagamento'),
   campoProva: $('campo-prova'),
   rigaFineProva: $('riga-fine-prova'),
   campoFineProva: $('campo-fine-prova'),
@@ -279,7 +284,8 @@ function disegnaLista() {
   el.btnCancellaRicerca.hidden = el.campoRicerca.value === '';
 
   const conInfo = abbonamenti
-    .filter((abb) => semplifica(abb.nome).includes(cercato)) // "" è contenuto in ogni nome
+    // Cerchiamo nel nome, nel metodo di pagamento e nelle note ("" è contenuto in tutto)
+    .filter((abb) => semplifica(`${abb.nome} ${abb.pagamento} ${abb.note}`).includes(cercato))
     .map((abb) => ({ abb, info: infoRinnovo(abb, oggi) }))
     .sort(ORDINAMENTI[ordine]);
 
@@ -352,6 +358,14 @@ function disegnaProssimo(primo) {
     crea('span', 'prossimo-data', `${data} · ${info.prova ? 'poi ' : ''}${formatoEuro.format(abb.costo)}`),
     creaBadge(info, true),
   );
+  // Se c'è il link per disdire, lo mettiamo a portata di tocco
+  if (abb.link) {
+    const gestisci = crea('a', 'prossimo-link', 'Gestisci l\'abbonamento ↗');
+    gestisci.href = abb.link;
+    gestisci.target = '_blank';
+    gestisci.rel = 'noopener noreferrer'; // la pagina aperta non può "controllare" la nostra
+    el.prossimo.append(gestisci);
+  }
 }
 
 // --- Pillole del filtro: "Tutte" + una per ogni categoria usata ---
@@ -637,6 +651,7 @@ function selezionaMese(indice) {
     if (abb.frequenza === 'annuale') nome.append(crea('span', 'dettaglio-nota', ' · annuale'));
     if (stessoGiorno(data, fineProvaDi(abb))) nome.append(crea('span', 'dettaglio-nota', ' · fine prova'));
     if (data < oggi) nome.append(crea('span', 'dettaglio-nota', ' · già pagato'));
+    if (abb.pagamento) nome.append(crea('span', 'dettaglio-nota', ` · ${abb.pagamento}`));
 
     riga.append(
       crea('span', 'dettaglio-data', formatoGiornoMese.format(data).replace('.', '')),
@@ -692,6 +707,24 @@ function nascondiFoglio() {
   }
 }
 
+// "Apri la pagina per disdire": compare solo se nel campo c'è un link valido
+function aggiornaLinkDisdici() {
+  const link = Archivio.controllaLink(el.campoLink.value);
+  el.linkDisdici.hidden = !link;
+  if (link) el.linkDisdici.href = link;
+}
+
+// Suggerimenti per il campo Pagamento: i metodi già usati negli altri abbonamenti
+// (così scrivi sempre "Visa •••• 1234" allo stesso modo e la ricerca li trova tutti)
+function preparaSuggerimentiPagamento() {
+  const metodi = [...new Set(abbonamenti.map((abb) => abb.pagamento).filter(Boolean))].sort();
+  el.metodiPagamento.replaceChildren(...metodi.map((metodo) => {
+    const opzione = crea('option');
+    opzione.value = metodo;
+    return opzione;
+  }));
+}
+
 // Il giorno di fine prova e la sua spiegazione si vedono solo con l'interruttore acceso
 function aggiornaRigaProva() {
   el.rigaFineProva.hidden = !el.campoProva.checked;
@@ -714,6 +747,11 @@ function apriFoglio(abb) {
     : filtro !== 'tutte' ? filtro
     : CATEGORIA_PREDEFINITA;
   el.campoStato.value = abb ? abb.stato : 'attivo'; // un nuovo abbonamento è attivo
+  el.campoLink.value = abb ? abb.link : '';
+  el.campoPagamento.value = abb ? abb.pagamento : '';
+  el.campoNote.value = abb ? abb.note : '';
+  aggiornaLinkDisdici();
+  preparaSuggerimentiPagamento();
   // Prova gratuita: l'interruttore è acceso solo se la prova non è ancora finita
   const fine = abb ? fineProvaDi(abb) : null;
   el.campoProva.checked = Boolean(fine) && fine >= oggiAMezzanotte();
@@ -741,6 +779,9 @@ function leggiModulo() {
   const categoria = el.campoCategoria.value;
   const stato = el.campoStato.value;
   const fineProva = el.campoProva.checked ? el.campoFineProva.value : null;
+  const link = Archivio.controllaLink(el.campoLink.value); // "" se vuoto, null se non valido
+  const pagamento = el.campoPagamento.value.trim();
+  const note = el.campoNote.value.trim();
 
   if (!nome) return { errore: 'Scrivi il nome dell\'abbonamento.', campo: el.campoNome };
   if (!Number.isFinite(costo) || costo <= 0) {
@@ -753,8 +794,18 @@ function leggiModulo() {
   if (el.campoProva.checked && !/^\d{4}-\d{2}-\d{2}$/.test(fineProva)) {
     return { errore: 'Scegli il giorno in cui finisce la prova gratuita.', campo: el.campoFineProva };
   }
+  if (link === null) {
+    return { errore: 'Il link non sembra valido: scrivi un indirizzo come netflix.com/account.', campo: el.campoLink };
+  }
+  // Sicurezza: 12 o più cifre nel campo Pagamento = probabilmente il numero intero della carta
+  if ((pagamento.match(/\d/g) || []).length >= 12) {
+    return {
+      errore: 'Non scrivere il numero intero della carta: bastano il circuito e le ultime 4 cifre (es. Visa •••• 1234).',
+      campo: el.campoPagamento,
+    };
+  }
 
-  return { dati: { nome, costo, frequenza, giorno, mese: frequenza === 'annuale' ? mese : null, categoria, stato, fineProva } };
+  return { dati: { nome, costo, frequenza, giorno, mese: frequenza === 'annuale' ? mese : null, categoria, stato, fineProva, link, pagamento, note } };
 }
 
 async function salva(evento) {
@@ -1077,6 +1128,7 @@ el.modulo.addEventListener('input', (e) => {
   el.errore.textContent = '';
   // Se scrivi tu il giorno del rinnovo, non lo cambiamo più in automatico
   if (e.target === el.campoGiorno) el.campoGiorno.dataset.automatico = 'no';
+  if (e.target === el.campoLink) aggiornaLinkDisdici();
 });
 
 // Un solo "ascoltatore" per tutti i gruppi: capiamo quale riga è stata toccata

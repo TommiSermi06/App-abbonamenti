@@ -50,6 +50,12 @@ grant select, insert, update on public.abbonamenti to authenticated;
 -- Versione 3.1: fine della prova gratuita (null = nessuna prova)
 alter table public.abbonamenti add column fine_prova date;
 
+-- Versione 3.2: link per disdire, metodo di pagamento e note (null = vuoto)
+alter table public.abbonamenti
+  add column link text check (char_length(link) <= 300),
+  add column pagamento text check (char_length(pagamento) <= 40),
+  add column note text check (char_length(note) <= 500);
+
 -- Impostazioni fatte dal sito di Supabase (non con SQL):
 -- - Authentication → URL Configuration → Site URL: https://tommisermi06.github.io/App-abbonamenti/
 -- - Authentication → Sign In / Providers → Email → "Confirm email": spento
