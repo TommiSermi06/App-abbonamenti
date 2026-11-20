@@ -61,6 +61,13 @@ create policy "Chiave pubblica leggibile" on public.configurazione_push
 
 grant select on public.configurazione_push to anon, authenticated;
 
+-- Il server (la funzione invia-avvisi entra come "service_role") deve poter leggere e scrivere
+-- queste tabelle e leggere gli abbonamenti. Nei progetti Supabase nuovi questi permessi NON ci sono
+-- da soli: senza queste righe la funzione risponde "permission denied".
+grant select, insert, update, delete on public.iscrizioni_push, public.avvisi_inviati,
+  public.configurazione_push to service_role;
+grant select on public.abbonamenti to service_role;
+
 -- 4. L'orologio: ogni ora, al minuto 0, chiama la funzione invia-avvisi.
 --    (pg_cron = "orologio" del database; pg_net = fa la chiamata via internet)
 create extension if not exists pg_cron;
