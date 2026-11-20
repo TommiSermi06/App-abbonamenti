@@ -14,7 +14,8 @@
    - disponibile()        → il dispositivo ha Face ID / Touch ID utilizzabili?
    - registra(nome)       → crea la chiave; restituisce il suo "id" (da salvare)
    - verifica(id)         → chiede il Face ID; va a buon fine solo se è riuscito
-   - chiudi(opzioni)      → mostra la schermata di blocco e aspetta lo sblocco
+   - chiudi(opzioni)      → mostra la schermata di blocco, chiede SUBITO il Face ID da sola
+                            e aspetta lo sblocco (il pulsante compare solo se serve)
    - copri() / scopri()   → copre l'app di colpo (quando va in background) e la ricopre
    - stato()              → 'aperto', 'coperto' (solo coperto) o 'bloccato' (serve il Face ID)
 
@@ -106,7 +107,7 @@ const Blocco = (function () {
   function scopri() {
     const schermata = $('blocco');
     stato = 'aperto';
-    schermata.classList.remove('istantaneo', 'visibile', 'aiuto');
+    schermata.classList.remove('istantaneo', 'visibile', 'aiuto', 'in-attesa');
     setTimeout(() => { if (stato === 'aperto') schermata.hidden = true; }, 400); // dopo la dissolvenza
   }
 
@@ -139,7 +140,10 @@ const Blocco = (function () {
         risolvi(come);
       };
 
-      // Il Face ID parte solo da un tocco: Safari lo vuole (così nessun sito lo può chiedere a sorpresa)
+      const testo = $('blocco-testo');
+      const testoNormale = 'Usa Face ID per vedere i tuoi abbonamenti.';
+
+      // Il tocco sul pulsante "Sblocca con Face ID" (la rete di sicurezza)
       pulsante.onclick = async () => {
         errore.textContent = '';
         pulsante.disabled = true;
@@ -152,6 +156,19 @@ const Blocco = (function () {
           pulsante.disabled = false;
         }
       };
+
+      // Appena si apre, chiediamo il Face ID DA SOLI, senza aspettare un tocco.
+      // Intanto niente pulsanti: solo "Sblocco con Face ID…" e il pianeta che respira (classe "in-attesa").
+      // Se l'iPhone vuole per forza un tocco, o se annulli, ricompaiono pulsante e aiuto (senza errori rossi:
+      // non hai sbagliato niente).
+      schermata.classList.add('in-attesa');
+      testo.textContent = 'Sblocco con Face ID…';
+      verifica(id)
+        .then(() => fatto('faceid'))
+        .catch(() => {
+          schermata.classList.remove('in-attesa');
+          testo.textContent = testoNormale;
+        });
 
       $('btn-blocco-aiuto').onclick = () => {
         schermata.classList.toggle('aiuto');

@@ -524,7 +524,8 @@
   <section id="blocco" class="blocco" role="dialog" aria-modal="true" aria-labelledby="blocco-titolo" tabindex="-1" hidden>
     <img class="blocco-pianeta" src="pianeta.webp?v=4.15" alt="" width="520" height="520" decoding="async">
     <h2 id="blocco-titolo" class="blocco-titolo">Abbonamenti è bloccato</h2>
-    <p class="blocco-testo">Usa Face ID per vedere i tuoi abbonamenti.</p>
+    <!-- Il testo lo cambia blocco.js: "Sblocco con Face ID…" mentre aspetta, poi questa frase -->
+    <p id="blocco-testo" class="blocco-testo">Usa Face ID per vedere i tuoi abbonamenti.</p>
     <button type="button" id="btn-sblocca" class="btn-principale">Sblocca con Face ID</button>
     <p id="blocco-errore" class="errore" role="alert"></p>
     <button type="button" id="btn-blocco-aiuto" class="btn-testo">Non riesci a sbloccare?</button>

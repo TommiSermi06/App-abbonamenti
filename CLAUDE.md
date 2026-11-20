@@ -256,7 +256,10 @@ I backup delle versioni precedenti si importano ancora (stato mancante → `atti
   piattaforma (`authenticatorAttachment: 'platform'`, `userVerification: 'required'`) → id in base64url;
   `verifica(id)` chiede il Face ID (`navigator.credentials.get`) e controlla il bit "UV" (user verified, byte 32
   di `authenticatorData`). Nessun server: è un controllo locale, protegge la SCHERMATA, i dati non sono cifrati.
-  Il Face ID parte SOLO da un tocco (Safari lo esige).
+- **Il Face ID parte da solo** (scelta del proprietario): appena si apre la schermata di blocco, `chiudi()` chiama
+  `verifica()` senza aspettare un tocco; intanto classe `.in-attesa` (pulsanti nascosti con `visibility`, testo
+  "Sblocco con Face ID…", pianeta che respira). Se fallisce (annullato, non riconosciuto, o Safari che vuole un
+  tocco) ricompaiono pulsante "Sblocca con Face ID" e aiuto, senza errore rosso. Poi parte l'orbita come sempre.
 - L'id della chiave sta nell'impostazione `bloccoFaceId` (solo sul dispositivo; `null` = spento). Interruttore in
   Impostazioni → **Privacy** (`#campo-blocco`, `cambiaBlocco()`): accendere crea la chiave; **spegnere chiede prima
   il Face ID**. Non disponibile (`isUserVerifyingPlatformAuthenticatorAvailable` falso, o `file://`) → disattivato.

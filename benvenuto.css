@@ -532,6 +532,22 @@
   text-align: center;
 }
 
+/* Mentre il Face ID parte da solo: niente pulsanti, e il pianeta "respira" piano */
+.blocco.in-attesa .btn-principale,
+.blocco.in-attesa #btn-blocco-aiuto,
+.blocco.in-attesa .blocco-aiuto {
+  visibility: hidden; /* nascosti ma al loro posto: quando ricompaiono non fa sobbalzare niente */
+}
+
+.blocco.in-attesa .blocco-pianeta {
+  animation: respira-blocco 1.6s var(--curva) infinite alternate;
+}
+
+@keyframes respira-blocco {
+  from { transform: scale(1); }
+  to   { transform: scale(1.06); }
+}
+
 /* L'aiuto si vede solo dopo aver toccato "Non riesci a sbloccare?" */
 .blocco-aiuto {
   display: none;
@@ -551,5 +567,8 @@
 @media (prefers-reduced-motion: reduce) {
   .blocco {
     transition: none;
+  }
+  .blocco.in-attesa .blocco-pianeta {
+    animation: none;
   }
 }
