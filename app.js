@@ -1642,7 +1642,8 @@ function entraNellApp() {
   posizionaGocciaSchede();
 
   // Animazioni: barra in alto che diventa compatta, fogli che si chiudono tirandoli giù
-  Animazioni.barraCompatta($('barra-fissa'), $('titolo-grande'));
+  // La fila dei filtri svanisce mentre passa sotto la barra (vedi animazioni.js)
+  Animazioni.barraCompatta($('barra-fissa'), $('titolo-grande'), [el.filtri]);
   Animazioni.trascinaPerChiudere(el.foglio, nascondiFoglio);
   Animazioni.trascinaPerChiudere(el.foglioAccount, nascondiFoglio);
   // Righe della lista: scorrendo a sinistra compaiono "Pausa" ed "Elimina"
