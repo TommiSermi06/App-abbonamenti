@@ -84,7 +84,7 @@ function creaFileCalendario(pagamenti) {
   for (const { abb, data, fineProva } of pagamenti) {
     const categoria = trovaCategoria(abb.categoria);
     const costo = euroCalendario.format(abb.costo);
-    const frequenza = abb.frequenza === 'annuale' ? 'annuale' : 'mensile';
+    const frequenza = trovaFrequenza(abb.frequenza)?.aggettivo || 'mensile'; // "settimanale", "trimestrale"…
     // L'evento dura tutto il giorno: finisce all'inizio del giorno dopo
     const giornoDopo = new Date(data.getFullYear(), data.getMonth(), data.getDate() + 1);
     const preavviso = GIORNI_PREAVVISO === 1 ? 'domani' : `tra ${GIORNI_PREAVVISO} giorni`;

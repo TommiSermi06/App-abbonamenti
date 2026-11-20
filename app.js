@@ -107,6 +107,12 @@ const el = {
   campoGiorno: $('campo-giorno'),
   campoMese: $('campo-mese'),
   rigaMese: $('riga-mese'),
+  etichettaMese: $('etichetta-mese'),
+  campoFrequenza: $('campo-frequenza'),
+  rigaGiorno: $('riga-giorno'),
+  rigaGiornoSettimana: $('riga-giorno-settimana'),
+  campoGiornoSettimana: $('campo-giorno-settimana'),
+  notaFrequenza: $('nota-frequenza'),
   errore: $('errore'),
   bloccoElimina: $('blocco-elimina'),
   btnElimina: $('btn-elimina'),
@@ -144,17 +150,21 @@ function dataSicura(anno, mese, giorno) {
 
 // La prossima data di rinnovo (oggi compreso)
 function prossimaData(abb, oggi) {
-  const anno = oggi.getFullYear();
-  if (abb.frequenza === 'mensile') {
-    // Proviamo questo mese; se il giorno è già passato, il mese dopo
-    let data = dataSicura(anno, oggi.getMonth(), abb.giorno);
-    if (data < oggi) data = dataSicura(anno, oggi.getMonth() + 1, abb.giorno);
-    return data;
+  if (abb.frequenza === 'settimanale') {
+    // Quanti giorni mancano al prossimo "lunedì" (0 se è proprio oggi)
+    const mancano = (giornoJS(abb.giorno) - oggi.getDay() + 7) % 7;
+    return new Date(oggi.getFullYear(), oggi.getMonth(), oggi.getDate() + mancano);
   }
-  // Annuale: proviamo quest'anno; se è già passato, l'anno prossimo
-  let data = dataSicura(anno, abb.mese - 1, abb.giorno);
-  if (data < oggi) data = dataSicura(anno + 1, abb.mese - 1, abb.giorno);
-  return data;
+  // Frequenze "a mesi" (mensile, trimestrale, semestrale, annuale): partiamo da questo mese
+  // e andiamo avanti finché troviamo un mese in cui si paga, con il giorno non ancora passato.
+  // Al massimo serve guardare 13 mesi (l'annuale il cui giorno è appena passato).
+  for (let i = 0; i <= 12; i++) {
+    const primo = new Date(oggi.getFullYear(), oggi.getMonth() + i, 1);
+    if (!pagaNelMese(abb, primo.getMonth())) continue;
+    const data = dataSicura(primo.getFullYear(), primo.getMonth(), abb.giorno);
+    if (data >= oggi) return data;
+  }
+  return oggi; // non dovrebbe mai succedere: i dati li controlla storage.js
 }
 
 // Quanti giorni mancano. Math.round evita errori dovuti all'ora legale.
@@ -217,9 +227,20 @@ function infoRinnovo(abb, oggi) {
   return { data, giorni, stato: statoDaGiorni(giorni), prova: false };
 }
 
-// Quanto pesa ogni mese: gli annuali contano costo / 12
+// Quanto pesa ogni mese: quello che paghi in un anno, diviso 12.
+// Settimanale: costo × 52 / 12 · trimestrale: costo / 3 · semestrale: costo / 6 · annuale: costo / 12
 function costoMensile(abb) {
-  return abb.frequenza === 'annuale' ? abb.costo / 12 : abb.costo;
+  return (abb.costo * volteAllAnno(abb.frequenza)) / 12;
+}
+
+// Il testo sotto il nome: "16,99 € al mese · il 2", "4,99 € a settimana · ogni lunedì"…
+// "\u00a0" è uno spazio che non va a capo: se la riga è stretta, "il 20" scende intero
+function testoRinnovo(abb) {
+  const costo = formatoEuro.format(abb.costo);
+  const periodo = trovaFrequenza(abb.frequenza).periodo.replace(/ /g, '\u00a0');
+  if (abb.frequenza === 'settimanale') return `${costo} ${periodo} · ogni\u00a0${GIORNI_SETTIMANA[abb.giorno]}`;
+  if (abb.frequenza === 'annuale') return `${costo} ${periodo} · ${abb.giorno}\u00a0${NOMI_MESI[abb.mese - 1]}`;
+  return `${costo} ${periodo} · il\u00a0${abb.giorno}`;
 }
 
 
@@ -517,13 +538,10 @@ function creaRigaAbbonamento(abb, info, posizione) {
   pulsante.type = 'button';
   pulsante.dataset.id = abb.id;
 
-  // "\u00a0" è uno spazio che non va a capo: se la riga è stretta, "il 20" scende intero
-  let dettaglio = abb.frequenza === 'mensile'
-    ? `${formatoEuro.format(abb.costo)} al\u00a0mese · il\u00a0${abb.giorno}`
-    : `${formatoEuro.format(abb.costo)} all'anno · ${abb.giorno}\u00a0${NOMI_MESI[abb.mese - 1]}`;
+  let dettaglio = testoRinnovo(abb);
   // Ancora in prova: "Gratis fino al 25 nov, poi 13,99 € al mese"
   if (info.prova) {
-    const periodo = abb.frequenza === 'mensile' ? 'al mese' : 'all\'anno';
+    const periodo = trovaFrequenza(abb.frequenza).periodo;
     const fino = formatoGiornoMese.format(info.data).replace('.', '');
     dettaglio = `Gratis fino al ${fino}, poi ${formatoEuro.format(abb.costo)} ${periodo}`;
   }
@@ -649,16 +667,29 @@ function disegnaPerCategoria() {
    gli annuali per intero solo nel mese del rinnovo (non divisi per 12).
    ===================================================================== */
 
+// I giorni in cui un abbonamento si paga in un certo mese (mese da 0 = gennaio a 11 = dicembre).
+// Settimanale: tutti i "lunedì" del mese (4 o 5). Le altre: un giorno, se quel mese si paga.
+function dateDelMese(abb, anno, mese) {
+  if (abb.frequenza === 'settimanale') {
+    const date = [];
+    for (let giorno = 1; giorno <= giorniNelMese(anno, mese); giorno++) {
+      const data = new Date(anno, mese, giorno);
+      if (data.getDay() === giornoJS(abb.giorno)) date.push(data);
+    }
+    return date;
+  }
+  return pagaNelMese(abb, mese) ? [dataSicura(anno, mese, abb.giorno)] : [];
+}
+
 // I pagamenti di un mese (mese da 0 = gennaio a 11 = dicembre), in ordine di giorno
 function pagamentiDelMese(anno, mese) {
   const pagamenti = [];
   for (const abb of attivi()) { // chi è in pausa o disdetto non paga
-    const pagaQuestoMese = abb.frequenza === 'mensile' || abb.mese - 1 === mese;
-    if (!pagaQuestoMese) continue;
-    const data = dataSicura(anno, mese, abb.giorno);
     const fine = fineProvaDi(abb);
-    if (fine && data < fine) continue; // durante la prova gratuita non si paga
-    pagamenti.push({ abb, data });
+    for (const data of dateDelMese(abb, anno, mese)) {
+      if (fine && data < fine) continue; // durante la prova gratuita non si paga
+      pagamenti.push({ abb, data });
+    }
   }
   return pagamenti.sort((a, b) => a.data - b.data || a.abb.nome.localeCompare(b.abb.nome, 'it'));
 }
@@ -772,7 +803,9 @@ function selezionaMese(indice) {
     if (data < oggi) riga.classList.add('passato'); // già addebitato questo mese
 
     const nome = crea('span', 'dettaglio-nome', `${trovaCategoria(abb.categoria).emoji} ${abb.nome}`);
-    if (abb.frequenza === 'annuale') nome.append(crea('span', 'dettaglio-nota', ' · annuale'));
+    // "· annuale", "· trimestrale", "· semestrale": per mensili e settimanali non serve dirlo
+    // (i settimanali compaiono 4-5 volte nel mese: si capisce dalle date)
+    if (usaMese(abb.frequenza)) nome.append(crea('span', 'dettaglio-nota', ` · ${trovaFrequenza(abb.frequenza).aggettivo}`));
     if (stessoGiorno(data, fineProvaDi(abb))) nome.append(crea('span', 'dettaglio-nota', ' · fine prova'));
     if (data < oggi) nome.append(crea('span', 'dettaglio-nota', ' · già pagato'));
     if (abb.pagamento) nome.append(crea('span', 'dettaglio-nota', ` · ${abb.pagamento}`));
@@ -793,17 +826,32 @@ function selezionaMese(indice) {
    ===================================================================== */
 
 function frequenzaScelta() {
-  return el.modulo.querySelector('input[name="frequenza"]:checked').value;
+  return el.campoFrequenza.value;
 }
 
 function impostaFrequenza(valore) {
-  el.modulo.querySelector(`input[name="frequenza"][value="${valore}"]`).checked = true;
-  aggiornaRigaMese();
+  el.campoFrequenza.value = valore;
+  aggiornaRigheFrequenza();
 }
 
-// Il campo "mese" si vede solo per gli abbonamenti annuali
-function aggiornaRigaMese() {
-  el.rigaMese.hidden = frequenzaScelta() !== 'annuale';
+// Mostra le righe giuste per la frequenza scelta:
+// - settimanale: il giorno della SETTIMANA (al posto del giorno del mese);
+// - trimestrale e semestrale: il mese da cui si parte, con la nota "Si rinnova a gennaio, aprile…";
+// - annuale: il mese del rinnovo.
+function aggiornaRigheFrequenza() {
+  const frequenza = frequenzaScelta();
+  el.rigaGiorno.hidden = frequenza === 'settimanale';
+  el.rigaGiornoSettimana.hidden = frequenza !== 'settimanale';
+  el.rigaMese.hidden = !usaMese(frequenza);
+  el.etichettaMese.textContent = frequenza === 'annuale' ? 'Mese del rinnovo' : 'A partire da';
+
+  const aMesi = frequenza === 'trimestrale' || frequenza === 'semestrale';
+  el.notaFrequenza.hidden = !aMesi;
+  if (aMesi) {
+    const mesi = mesiDiPagamento({ frequenza, mese: Number(el.campoMese.value) }).map((m) => NOMI_MESI[m]);
+    // "gennaio, aprile, luglio e ottobre"
+    el.notaFrequenza.textContent = `Si rinnova a ${mesi.slice(0, -1).join(', ')} e ${mesi[mesi.length - 1]}.`;
+  }
 }
 
 // --- Aprire e chiudere un foglio (vale per tutti i fogli dell'app) ---
@@ -908,8 +956,12 @@ function apriFoglio(abb) {
   el.campoNome.value = abb ? abb.nome : '';
   // Mostriamo la virgola italiana: 15.99 → "15,99"
   el.campoCosto.value = abb ? abb.costo.toFixed(2).replace('.', ',') : '';
-  el.campoGiorno.value = abb ? String(abb.giorno) : '';
+  // Il giorno: per i settimanali è un giorno della settimana (1-7), per gli altri del mese (1-31)
+  const settimanale = abb && abb.frequenza === 'settimanale';
+  el.campoGiorno.value = abb && !settimanale ? String(abb.giorno) : '';
   el.campoGiorno.dataset.automatico = 'no';
+  el.campoGiornoSettimana.value = String(settimanale ? abb.giorno : giornoSettimanaDi(oggiAMezzanotte()));
+  el.campoGiornoSettimana.dataset.automatico = settimanale ? 'no' : 'si';
   el.campoMese.value = String(abb && abb.mese ? abb.mese : new Date().getMonth() + 1);
   // Nuovo abbonamento: se stai guardando una categoria, la proponiamo già scelta
   el.campoCategoria.value = abb ? abb.categoria
@@ -945,8 +997,10 @@ function leggiModulo() {
   const nome = el.campoNome.value.trim();
   // Accettiamo sia "15,99" sia "15.99", ed eventuali spazi o "€"
   const costo = Number(el.campoCosto.value.replace(/[€\s]/g, '').replace(',', '.'));
-  const giorno = Number(el.campoGiorno.value.trim());
   const frequenza = frequenzaScelta();
+  const giorno = frequenza === 'settimanale'
+    ? Number(el.campoGiornoSettimana.value) // 1 = lunedì … 7 = domenica
+    : Number(el.campoGiorno.value.trim());
   const mese = Number(el.campoMese.value);
   const categoria = el.campoCategoria.value;
   const stato = el.campoStato.value;
@@ -959,7 +1013,7 @@ function leggiModulo() {
   if (!Number.isFinite(costo) || costo <= 0) {
     return { errore: 'Scrivi un costo valido, per esempio 9,99.', campo: el.campoCosto };
   }
-  if (!Number.isInteger(giorno) || giorno < 1 || giorno > 31) {
+  if (frequenza !== 'settimanale' && (!Number.isInteger(giorno) || giorno < 1 || giorno > 31)) {
     return { errore: 'Il giorno del rinnovo va da 1 a 31.', campo: el.campoGiorno };
   }
 
@@ -977,7 +1031,7 @@ function leggiModulo() {
     };
   }
 
-  return { dati: { nome, costo, frequenza, giorno, mese: frequenza === 'annuale' ? mese : null, categoria, stato, fineProva, link, pagamento, note } };
+  return { dati: { nome, costo, frequenza, giorno, mese: usaMese(frequenza) ? mese : null, categoria, stato, fineProva, link, pagamento, note } };
 }
 
 async function salva(evento) {
@@ -1288,7 +1342,8 @@ el.btnGuida.addEventListener('click', () => {
   disegnaGuida();
 });
 el.modulo.addEventListener('change', (e) => {
-  if (e.target.name === 'frequenza') aggiornaRigaMese();
+  if (e.target === el.campoFrequenza || e.target === el.campoMese) aggiornaRigheFrequenza();
+  if (e.target === el.campoGiornoSettimana) el.campoGiornoSettimana.dataset.automatico = 'no';
   if (e.target === el.campoProva) {
     // Appena accendi la prova, proponiamo una settimana da oggi (si può cambiare)
     if (el.campoProva.checked && !el.campoFineProva.value) {
@@ -1305,6 +1360,11 @@ el.modulo.addEventListener('change', (e) => {
       && el.campoProva.checked && el.campoFineProva.value && giornoNostro) {
     el.campoGiorno.value = String(Number(el.campoFineProva.value.slice(8, 10)));
     el.campoGiorno.dataset.automatico = 'si';
+  }
+  // Settimanale: il giorno della settimana segue la fine della prova (finché non lo scegli tu)
+  if ((e.target === el.campoProva || e.target === el.campoFineProva)
+      && el.campoProva.checked && el.campoFineProva.value && el.campoGiornoSettimana.dataset.automatico === 'si') {
+    el.campoGiornoSettimana.value = String(giornoSettimanaDi(dataDaTesto(el.campoFineProva.value)));
   }
 });
 // Appena l'utente ricomincia a scrivere, togliamo il messaggio di errore
@@ -1506,8 +1566,23 @@ function preparaMenuCategorie() {
   }
 }
 
+// Riempie i menu "Si rinnova" e "Giorno della settimana" leggendo frequenze.js
+function preparaMenuFrequenze() {
+  for (const f of FREQUENZE) {
+    const opzione = crea('option', '', f.nome);
+    opzione.value = f.id;
+    el.campoFrequenza.append(opzione);
+  }
+  for (let giorno = 1; giorno <= 7; giorno++) {
+    const opzione = crea('option', '', GIORNI_SETTIMANA[giorno]);
+    opzione.value = String(giorno);
+    el.campoGiornoSettimana.append(opzione);
+  }
+}
+
 async function avvia() {
   preparaMenuCategorie();
+  preparaMenuFrequenze();
   scriviNotaCalendario();
 
   // Recuperiamo l'ordine scelto l'ultima volta (se è uno di quelli validi)
