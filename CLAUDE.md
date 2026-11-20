@@ -33,8 +33,8 @@ Il proprietario del progetto **sta imparando a programmare**:
   (generate da `icon.svg`, con sfondo quadrato: gli angoli li arrotonda iOS).
 
 ## Numero di versione (da aggiornare a OGNI rilascio)
-- Versione attuale: **4.20**. In `index.html` i file hanno il numero di versione (`style.css?v=4.20`, `app.js?v=4.20`…)
-  e c'è la scritta "Abbonamenti · versione 4.20" in fondo alla pagina.
+- Versione attuale: **4.21**. In `index.html` i file hanno il numero di versione (`style.css?v=4.21`, `app.js?v=4.21`…)
+  e c'è la scritta "Abbonamenti · versione 4.21" in fondo alla pagina.
 - A ogni modifica di CSS, JavaScript o manifest **aumenta il numero in tutti i punti di `index.html`**
   (cerca la versione attuale), così l'iPhone scarica i file nuovi invece di usare la copia in memoria.
   Piccole modifiche: 3.0 → 3.1; una nuova versione grande dell'app: 3.x → 4.0.
@@ -358,6 +358,24 @@ I backup delle versioni precedenti si importano ancora (stato mancante → `atti
 - Backup versione 6: `{ …, abbonamenti, spese }`. Un backup vecchio (senza `spese`) non tocca le spese attuali.
 - Prove automatiche: finto Supabase con `context.route` (GET/POST upsert/PATCH in memoria) e sessione finta in
   `abbonamenti:sessione` (`{ access_token, refresh_token, scadeIl, email, idUtente }`).
+
+## Spese per categoria: barre e torta (versione 4.21, richiesta del proprietario)
+- Nella scheda Spese, tra la card del mese e la lista, la sezione `#sezione-spese-categorie` "Per categoria" con il
+  segmentato **Barre / Torta** (`name="vista-spese"`, scelta salvata nell'impostazione `vistaSpese`).
+- **Barre** (`disegnaBarreSpese`): come "Spesa per categoria" degli abbonamenti (riusa `.riga-categoria`/`.categoria-barra`),
+  tutte le categorie dalla più grande; ogni riga è un pulsante (`.riga-categoria-spesa`, `aria-pressed`).
+- **Torta** (`disegnaTortaSpese`): ciambella SVG 200×200 (raggi 92/58), un `<path>` per fetta (`tracciatoFetta`) + emoji
+  della categoria a metà fetta (solo se > 1/20 di giro). Al massimo `FETTE_MASSIME` = 5 fette: con più categorie le 4
+  più grandi + "🗂️ Altre N categorie" (`fetteDellaTorta`). Colori `--torta-1…5` (sfumature dello stesso blu, dalla fetta
+  più grande; al buio la più grande è la più chiara): da sole NON bastano a distinguere le fette (verificato con il
+  validatore della skill dataviz), per questo ci sono emoji sulle fette, legenda scritta e spazio di 2px tra le fette.
+  Animazione in JS (`requestAnimationFrame`, 0,7 s, rallenta alla fine): le fette passano dagli angoli disegnati prima
+  (`angoliTorta`) a quelli nuovi; con `angoliTorta` vuoto si aprono a ventaglio (passando a "Torta" ed entrando nella
+  scheda). Con Riduci movimento niente animazione. Al centro il totale del mese o la categoria scelta (con la %).
+- **Toccare una categoria** (barra, fetta o voce della legenda) = `sceltaSpese` (id, oppure `'altre'`): la fetta esce di
+  7 punti, le altre si fanno tenui (classe `con-scelta`, cambiata dopo due fotogrammi perché la transizione si veda), e la
+  lista dei giorni mostra solo quella categoria, con il pulsante "Mostra tutte le categorie (N)" (`#btn-tutte-spese`).
+  Un secondo tocco toglie la scelta; cambiando mese o salvando una spesa la scelta si azzera.
 
 ## Budget mensile (versione 4.19)
 - Impostazione locale `budget` (euro, `null` = nessuno; solo sul dispositivo, come il nome). Si sceglie in

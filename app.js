@@ -44,6 +44,8 @@ let spese = [];              // le spese di tutti i giorni (versione 4.20), cari
 let meseSpese = null;        // il mese guardato nella scheda Spese: { anno, mese } (mese 0 = gennaio)
 let idSpesaInModifica = null; // id della spesa aperta nel foglio (null = nuova)
 let idSpesaDaAnimare = null;  // la riga della spesa appena salvata, che compare con dissolvenza
+let vistaSpese = 'barre';     // come vedere le spese per categoria: 'barre' oppure 'torta' (versione 4.21)
+let sceltaSpese = null;       // categoria toccata: null = tutte, l'id di una categoria, oppure 'altre' (fetta "Altre")
 const scorrimentoSchede = {};      // per ogni scheda, fin dove l'avevi fatta scorrere
 
 
@@ -95,6 +97,16 @@ const el = {
   erroreSpesa: $('errore-spesa'),
   bloccoEliminaSpesa: $('blocco-elimina-spesa'),
   btnEliminaSpesa: $('btn-elimina-spesa'),
+  // Spese per categoria: barre e torta (versione 4.21)
+  sezioneSpeseCategorie: $('sezione-spese-categorie'),
+  speseBarre: $('spese-barre'),
+  speseTorta: $('spese-torta'),
+  tortaSvg: $('torta-svg'),
+  tortaEtichetta: $('torta-etichetta'),
+  tortaValore: $('torta-valore'),
+  tortaPercentuale: $('torta-percentuale'),
+  tortaLegenda: $('torta-legenda'),
+  btnTutteSpese: $('btn-tutte-spese'),
   prossimo: $('prossimo'),
   bloccoOrdina: $('blocco-ordina'),
   campoOrdine: $('campo-ordine'),
@@ -1880,10 +1892,18 @@ function disegnaSpese() {
   el.speseConteggio.textContent = delMese.length === 0 ? 'Nessuna spesa'
     : delMese.length === 1 ? '1 spesa' : `${delMese.length} spese`;
 
+  // Per categoria: barre o torta (e quale categoria è scelta)
+  const righe = categorieDelleSpese(delMese);
+  disegnaCategorieSpese(righe, totale);
+  const idScelti = idDellaScelta(righe); // null = tutte
+  const visibili = idScelti ? delMese.filter((sp) => idScelti.has(sp.categoria)) : delMese;
+  el.btnTutteSpese.hidden = !idScelti;
+  el.btnTutteSpese.textContent = `Mostra tutte le categorie (${delMese.length})`;
+
   // La lista: un gruppo per giorno, dal più recente; dentro il giorno, l'ultima aggiunta in alto
   el.speseGiorni.replaceChildren();
   const perGiorno = new Map();
-  for (const sp of [...delMese].reverse()) {
+  for (const sp of [...visibili].reverse()) {
     if (!perGiorno.has(sp.data)) perGiorno.set(sp.data, []);
     perGiorno.get(sp.data).push(sp);
   }
@@ -1905,6 +1925,234 @@ function disegnaSpese() {
   el.speseVuote.textContent = questoMese
     ? `Nessuna spesa a ${nomeMese}. Tocca + in alto per segnare la prima.`
     : `Nessuna spesa segnata a ${nomeMese}.`;
+}
+
+// ---------- Spese per categoria: barre e torta (versione 4.21) ----------
+// Quanto hai speso per ogni categoria nel mese, dalla più grande
+function categorieDelleSpese(delMese) {
+  const somme = new Map();
+  for (const sp of delMese) somme.set(sp.categoria, (somme.get(sp.categoria) || 0) + sp.importo);
+  return [...somme.entries()]
+    .map(([id, importo]) => ({ cat: trovaCategoriaSpesa(id), importo }))
+    .sort((a, b) => b.importo - a.importo);
+}
+
+// Le fette della torta: al massimo 5. Con più categorie teniamo le 4 più grandi
+// e uniamo le altre nella fetta "Altre" (con 6 sfumature di blu non si distinguerebbero più).
+const FETTE_MASSIME = 5;
+function fetteDellaTorta(righe) {
+  const fette = righe.map(({ cat, importo }) => ({ chiave: cat.id, emoji: cat.emoji, nome: cat.nome, importo, ids: [cat.id] }));
+  if (fette.length <= FETTE_MASSIME) return fette;
+  const resto = fette.slice(FETTE_MASSIME - 1);
+  return [...fette.slice(0, FETTE_MASSIME - 1), {
+    chiave: 'altre',
+    emoji: '🗂️',
+    nome: `Altre ${resto.length} categorie`,
+    importo: resto.reduce((somma, f) => somma + f.importo, 0),
+    ids: resto.flatMap((f) => f.ids),
+  }];
+}
+
+// Gli id delle categorie scelte (un Set), oppure null se le vuoi vedere tutte
+function idDellaScelta(righe) {
+  if (!sceltaSpese) return null;
+  const fetta = fetteDellaTorta(righe).find((f) => f.chiave === sceltaSpese);
+  if (fetta) return new Set(fetta.ids);
+  // Scelta fatta dalle barre su una categoria che nella torta sta dentro "Altre"
+  return righe.some(({ cat }) => cat.id === sceltaSpese) ? new Set([sceltaSpese]) : null;
+}
+
+// Tocco su una categoria (barra, fetta o voce della legenda): la scegli, oppure la togli se era già scelta
+function scegliCategoriaSpese(chiave) {
+  sceltaSpese = sceltaSpese === chiave ? null : chiave;
+  disegnaSpese();
+}
+
+function disegnaCategorieSpese(righe, totale) {
+  el.sezioneSpeseCategorie.hidden = righe.length === 0;
+  if (righe.length === 0) return;
+  // La scelta non esiste più (es. hai eliminato l'ultima spesa di quella categoria)? La togliamo
+  if (sceltaSpese && !idDellaScelta(righe)) sceltaSpese = null;
+
+  el.speseBarre.hidden = vistaSpese !== 'barre';
+  el.speseTorta.hidden = vistaSpese !== 'torta';
+  disegnaBarreSpese(righe, totale);
+  disegnaTortaSpese(righe, totale);
+}
+
+// Le BARRE: come "Spesa per categoria" degli abbonamenti, ma ogni riga si può toccare
+function disegnaBarreSpese(righe, totale) {
+  el.speseBarre.replaceChildren();
+  el.speseBarre.classList.toggle('con-scelta', Boolean(sceltaSpese));
+  const idScelti = idDellaScelta(righe);
+  for (const { cat, importo } of righe) {
+    const percentuale = Math.round((importo / totale) * 100);
+    const pulsante = crea('button', 'riga-categoria riga-categoria-spesa');
+    pulsante.type = 'button';
+    pulsante.dataset.chiave = cat.id;
+    pulsante.setAttribute('aria-pressed', String(Boolean(idScelti && idScelti.has(cat.id))));
+
+    const alto = crea('div', 'categoria-alto');
+    const valore = crea('span', 'categoria-valore', formatoEuro.format(importo));
+    valore.append(crea('span', 'categoria-percentuale', ` · ${percentuale}%`));
+    alto.append(crea('span', 'categoria-nome', `${cat.emoji} ${cat.nome}`), valore);
+
+    const barra = crea('div', 'categoria-barra');
+    barra.setAttribute('aria-hidden', 'true');
+    const riempimento = crea('span');
+    riempimento.style.width = `${(importo / totale) * 100}%`;
+    barra.append(riempimento);
+
+    pulsante.append(alto, barra);
+    const riga = crea('li');
+    riga.append(pulsante);
+    el.speseBarre.append(riga);
+  }
+}
+
+/* La TORTA: una ciambella disegnata con SVG. Ogni fetta è un <path> (un "tracciato").
+   Quando cambiano i numeri (altro mese, spesa nuova) le fette non saltano: si allargano o si
+   stringono piano fino alla misura nuova, ricalcolando il disegno a ogni fotogramma.
+   La prima volta si aprono "a ventaglio" partendo dall'alto. */
+const CENTRO_TORTA = 100;  // il centro del disegno (che è 200 × 200)
+const RAGGIO_FUORI = 92;
+const RAGGIO_DENTRO = 58;  // il buco della ciambella, dove scriviamo il totale
+let angoliTorta = new Map(); // per ogni fetta, gli angoli disegnati adesso: { inizio, fine } (da 0 a 1 = giro intero)
+let animazioneTorta = null;
+
+// Un punto sul cerchio: "giro" va da 0 (in alto) a 1 (di nuovo in alto), in senso orario
+function puntoTorta(raggio, giro) {
+  const angolo = giro * 2 * Math.PI;
+  return [CENTRO_TORTA + raggio * Math.sin(angolo), CENTRO_TORTA - raggio * Math.cos(angolo)];
+}
+
+// Il tracciato di una fetta di ciambella: arco fuori, giù verso il buco, arco dentro all'indietro
+function tracciatoFetta(inizio, fine) {
+  const fineSicura = Math.min(fine, inizio + 0.9999); // un giro intero esatto non si può disegnare con un arco
+  if (fineSicura - inizio <= 0) return '';
+  const grande = fineSicura - inizio > 0.5 ? 1 : 0; // l'arco è più di mezzo giro?
+  const [x1, y1] = puntoTorta(RAGGIO_FUORI, inizio);
+  const [x2, y2] = puntoTorta(RAGGIO_FUORI, fineSicura);
+  const [x3, y3] = puntoTorta(RAGGIO_DENTRO, fineSicura);
+  const [x4, y4] = puntoTorta(RAGGIO_DENTRO, inizio);
+  return `M${x1} ${y1}A${RAGGIO_FUORI} ${RAGGIO_FUORI} 0 ${grande} 1 ${x2} ${y2}`
+    + `L${x3} ${y3}A${RAGGIO_DENTRO} ${RAGGIO_DENTRO} 0 ${grande} 0 ${x4} ${y4}Z`;
+}
+
+function disegnaTortaSpese(righe, totale) {
+  const fette = fetteDellaTorta(righe);
+  const svgNS = 'http://www.w3.org/2000/svg';
+  const svg = el.tortaSvg;
+  svg.replaceChildren();
+
+  // Dove deve arrivare ogni fetta
+  let partenza = 0;
+  const arrivi = fette.map((fetta, posizione) => {
+    const inizio = partenza;
+    partenza += fetta.importo / totale;
+    return { ...fetta, inizio, fine: partenza, colore: posizione + 1 };
+  });
+
+  // Creiamo le fette (e l'emoji sopra ognuna); la forma la scrive "disegnaFotogramma"
+  const elementi = arrivi.map((fetta) => {
+    const percorso = document.createElementNS(svgNS, 'path');
+    percorso.setAttribute('class', `fetta colore-${fetta.colore}`);
+    percorso.dataset.chiave = fetta.chiave;
+    const emoji = document.createElementNS(svgNS, 'text');
+    emoji.setAttribute('class', 'emoji-fetta');
+    emoji.textContent = fetta.emoji;
+    svg.append(percorso, emoji);
+    return { fetta, percorso, emoji };
+  });
+
+  // La fetta scelta "esce" di 7 punti verso l'esterno e le altre si fanno tenui.
+  // Lo facciamo un attimo dopo (due fotogrammi), così il browser vede il cambio e lo anima.
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    svg.classList.toggle('con-scelta', Boolean(sceltaSpese));
+    for (const { fetta, percorso, emoji } of elementi) {
+      const scelta = sceltaSpese === fetta.chiave;
+      percorso.classList.toggle('scelta', scelta);
+      emoji.classList.toggle('scelta', scelta);
+      const [x, y] = puntoTorta(scelta ? 7 : 0, (fetta.inizio + fetta.fine) / 2);
+      const spostamento = scelta ? `translate(${x - CENTRO_TORTA}px, ${y - CENTRO_TORTA}px)` : '';
+      percorso.style.transform = spostamento;
+      emoji.style.transform = spostamento;
+    }
+  }));
+
+  // Da dove parte ogni fetta: da com'era disegnata prima; se è nuova, da larghezza zero
+  const primaVolta = angoliTorta.size === 0;
+  const partenze = arrivi.map((fetta) => angoliTorta.get(fetta.chiave)
+    || (primaVolta ? { inizio: 0, fine: 0 } : { inizio: fetta.inizio, fine: fetta.inizio }));
+
+  function disegnaFotogramma(avanzamento) {
+    const nuovi = new Map();
+    elementi.forEach(({ fetta, percorso, emoji }, i) => {
+      const inizio = partenze[i].inizio + (fetta.inizio - partenze[i].inizio) * avanzamento;
+      const fine = partenze[i].fine + (fetta.fine - partenze[i].fine) * avanzamento;
+      percorso.setAttribute('d', tracciatoFetta(inizio, fine));
+      // L'emoji sta a metà fetta; si vede solo se la fetta è abbastanza grande (più di 1/20 di giro)
+      const [x, y] = puntoTorta((RAGGIO_FUORI + RAGGIO_DENTRO) / 2, (inizio + fine) / 2);
+      emoji.setAttribute('x', x);
+      emoji.setAttribute('y', y);
+      emoji.style.visibility = fine - inizio > 0.05 ? 'visible' : 'hidden';
+      nuovi.set(fetta.chiave, { inizio, fine });
+    });
+    angoliTorta = nuovi;
+  }
+
+  // L'animazione: 0,7 secondi con una curva che rallenta alla fine. Con "Riduci movimento" niente.
+  cancelAnimationFrame(animazioneTorta);
+  const movimentoRidotto = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (movimentoRidotto || vistaSpese !== 'torta') {
+    disegnaFotogramma(1);
+  } else {
+    const durata = 700;
+    const avvio = performance.now();
+    const passo = (adesso) => {
+      const t = Math.min(1, (adesso - avvio) / durata);
+      disegnaFotogramma(1 - (1 - t) ** 3); // rallenta verso la fine
+      if (t < 1) animazioneTorta = requestAnimationFrame(passo);
+    };
+    animazioneTorta = requestAnimationFrame(passo);
+  }
+
+  // Al centro: il totale del mese, oppure la categoria scelta
+  const scelta = arrivi.find((f) => f.chiave === sceltaSpese);
+  el.tortaEtichetta.textContent = scelta ? `${scelta.emoji} ${scelta.nome}` : `Speso a ${NOMI_MESI[meseSpese.mese]}`;
+  Animazioni.conta(el.tortaValore, scelta ? scelta.importo : totale, (v) => formatoEuro.format(v));
+  el.tortaPercentuale.textContent = scelta
+    ? `${Math.round((scelta.importo / totale) * 100)}% del mese`
+    : (fette.length === 1 ? '1 categoria' : `${righe.length} categorie`);
+
+  // Per VoiceOver: il disegno riassunto in una frase (la legenda sotto ha i dettagli)
+  svg.setAttribute('aria-label', `Torta delle spese: ${arrivi.map((f) => `${f.nome} ${Math.round((f.importo / totale) * 100)}%`).join(', ')}`);
+
+  // La legenda: pallino del colore, nome, importo e percentuale. Anche lei si può toccare.
+  el.tortaLegenda.replaceChildren();
+  el.tortaLegenda.classList.toggle('con-scelta', Boolean(sceltaSpese));
+  for (const fetta of arrivi) {
+    const voce = crea('button', 'voce-legenda');
+    voce.type = 'button';
+    voce.dataset.chiave = fetta.chiave;
+    voce.setAttribute('aria-pressed', String(sceltaSpese === fetta.chiave));
+    const pallino = crea('span', `pallino-legenda colore-${fetta.colore}`);
+    pallino.setAttribute('aria-hidden', 'true');
+    const valore = crea('span', 'categoria-valore', formatoEuro.format(fetta.importo));
+    valore.append(crea('span', 'categoria-percentuale', ` · ${Math.round((fetta.importo / totale) * 100)}%`));
+    voce.append(pallino, crea('span', 'categoria-nome', `${fetta.emoji} ${fetta.nome}`), valore);
+    const riga = crea('li');
+    riga.append(voce);
+    el.tortaLegenda.append(riga);
+  }
+}
+
+// Barre ↔ Torta. Passando alla torta la ridisegniamo da zero, così si apre a ventaglio.
+async function cambiaVistaSpese(vista) {
+  vistaSpese = vista;
+  if (vista === 'torta') angoliTorta = new Map();
+  disegnaSpese();
+  await Archivio.salvaImpostazione('vistaSpese', vista);
 }
 
 // La riga di una spesa: pianetino con l'emoji della categoria, descrizione, categoria e importo
@@ -1932,6 +2180,7 @@ function creaRigaSpesa(sp) {
 function cambiaMeseSpese(delta) {
   const data = new Date(meseSpese.anno, meseSpese.mese + delta, 1); // JavaScript sistema da solo il cambio d'anno
   meseSpese = { anno: data.getFullYear(), mese: data.getMonth() };
+  sceltaSpese = null; // in un altro mese le categorie sono diverse
   disegnaSpese();
 }
 
@@ -2026,6 +2275,7 @@ async function salvaSpesa(evento) {
     // Mostriamo il mese della spesa appena salvata (se l'hai messa in un altro mese)
     const data = dataDaTesto(salvata.data);
     meseSpese = { anno: data.getFullYear(), mese: data.getMonth() };
+    sceltaSpese = null; // così vedi subito la spesa salvata, qualunque sia la sua categoria
     nascondiFoglio();
     disegnaSpese();
     Animazioni.avviso(eraNuova ? 'Spesa aggiunta' : 'Modifiche salvate');
@@ -2356,6 +2606,15 @@ el.moduloSpesa.addEventListener('submit', salvaSpesa);
 el.btnAnnullaSpesa.addEventListener('click', nascondiFoglio);
 el.btnEliminaSpesa.addEventListener('click', eliminaSpesaDalFoglio);
 el.campoSpesaDescrizione.addEventListener('change', categoriaDallaDescrizione);
+// Per categoria: Barre / Torta, e tocco su una categoria (barra, fetta o voce della legenda)
+document.querySelectorAll('input[name="vista-spese"]').forEach((scelta) => {
+  scelta.addEventListener('change', () => cambiaVistaSpese(scelta.value));
+});
+el.sezioneSpeseCategorie.addEventListener('click', (e) => {
+  const toccato = e.target.closest('[data-chiave]');
+  if (toccato) scegliCategoriaSpese(toccato.dataset.chiave);
+});
+el.btnTutteSpese.addEventListener('click', () => scegliCategoriaSpese(null));
 el.btnAnnulla.addEventListener('click', chiudiFoglio);
 el.velo.addEventListener('click', nascondiFoglio); // toccare fuori dal foglio lo chiude
 el.modulo.addEventListener('submit', salva);
@@ -2670,7 +2929,10 @@ function mostraScheda(nome) {
 
   // Mentre una scheda è nascosta non si può misurare niente:
   // tornando sugli abbonamenti rimettiamo a posto i totali e la goccia dei filtri
-  if (nome === 'spese') disegnaSpese(); // ora si può misurare il totale (numeri lunghi)
+  if (nome === 'spese') {
+    angoliTorta = new Map(); // la torta si riapre a ventaglio ogni volta che entri nella scheda
+    disegnaSpese(); // ora si può misurare il totale (numeri lunghi)
+  }
   if (nome === 'abbonamenti') {
     disegnaTotali();
     Animazioni.posizionaIndicatore(el.filtri, el.filtri.querySelector('[aria-pressed="true"] .pillola'));
@@ -2736,6 +2998,9 @@ async function avvia() {
     abbonamenti = [];
   }
   spese = await Archivio.tutteLeSpese(); // le spese di tutti i giorni (versione 4.20)
+  // Barre o torta: com'era l'ultima volta
+  vistaSpese = (await Archivio.leggiImpostazione('vistaSpese', 'barre')) === 'torta' ? 'torta' : 'barre';
+  document.querySelector(`input[name="vista-spese"][value="${vistaSpese}"]`).checked = true;
   meseSpese = meseDiOggi();
   disegnaSpese();
   // Il nome con cui salutarti e se hai già visto il benvenuto
