@@ -28,8 +28,8 @@ Il proprietario del progetto **sta imparando a programmare**:
   (generate da `icon.svg`, con sfondo quadrato: gli angoli li arrotonda iOS).
 
 ## Numero di versione (da aggiornare a OGNI rilascio)
-- Versione attuale: **4.6**. In `index.html` i file hanno il numero di versione (`style.css?v=4.6`, `app.js?v=4.6`…)
-  e c'è la scritta "Abbonamenti · versione 4.6" in fondo alla pagina.
+- Versione attuale: **4.7**. In `index.html` i file hanno il numero di versione (`style.css?v=4.7`, `app.js?v=4.7`…)
+  e c'è la scritta "Abbonamenti · versione 4.7" in fondo alla pagina.
 - A ogni modifica di CSS, JavaScript o manifest **aumenta il numero in tutti i punti di `index.html`**
   (cerca la versione attuale), così l'iPhone scarica i file nuovi invece di usare la copia in memoria.
   Piccole modifiche: 3.0 → 3.1; una nuova versione grande dell'app: 3.x → 4.0.
@@ -66,7 +66,9 @@ Il proprietario del progetto **sta imparando a programmare**:
   totali che contano (`Animazioni.conta`), goccia che scivola nel segmentato (CSS `:has`) e nei filtri
   (`Animazioni.posizionaIndicatore`), barra in alto che diventa compatta seguendo lo scorrimento (`Animazioni.barraCompatta` scrive
   `--avanzamento-barra` da 0 a 1: vetro `--vetro-alto` che sfuma in basso con una maschera, titolo piccolo che
-  sale, titolo grande che sbiadisce; niente cambio netto né riga di separazione),
+  sale, titolo grande che sbiadisce; niente cambio netto né riga di separazione; la fila dei filtri, passata come
+  terzo argomento, svanisce mentre va sotto la barra: è una fila che scorre di lato e il browser la disegna come
+  un livello a parte che il vetro NON sfoca, quindi senza questo si vedrebbe una pillola nitida accanto al "+"),
   foglio con molla + pagina dietro che si allontana + chiusura trascinando la maniglia
   (`Animazioni.trascinaPerChiudere`), righe che entrano "mettendosi a fuoco", capsula "✓" dopo le azioni
   (`Animazioni.avviso`). Niente animazioni decorative continue tranne lo sfondo lentissimo.

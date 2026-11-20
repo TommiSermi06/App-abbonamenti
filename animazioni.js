@@ -95,7 +95,12 @@ const Animazioni = (function () {
   // 0 = ancora tutto visibile, 1 = tutto nascosto. Il numero va nella variabile CSS
   // --avanzamento-barra e il CSS lo usa per far comparire il vetro, il titolo piccolo
   // e sfumare il titolo grande POCO A POCO, seguendo il dito (non più di colpo).
-  function barraCompatta(barra, titoloGrande) {
+  //
+  // "daSfumare" (facoltativo): elementi che svaniscono mentre passano sotto la barra.
+  // Serve per la fila dei filtri: è una fila che scorre di lato, e il browser la disegna
+  // come un "livello" a parte che il vetro della barra non riesce a sfocare
+  // (si vedrebbe una pillola nitida accanto al "+").
+  function barraCompatta(barra, titoloGrande, daSfumare = []) {
     let inAttesa = false;
 
     const aggiorna = () => {
@@ -106,6 +111,13 @@ const Animazioni = (function () {
       document.documentElement.style.setProperty('--avanzamento-barra', avanzamento.toFixed(3));
       // Oltre metà: il "+" perde la bolla (questo cambio invece è un passaggio animato)
       barra.classList.toggle('compatta', avanzamento > 0.6);
+
+      // Quanta parte dell'elemento è ancora SOTTO la barra (visibile): 1 = tutto, 0 = niente
+      for (const elemento of daSfumare) {
+        const riquadro = elemento.getBoundingClientRect();
+        const visibile = Math.min(1, Math.max(0, (riquadro.bottom - fondoBarra) / (riquadro.height || 1)));
+        elemento.style.opacity = visibile < 1 ? visibile.toFixed(3) : '';
+      }
     };
 
     // Lo scorrimento manda tantissimi eventi: ricalcoliamo al massimo una volta per fotogramma
