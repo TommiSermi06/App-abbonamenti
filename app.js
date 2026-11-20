@@ -48,6 +48,10 @@ const $ = (id) => document.getElementById(id);
 const el = {
   totaleMese: $('totale-mese'),
   totaleAnno: $('totale-anno'),
+  daPagare: $('da-pagare'),
+  daPagareTitolo: $('da-pagare-titolo'),
+  daPagareDettaglio: $('da-pagare-dettaglio'),
+  daPagareImporto: $('da-pagare-importo'),
   prossimo: $('prossimo'),
   bloccoOrdina: $('blocco-ordina'),
   campoOrdine: $('campo-ordine'),
@@ -392,6 +396,44 @@ function disegnaTotali() {
     const finisce = inProvaOra.length === 1 ? 'quando finisce' : 'quando finiscono';
     el.notaProve.textContent = `🎁 In prova gratuita: ${quanti}, +${formatoEuro.format(totaleAlMese(inProvaOra))} al mese ${finisce}.`;
   }
+  disegnaDaPagare();
+}
+
+// "Ancora da pagare a novembre: 32,98 €": i pagamenti VERI da oggi (compreso) alla fine del mese.
+// Sono gli stessi del grafico (pagamentiDelMese): niente medie, niente prove gratuite in corso.
+function disegnaDaPagare() {
+  const oggi = oggiAMezzanotte();
+  const mese = NOMI_MESI[oggi.getMonth()];
+  const restano = pagamentiDelMese(oggi.getFullYear(), oggi.getMonth()).filter((p) => p.data >= oggi);
+  const somma = restano.reduce((totale, p) => totale + p.abb.costo, 0);
+
+  el.daPagare.hidden = attivi().length === 0; // senza abbonamenti attivi non c'è niente da dire
+  if (restano.length === 0) {
+    el.daPagareTitolo.textContent = `Per ${mese} hai già pagato tutto`;
+    el.daPagareDettaglio.textContent = 'Nessun altro rinnovo fino a fine mese';
+    el.daPagareImporto.textContent = '✓';
+    el.daPagareImporto.dataset.valore = '0'; // la prossima volta il numero "conta" partendo da 0
+  } else {
+    const ultimo = giorniNelMese(oggi.getFullYear(), oggi.getMonth());
+    const quanti = restano.length === 1 ? '1 rinnovo' : `${restano.length} rinnovi`;
+    el.daPagareTitolo.textContent = `Ancora da pagare a ${mese}`;
+    el.daPagareDettaglio.textContent = `${quanti} entro il ${ultimo} ${mese}`;
+    Animazioni.conta(el.daPagareImporto, somma, (v) => formatoEuro.format(v));
+  }
+  // Per VoiceOver: tutta la frase in una volta
+  el.daPagare.setAttribute('aria-label', restano.length === 0
+    ? `Per ${mese} hai già pagato tutto. Tocca per vedere il dettaglio del mese.`
+    : `Ancora da pagare a ${mese}: ${formatoEuro.format(somma)}, ${el.daPagareDettaglio.textContent}. Tocca per vedere il dettaglio.`);
+}
+
+// Tocco su "Ancora da pagare": apriamo Statistiche con il grafico sul mese in corso
+function apriMeseInCorso() {
+  mostraScheda('statistiche');
+  selezionaMese(0);
+  // Scorriamo fino al grafico, lasciando spazio per la barra in alto
+  const sopra = el.sezioneMesi.getBoundingClientRect().top + window.scrollY - 70;
+  const movimentoRidotto = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  window.scrollTo({ top: sopra, behavior: movimentoRidotto ? 'auto' : 'smooth' });
 }
 
 function disegnaProssimo(primo) {
@@ -1487,6 +1529,9 @@ window.addEventListener('pageshow', (e) => {
   if (e.persisted) salutaAlRitorno();
 });
 
+// "Ancora da pagare a novembre" → il dettaglio del mese nel grafico
+el.daPagare.addEventListener('click', apriMeseInCorso);
+
 // --- Barra delle schede in basso ---
 el.barraSchede.addEventListener('click', (e) => {
   const pulsante = e.target.closest('.scheda-btn');
@@ -1697,6 +1742,12 @@ function entraNellApp() {
 function disegnaSaluto() {
   el.saluto.hidden = !nomeUtente || schedaAttiva !== 'abbonamenti';
   el.saluto.textContent = Benvenuto.testoSaluto(nomeUtente);
+}
+
+// Il service worker (sw.js) mette da parte i file dell'app: così si apre anche senza internet.
+// Con il doppio clic su index.html (indirizzo "file://") i browser non lo permettono: lì lo saltiamo.
+if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+  navigator.serviceWorker.register('sw.js').catch(() => { /* senza: l'app funziona lo stesso, solo non offline */ });
 }
 
 avvia();

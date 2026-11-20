@@ -8,6 +8,8 @@ quanto spendi al mese e all'anno, e quale rinnovo sta per arrivare.
 - Aggiungi, modifica ed elimina con un modulo che sale dal basso
 - Totale al mese e all'anno (gli annuali contano costo / 12 al mese)
 - Prossimo rinnovo in evidenza, con i giorni mancanti colorati (grigio, arancione, rosso, "Oggi!")
+- "Ancora da pagare" questo mese: quanto uscirà davvero dal conto da oggi a fine mese
+- Si apre anche senza internet (service worker)
 - Categorie (Streaming, Musica, Giochi, …): lista divisa in gruppi, filtro e spesa al mese per categoria
 - Grafico delle spese dei prossimi 12 mesi, con il dettaglio dei pagamenti di ogni mese
 - Promemoria dei rinnovi nel Calendario dell'iPhone (file .ics con avvisi)
