@@ -128,6 +128,8 @@ const el = {
   rigaGiornoSettimana: $('riga-giorno-settimana'),
   campoGiornoSettimana: $('campo-giorno-settimana'),
   notaFrequenza: $('nota-frequenza'),
+  aggiuntaRapida: $('aggiunta-rapida'),
+  serviziRapidi: $('servizi-rapidi'),
   errore: $('errore'),
   bloccoElimina: $('blocco-elimina'),
   btnElimina: $('btn-elimina'),
@@ -1001,11 +1003,69 @@ function aggiornaRigaProva() {
   el.notaProva.hidden = !el.campoProva.checked;
 }
 
+// ---------- Aggiunta rapida ----------
+// I pianetini dei servizi più diffusi (SERVIZI_POPOLARI di servizi.js) in cima al modulo.
+// Solo per un abbonamento NUOVO, e senza quelli che hai già nella lista.
+function preparaAggiuntaRapida(nuovo) {
+  el.serviziRapidi.replaceChildren();
+  const giaPresenti = abbonamenti.map((abb) => chiaveNome(abb.nome));
+  const daMostrare = SERVIZI_POPOLARI.filter((servizio) => {
+    const chiave = chiaveNome(servizio.nome);
+    return !giaPresenti.some((presente) => presente.startsWith(chiave));
+  });
+  el.aggiuntaRapida.hidden = !nuovo || daMostrare.length === 0;
+  if (el.aggiuntaRapida.hidden) return;
+
+  for (const servizio of daMostrare) {
+    const pulsante = crea('button', 'servizio-rapido');
+    pulsante.type = 'button';
+    pulsante.dataset.nome = servizio.nome;
+    pulsante.setAttribute('aria-pressed', 'false');
+    const pianetino = crea('span', `pianetino ${Benvenuto.tinta(servizio.nome)}`);
+    pianetino.setAttribute('aria-hidden', 'true');
+    Loghi.riempi(pianetino, servizio.nome, Benvenuto.iniziale(servizio.nome));
+    pulsante.append(pianetino, crea('span', '', servizio.breve || servizio.nome));
+    pulsante.setAttribute('aria-label', servizio.nome); // VoiceOver legge il nome completo
+    el.serviziRapidi.append(pulsante);
+  }
+  el.serviziRapidi.scrollLeft = 0;
+}
+
+// Tocco su un pianetino: riempiamo nome, categoria, frequenza (se serve) e link per disdire
+function scegliServizioRapido(pulsante) {
+  const servizio = SERVIZI_POPOLARI.find((s) => s.nome === pulsante.dataset.nome);
+  if (!servizio) return;
+  for (const altro of el.serviziRapidi.children) altro.setAttribute('aria-pressed', String(altro === pulsante));
+
+  el.campoNome.value = servizio.nome;
+  el.campoCategoria.value = servizio.categoria;
+  const righe = [el.campoNome, el.campoCategoria];
+  // La frequenza tipica del servizio ("Ogni mese" se non è indicata): così, se prima avevi
+  // toccato Amazon Prime ("Ogni anno") e poi Netflix, si torna giustamente a "Ogni mese"
+  const frequenza = servizio.frequenza || 'mensile';
+  if (frequenzaScelta() !== frequenza) righe.push(el.campoFrequenza);
+  impostaFrequenza(frequenza);
+  suggerisciLink();   // il link ufficiale per disdire (se lo conosciamo)
+  disegnaGuida();     // "Come disdire Netflix ›"
+  el.errore.textContent = '';
+
+  // Le righe riempite si illuminano un attimo, così si vede cosa è cambiato
+  for (const campo of righe) {
+    const riga = campo.closest('.campo');
+    riga.classList.remove('appena-riempito');
+    riga.getBoundingClientRect(); // fa ripartire l'animazione anche se c'era già
+    riga.classList.add('appena-riempito');
+  }
+  // Manca solo il prezzo: ci mettiamo subito lì (sull'iPhone si apre la tastiera dei numeri)
+  el.campoCosto.focus();
+}
+
 // Apre il foglio del modulo. Senza argomento = nuovo abbonamento; con un abbonamento = modifica.
 function apriFoglio(abb) {
   idInModifica = abb ? abb.id : null;
 
   el.foglioTitolo.textContent = abb ? 'Modifica' : 'Nuovo abbonamento';
+  preparaAggiuntaRapida(!abb);
   el.campoNome.value = abb ? abb.nome : '';
   // Mostriamo la virgola italiana: 15.99 → "15,99"
   el.campoCosto.value = abb ? abb.costo.toFixed(2).replace('.', ',') : '';
@@ -1512,6 +1572,12 @@ el.modulo.addEventListener('input', (e) => {
     aggiornaLinkDisdici();
   }
   // Nome o pagamento cambiati: aggiorniamo link suggerito e guida
+  // Hai cambiato il nome a mano: il pianetino dell'aggiunta rapida non è più "quello scelto"
+  if (e.target === el.campoNome) {
+    for (const pulsante of el.serviziRapidi.children) {
+      pulsante.setAttribute('aria-pressed', String(pulsante.dataset.nome === el.campoNome.value));
+    }
+  }
   if (e.target === el.campoNome || e.target === el.campoPagamento) {
     suggerisciLink();
     disegnaGuida();
@@ -1619,6 +1685,12 @@ document.addEventListener('visibilitychange', () => {
 // Alcuni browser rimettono la pagina "dalla memoria" invece di ricaricarla: conta come un ritorno
 window.addEventListener('pageshow', (e) => {
   if (e.persisted) salutaAlRitorno();
+});
+
+// Aggiunta rapida: un solo "ascoltatore" per tutti i pianetini
+el.serviziRapidi.addEventListener('click', (e) => {
+  const pulsante = e.target.closest('.servizio-rapido');
+  if (pulsante) scegliServizioRapido(pulsante);
 });
 
 // "Ancora da pagare a novembre" → il dettaglio del mese nel grafico

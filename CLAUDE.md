@@ -8,9 +8,7 @@ pensata per l'iPhone e installabile nella schermata Home.
 - **Nuova icona**: la disegna la sua ragazza (PNG 1024×1024, angoli dritti, sfondo pieno); poi rigenerare
   `icon-180.png`, `icon-512.png` e `icon.svg`.
 - **"Lo uso davvero?"**: segnare quanto si usa ogni abbonamento e suggerire dove risparmiare.
-- **Idee "fondamentali" scelte il 20/11/2026** (1 e 3 fatte nella versione 4.10, 2 nella 4.11; le altre da fare):
-  4) aggiunta rapida dei servizi più diffusi (pianetini con logo in cima al modulo: nome, categoria e link
-     si riempiono da soli, l'utente scrive solo prezzo e giorno);
+- **Idee "fondamentali" scelte il 20/11/2026** (1 e 3 fatte nella 4.10, 2 nella 4.11, 4 nella 4.12; le altre da fare):
   5) "Spesa per metodo di pagamento" in Statistiche (quanto va al mese su ogni carta);
   6) blocco con Face ID all'apertura (WebAuthn, interruttore in Impostazioni).
 - Altre idee già proposte: abbonamenti condivisi (quota),
@@ -33,8 +31,8 @@ Il proprietario del progetto **sta imparando a programmare**:
   (generate da `icon.svg`, con sfondo quadrato: gli angoli li arrotonda iOS).
 
 ## Numero di versione (da aggiornare a OGNI rilascio)
-- Versione attuale: **4.11**. In `index.html` i file hanno il numero di versione (`style.css?v=4.11`, `app.js?v=4.11`…)
-  e c'è la scritta "Abbonamenti · versione 4.11" in fondo alla pagina.
+- Versione attuale: **4.12**. In `index.html` i file hanno il numero di versione (`style.css?v=4.12`, `app.js?v=4.12`…)
+  e c'è la scritta "Abbonamenti · versione 4.12" in fondo alla pagina.
 - A ogni modifica di CSS, JavaScript o manifest **aumenta il numero in tutti i punti di `index.html`**
   (cerca la versione attuale), così l'iPhone scarica i file nuovi invece di usare la copia in memoria.
   Piccole modifiche: 3.0 → 3.1; una nuova versione grande dell'app: 3.x → 4.0.
@@ -314,6 +312,15 @@ I backup delle versioni precedenti si importano ancora (stato mancante → `atti
   (`dataset.automatico`); se l'utente lo scrive, non si tocca più. Servizio sconosciuto → guida generale, nessun link.
 - `linkPer(abb)`: link salvato oppure quello della guida; usato in "Gestisci l'abbonamento ↗" e nel calendario.
 - Nessuna colonna nuova nel database: le guide stanno nel codice.
+
+## Aggiunta rapida (versione 4.12)
+- In cima al modulo "Nuovo abbonamento" (mai in modifica) la fila `#aggiunta-rapida`: pianetini con il logo dei
+  servizi di `SERVIZI_POPOLARI` (in fondo a `servizi.js`: `nome`, `categoria`, `breve` facoltativo per l'etichetta,
+  `frequenza` solo dove di solito si paga all'anno). Non mostra quelli già nella lista (stesso `chiaveNome` iniziale).
+- Tocco (`scegliServizioRapido`): nome, categoria, frequenza (quella del servizio o "Ogni mese"), link per disdire
+  (`suggerisciLink`) e guida; le righe cambiate si illuminano (`.appena-riempito`); il cursore va sul Costo.
+  **Il prezzo NON si riempie** (cambia spesso). Pianetino scelto = `aria-pressed="true"` con anello blu.
+- Il nome di un servizio deve somigliare agli alias di `SERVIZI` (link) e di `loghi.js` (logo).
 
 ## Ricerca e ordinamento
 - Barra di ricerca sopra la lista: filtra per nome, metodo di pagamento e note, senza badare a maiuscole e accenti (`semplifica()`),

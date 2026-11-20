@@ -254,3 +254,33 @@ function guidaDisdetta(nome, pagamento) {
     conosciuto: false,
   };
 }
+
+/* ---------- Aggiunta rapida ----------
+   I servizi più diffusi in Italia, mostrati come pianetini in cima al modulo
+   "Nuovo abbonamento": toccandone uno si riempiono nome e categoria (e il link
+   per disdire, se il servizio è tra quelli qui sopra). Il prezzo NO: cambia spesso,
+   lo scrive l'utente. "frequenza" solo dove di solito si paga all'anno.
+   "breve" = il nome corto sotto al pianetino, quando quello vero non ci sta.
+   Il nome deve somigliare a un alias di SERVIZI (per il link) e di loghi.js (per il logo). */
+const SERVIZI_POPOLARI = [
+  { nome: 'Netflix', categoria: 'streaming' },
+  { nome: 'Spotify', categoria: 'musica' },
+  { nome: 'Disney+', categoria: 'streaming' },
+  { nome: 'Amazon Prime', breve: 'Prime', categoria: 'streaming', frequenza: 'annuale' },
+  { nome: 'YouTube Premium', breve: 'YouTube', categoria: 'streaming' },
+  { nome: 'DAZN', categoria: 'streaming' },
+  { nome: 'iCloud+', categoria: 'altro' },
+  { nome: 'Apple Music', categoria: 'musica' },
+  { nome: 'Apple TV+', categoria: 'streaming' },
+  { nome: 'Sky', categoria: 'streaming' },
+  { nome: 'Paramount+', categoria: 'streaming' },
+  { nome: 'PlayStation Plus', breve: 'PS Plus', categoria: 'giochi' },
+  { nome: 'Xbox Game Pass', breve: 'Game Pass', categoria: 'giochi' },
+  { nome: 'Nintendo Switch Online', breve: 'Switch', categoria: 'giochi', frequenza: 'annuale' },
+  { nome: 'Crunchyroll', categoria: 'streaming' },
+  { nome: 'Audible', categoria: 'musica' },
+  { nome: 'ChatGPT', categoria: 'lavoro' },
+  { nome: 'Claude', categoria: 'lavoro' },
+  { nome: 'Microsoft 365', breve: 'Microsoft', categoria: 'lavoro', frequenza: 'annuale' },
+  { nome: 'Duolingo', categoria: 'lavoro' },
+];
