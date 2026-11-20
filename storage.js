@@ -560,6 +560,26 @@ const Archivio = (function () {
     return utente;
   }
 
+  // Cancella TUTTO quello che l'app ha salvato su questo telefono (dati, impostazioni, account).
+  // Serve solo come ultima spiaggia dalla schermata di blocco, se non si riesce più a sbloccare.
+  async function cancellaTutto() {
+    await Supabase.esci();
+    for (const chiave of [CHIAVE, CHIAVE_IMPOSTAZIONI, CHIAVE_SINCRO]) {
+      try {
+        localStorage.removeItem(chiave);
+      } catch (e) {
+        /* niente da fare */
+      }
+    }
+  }
+
+  // La password dell'account con cui sei entrato è giusta? (per sbloccare l'app senza Face ID)
+  async function verificaPassword(password) {
+    const utente = Supabase.utente();
+    if (!utente) throw new Error('Su questo telefono non sei entrato con un account.');
+    await Supabase.verificaPassword(utente.email, password);
+  }
+
   // ---------- Password dimenticata (le chiamate vere sono in supabase.js) ----------
   // Il link nell'email riporterà a questa stessa pagina (l'indirizzo dell'app, senza "#…")
   async function recuperaPassword(email) {
@@ -600,7 +620,7 @@ const Archivio = (function () {
     tutti, aggiungi, aggiorna, elimina, ripristina, esportaBackup, leggiBackup, sostituisciTutti,
     leggiImpostazione, salvaImpostazione,
     account, accedi, creaAccount, esci, sincronizza, statoSincronizzazione,
-    recuperaPassword, leggiRitornoDaEmail, impostaNuovaPassword,
+    recuperaPassword, leggiRitornoDaEmail, impostaNuovaPassword, verificaPassword, cancellaTutto,
     controllaLink,
   };
 })();

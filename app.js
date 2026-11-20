@@ -50,6 +50,8 @@ const el = {
   totaleAnno: $('totale-anno'),
   daPagare: $('da-pagare'),
   btnOcchio: $('btn-occhio'),
+  campoBlocco: $('campo-blocco'),
+  notaBlocco: $('nota-blocco'),
   daPagareTitolo: $('da-pagare-titolo'),
   daPagareDettaglio: $('da-pagare-dettaglio'),
   daPagareImporto: $('da-pagare-importo'),
@@ -462,6 +464,72 @@ async function cambiaImportiNascosti() {
   el.btnOcchio.classList.remove('sbatte');
   el.btnOcchio.getBoundingClientRect(); // fa ripartire l'animazione
   el.btnOcchio.classList.add('sbatte');
+}
+
+// ---------- Blocco con Face ID (la parte WebAuthn è in blocco.js) ----------
+// idBlocco = l'id della chiave creata dall'iPhone (null = blocco spento). Resta solo su questo telefono.
+let idBlocco = null;
+
+// La sezione "Privacy" delle Impostazioni: interruttore e spiegazione
+async function disegnaSezioneBlocco() {
+  const disponibile = await Blocco.disponibile();
+  el.campoBlocco.checked = Boolean(idBlocco);
+  el.campoBlocco.disabled = !disponibile && !idBlocco;
+  if (!disponibile && !idBlocco) {
+    el.notaBlocco.textContent = 'Qui non si può usare: serve l\'app installata sull\'iPhone (o un dispositivo con Face ID o Touch ID).';
+  } else if (idBlocco) {
+    el.notaBlocco.textContent = 'L\'app chiede Face ID quando la apri e quando torni dopo almeno 30 secondi. '
+      + 'Se il Face ID non ti riconosce, l\'iPhone ti chiede il codice del telefono.';
+  } else {
+    el.notaBlocco.textContent = 'Chi prende in mano il telefono non vedrà i tuoi abbonamenti. '
+      + (Archivio.account()
+        ? 'Se un giorno il Face ID non funzionasse, potrai sbloccare con la password del tuo account.'
+        : 'Consiglio: entra prima con un account, così se il Face ID non funzionasse potrai sbloccare con la password.');
+  }
+}
+
+// L'interruttore: accendere crea la chiave; spegnere chiede prima il Face ID (così un curioso non lo spegne)
+async function cambiaBlocco() {
+  const accendi = el.campoBlocco.checked;
+  el.campoBlocco.disabled = true;
+  try {
+    if (accendi) {
+      idBlocco = await Blocco.registra(nomeUtente);
+      await Archivio.salvaImpostazione('bloccoFaceId', idBlocco);
+      Animazioni.avviso('Blocco con Face ID attivo');
+    } else {
+      await Blocco.verifica(idBlocco);
+      idBlocco = null;
+      await Archivio.salvaImpostazione('bloccoFaceId', null);
+      Animazioni.avviso('Blocco disattivato');
+    }
+  } catch (e) {
+    el.campoBlocco.checked = !accendi; // non è andata: l'interruttore torna com'era
+    alert(Blocco.messaggio(e));
+  } finally {
+    el.campoBlocco.disabled = false;
+    disegnaSezioneBlocco();
+  }
+}
+
+// Mostra la schermata di blocco e aspetta lo sblocco
+async function sbloccaApp() {
+  const come = await Blocco.chiudi({
+    id: idBlocco,
+    conAccount: Boolean(Archivio.account()),
+    verificaPassword: (password) => Archivio.verificaPassword(password),
+    cancellaTutto: async () => {
+      await Archivio.cancellaTutto();
+      location.reload(); // si riparte da zero, come appena installata
+    },
+  });
+  if (come === 'password') {
+    // Sbloccata con la password: il Face ID evidentemente non va, spegniamo il blocco
+    idBlocco = null;
+    await Archivio.salvaImpostazione('bloccoFaceId', null);
+    disegnaSezioneBlocco();
+    setTimeout(() => Animazioni.avviso('Blocco con Face ID spento'), 500);
+  }
 }
 
 // "Ancora da pagare a novembre: 32,98 €": i pagamenti VERI da oggi (compreso) alla fine del mese.
@@ -1480,6 +1548,7 @@ function disegnaAccount() {
     el.notaAccount.textContent = messaggio
       || 'Entra con un account per avere gli stessi abbonamenti su telefono, iPad e computer. '
       + 'Senza account i dati restano solo su questo dispositivo.';
+    disegnaSezioneBlocco();
     return;
   }
 
@@ -1517,6 +1586,7 @@ function disegnaAccount() {
     esci,
   );
   el.notaAccount.textContent = note[stato] || 'Le modifiche si sincronizzano da sole. Sull\'altro dispositivo compaiono quando apri l\'app.';
+  disegnaSezioneBlocco(); // la nota della Privacy cambia se entri o esci dall'account
 }
 
 // --- Il foglio dell'account ---
@@ -1812,16 +1882,34 @@ function salutaAlRitorno() {
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') {
     nascostaDalle = Date.now();
+    // Con il blocco attivo copriamo subito l'app: nell'anteprima delle app aperte non si vede niente
+    if (idBlocco && appPronta) Blocco.copri();
     return;
   }
-  if (nascostaDalle && Date.now() - nascostaDalle >= PAUSA_BENTORNATO) salutaAlRitorno();
+  const lunga = Boolean(nascostaDalle) && Date.now() - nascostaDalle >= PAUSA_BENTORNATO;
   nascostaDalle = null;
+  if (idBlocco && appPronta) {
+    // Assenza lunga: serve il Face ID. Assenza breve: si scopre e basta.
+    // (Se la schermata di blocco sta già aspettando il Face ID, non si tocca: niente scorciatoie.)
+    if (Blocco.stato() === 'coperto') {
+      if (lunga) sbloccaApp();
+      else Blocco.scopri();
+    }
+  } else if (lunga) {
+    salutaAlRitorno();
+  }
   disegna();
   Archivio.sincronizza();
 });
 // Alcuni browser rimettono la pagina "dalla memoria" invece di ricaricarla: conta come un ritorno
 window.addEventListener('pageshow', (e) => {
-  if (e.persisted) salutaAlRitorno();
+  if (!e.persisted) return;
+  if (idBlocco && appPronta) {
+    Blocco.copri();
+    sbloccaApp();
+  } else {
+    salutaAlRitorno();
+  }
 });
 
 // Aggiunta rapida: un solo "ascoltatore" per tutti i pianetini
@@ -1835,6 +1923,9 @@ el.perPagamento.addEventListener('click', (e) => {
   const pulsante = e.target.closest('button[data-pagamento]');
   if (pulsante) mostraAbbonamentiDi(pulsante.dataset.pagamento);
 });
+
+// Privacy: l'interruttore del blocco con Face ID
+el.campoBlocco.addEventListener('change', cambiaBlocco);
 
 // L'occhio dei totali: nasconde o mostra gli importi
 el.btnOcchio.addEventListener('click', cambiaImportiNascosti);
@@ -1996,6 +2087,11 @@ async function avvia() {
   const ritorno = Archivio.leggiRitornoDaEmail(location.hash);
   if (ritorno) history.replaceState(null, '', location.pathname + location.search); // togliamo il biglietto dall'indirizzo
 
+  // Blocco con Face ID: prima di far vedere qualunque cosa (anche l'orbita) si sblocca.
+  // Non dal link dell'email "Password dimenticata" (lì si apre Safari, dove il blocco non c'è).
+  idBlocco = await Archivio.leggiImpostazione('bloccoFaceId', null);
+  if (idBlocco && !ritorno) await sbloccaApp();
+
   let apriAccesso = false;
   try {
     if (ritorno) {
@@ -2062,6 +2158,7 @@ function entraNellApp() {
   el.barraSchede.classList.add('entra'); // la barra delle schede sale dal basso
   disegna();
   disegnaAccount();
+  disegnaSezioneBlocco();
   posizionaGocciaSchede();
 
   // Animazioni: barra in alto che diventa compatta, fogli che si chiudono tirandoli giù

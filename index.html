@@ -18,22 +18,22 @@
 
   <link rel="apple-touch-icon" href="icon-180.png">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <!-- NUMERO DI VERSIONE: "?v=4.14" in fondo ai nomi dei file.
-       Per il browser "app.js?v=4.14" e "app.js?v=4.15" sono file diversi:
+  <!-- NUMERO DI VERSIONE: "?v=4.15" in fondo ai nomi dei file.
+       Per il browser "app.js?v=4.15" e "app.js?v=4.16" sono file diversi:
        cambiando il numero, l'iPhone è costretto a scaricare il codice nuovo
        invece di usare la copia vecchia che tiene in memoria.
        A ogni modifica di CSS o JavaScript aumenta il numero in TUTTI i punti
        di questo file (cerca il numero attuale), anche nella scritta in fondo alla pagina. -->
-  <link rel="manifest" href="manifest.json?v=4.14">
+  <link rel="manifest" href="manifest.json?v=4.15">
 
   <title>Abbonamenti</title>
-  <link rel="stylesheet" href="style.css?v=4.14">
+  <link rel="stylesheet" href="style.css?v=4.15">
   <!-- Lo stile "Liquid Glass": va DOPO style.css perché lo riveste -->
-  <link rel="stylesheet" href="vetro.css?v=4.14">
+  <link rel="stylesheet" href="vetro.css?v=4.15">
   <!-- La schermata di benvenuto "Orbita" e il saluto all'apertura -->
-  <link rel="stylesheet" href="benvenuto.css?v=4.14">
+  <link rel="stylesheet" href="benvenuto.css?v=4.15">
   <!-- Il pianeta serve subito (benvenuto e saluto): il browser lo scarica in anticipo -->
-  <link rel="preload" as="image" href="pianeta.webp?v=4.14" type="image/webp">
+  <link rel="preload" as="image" href="pianeta.webp?v=4.15" type="image/webp">
 </head>
 <body>
   <!-- Sfondo vivo: macchie di luce sfumate dietro al vetro (solo decorazione) -->
@@ -128,7 +128,7 @@
             <option value="nome">Nome</option>
           </select>
           <svg class="ordina-freccia" viewBox="0 0 12 8" width="10" height="7" aria-hidden="true">
-            <path d="M1.5 1.5 6 6l4.14-4.14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M1.5 1.5 6 6l4.15-4.15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </label>
       </div>
@@ -214,6 +214,16 @@
       </div>
       <p class="nota">Serve solo per salutarti quando apri l'app. Resta su questo dispositivo.</p>
 
+      <!-- ===== Privacy: blocco con Face ID (lo gestiscono blocco.js e app.js) ===== -->
+      <h2 class="titolo-sezione">Privacy</h2>
+      <div class="lista card">
+        <label class="riga campo campo-interruttore">
+          <span>Blocca con Face ID</span>
+          <input id="campo-blocco" type="checkbox" role="switch" class="interruttore">
+        </label>
+      </div>
+      <p id="nota-blocco" class="nota"></p>
+
       <!-- ===== Sincronizzazione online (il contenuto lo disegna app.js) ===== -->
       <h2 class="titolo-sezione">Sincronizzazione</h2>
       <div id="card-account" class="lista card"></div>
@@ -236,7 +246,7 @@
       <p class="nota">Il backup è un file .json con tutti i tuoi abbonamenti. Importarlo sostituisce i dati attuali.</p>
 
       <!-- Versione dell'app: utile per capire se l'iPhone ha già l'ultima -->
-      <p class="versione">Abbonamenti · versione 4.14</p>
+      <p class="versione">Abbonamenti · versione 4.15</p>
     </div>
     <!-- Campo per scegliere il file: è nascosto, lo apre il pulsante "Importa backup" -->
     <input type="file" id="file-importa" accept=".json,application/json" hidden>
@@ -479,7 +489,7 @@
       <div class="anello-scala interno"><div class="anello" id="anello-interno"></div></div>
       <!-- Al centro il pianeta (immagine creata con Higgsfield) -->
       <div class="orbita-centro">
-        <img class="pianeta-immagine" src="pianeta.webp?v=4.14" alt="" width="520" height="520" decoding="async">
+        <img class="pianeta-immagine" src="pianeta.webp?v=4.15" alt="" width="520" height="520" decoding="async">
       </div>
       <!-- Sotto l'orbita, la capsula di vetro con il totale al mese -->
       <span class="orbita-capsula">
@@ -510,9 +520,36 @@
     </form>
   </section>
 
+  <!-- ===== Schermata di blocco (Face ID): copre tutta l'app finché non la sblocchi ===== -->
+  <section id="blocco" class="blocco" role="dialog" aria-modal="true" aria-labelledby="blocco-titolo" tabindex="-1" hidden>
+    <img class="blocco-pianeta" src="pianeta.webp?v=4.15" alt="" width="520" height="520" decoding="async">
+    <h2 id="blocco-titolo" class="blocco-titolo">Abbonamenti è bloccato</h2>
+    <p class="blocco-testo">Usa Face ID per vedere i tuoi abbonamenti.</p>
+    <button type="button" id="btn-sblocca" class="btn-principale">Sblocca con Face ID</button>
+    <p id="blocco-errore" class="errore" role="alert"></p>
+    <button type="button" id="btn-blocco-aiuto" class="btn-testo">Non riesci a sbloccare?</button>
+
+    <!-- L'aiuto (compare toccando "Non riesci a sbloccare?") -->
+    <form id="modulo-blocco" class="blocco-aiuto" novalidate>
+      <!-- Con un account: si sblocca con la sua password -->
+      <div id="blocco-aiuto-account">
+        <p class="blocco-testo piccolo">Scrivi la password del tuo account: l'app si sblocca e il blocco con Face ID si spegne (lo riattivi dalle Impostazioni).</p>
+        <input id="blocco-password" class="benvenuto-campo" type="password" autocomplete="current-password" placeholder="Password dell'account" aria-label="Password dell'account">
+        <button type="submit" class="btn-principale">Sblocca con la password</button>
+      </div>
+      <!-- Senza account: l'unica strada è ricominciare da capo su questo telefono -->
+      <div id="blocco-aiuto-senza">
+        <p class="blocco-testo piccolo">Se il Face ID non riconosce il viso, l'iPhone ti chiede il codice del telefono.
+          Se la chiave "Abbonamenti" è stata cancellata dal Portachiavi e non hai un account, l'unico modo è
+          cancellare i dati di questa app sul telefono e ricominciare.</p>
+        <button type="button" id="btn-blocco-cancella" class="btn-testo testo-rosso">Cancella i dati e ricomincia</button>
+      </div>
+    </form>
+  </section>
+
   <!-- Saluto lampo quando torni nell'app dal background: goccia + "Bentornato, Tommaso" (si salta toccando) -->
   <div id="saluto-avvio" class="saluto-avvio" role="status" hidden>
-    <img class="goccia" src="pianeta.webp?v=4.14" alt="" width="520" height="520" decoding="async">
+    <img class="goccia" src="pianeta.webp?v=4.15" alt="" width="520" height="520" decoding="async">
     <p id="saluto-avvio-testo" class="saluto-avvio-testo"></p>
   </div>
 
@@ -525,17 +562,19 @@
 
   <!-- L'ordine conta: prima le categorie, poi supabase.js (il collegamento online),
        storage.js (i dati), calendario.js e servizi.js (le guide per disdire), infine app.js che li usa tutti -->
-  <script src="categorie.js?v=4.14"></script>
+  <script src="categorie.js?v=4.15"></script>
   <!-- Le frequenze (settimanale, mensile, trimestrale, semestrale, annuale) -->
-  <script src="frequenze.js?v=4.14"></script>
-  <script src="supabase.js?v=4.14"></script>
-  <script src="storage.js?v=4.14"></script>
-  <script src="calendario.js?v=4.14"></script>
-  <script src="servizi.js?v=4.14"></script>
+  <script src="frequenze.js?v=4.15"></script>
+  <script src="supabase.js?v=4.15"></script>
+  <script src="storage.js?v=4.15"></script>
+  <script src="calendario.js?v=4.15"></script>
+  <script src="servizi.js?v=4.15"></script>
   <!-- I loghi dei servizi per i pianetini (usa chiaveNome di servizi.js) -->
-  <script src="loghi.js?v=4.14"></script>
-  <script src="animazioni.js?v=4.14"></script>
-  <script src="benvenuto.js?v=4.14"></script>
-  <script src="app.js?v=4.14"></script>
+  <script src="loghi.js?v=4.15"></script>
+  <script src="animazioni.js?v=4.15"></script>
+  <script src="benvenuto.js?v=4.15"></script>
+  <!-- Il blocco con Face ID (WebAuthn) -->
+  <script src="blocco.js?v=4.15"></script>
+  <script src="app.js?v=4.15"></script>
 </body>
 </html>
