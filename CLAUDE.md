@@ -8,6 +8,12 @@ pensata per l'iPhone e installabile nella schermata Home.
 - **Nuova icona**: la disegna la sua ragazza (PNG 1024×1024, angoli dritti, sfondo pieno); poi rigenerare
   `icon-180.png`, `icon-512.png` e `icon.svg`.
 - **"Lo uso davvero?"**: segnare quanto si usa ogni abbonamento e suggerire dove risparmiare.
+- **Idee "fondamentali" scelte il 20/11/2026** (1 e 3 fatte nella versione 4.10; le altre da fare):
+  2) "Ho dimenticato la password" nel foglio dell'accesso (email di Supabase per reimpostarla);
+  4) aggiunta rapida dei servizi più diffusi (pianetini con logo in cima al modulo: nome, categoria e link
+     si riempiono da soli, l'utente scrive solo prezzo e giorno);
+  5) "Spesa per metodo di pagamento" in Statistiche (quanto va al mese su ogni carta);
+  6) blocco con Face ID all'apertura (WebAuthn, interruttore in Impostazioni).
 - Altre idee già proposte: abbonamenti condivisi (quota),
   notifiche vere sul telefono (serve una parte su Supabase), budget mensile, valute diverse, riepilogo annuale.
 
@@ -28,13 +34,15 @@ Il proprietario del progetto **sta imparando a programmare**:
   (generate da `icon.svg`, con sfondo quadrato: gli angoli li arrotonda iOS).
 
 ## Numero di versione (da aggiornare a OGNI rilascio)
-- Versione attuale: **4.9**. In `index.html` i file hanno il numero di versione (`style.css?v=4.9`, `app.js?v=4.9`…)
-  e c'è la scritta "Abbonamenti · versione 4.9" in fondo alla pagina.
+- Versione attuale: **4.10**. In `index.html` i file hanno il numero di versione (`style.css?v=4.10`, `app.js?v=4.10`…)
+  e c'è la scritta "Abbonamenti · versione 4.10" in fondo alla pagina.
 - A ogni modifica di CSS, JavaScript o manifest **aumenta il numero in tutti i punti di `index.html`**
   (cerca la versione attuale), così l'iPhone scarica i file nuovi invece di usare la copia in memoria.
   Piccole modifiche: 3.0 → 3.1; una nuova versione grande dell'app: 3.x → 4.0.
-- GitHub Pages fa tenere in memoria i file fino a ~10 minuti: dopo un merge, l'iPhone può
-  vedere la versione nuova con qualche minuto di ritardo (la scritta in fondo lo conferma).
+- Dalla 4.10 il service worker chiede `index.html` a internet a ogni apertura "da chiusa" (`cache: 'no-cache'`):
+  la versione nuova arriva alla prima riapertura. Il numero `?v=` resta FONDAMENTALE: è così che il service
+  worker capisce quali file sono nuovi (quelli con `?v=` li prende dal magazzino senza chiedere). Il primo
+  aggiornamento verso la 4.10 può ancora richiedere qualche minuto (GitHub Pages tiene i file ~10 minuti).
 
 ## Design in stile iOS (da rispettare)
 - Font di sistema `-apple-system`; titolo grande 34px, testo 17px.
@@ -179,6 +187,7 @@ Il proprietario del progetto **sta imparando a programmare**:
 | `storage.js` | `Archivio`: lettura/scrittura dati, dati iniziali, controllo e backup, impostazioni, account e sincronizzazione online |
 | `supabase/schema.sql` | Com'è fatto il database online (tabella, regole di protezione, permessi). Già eseguito: è documentazione |
 | `app.js` | Logica: calcolo date e totali, filtro, lista divisa in gruppi, spesa per categoria, grafico mese per mese, promemoria nel calendario, modulo, backup |
+| `sw.js` | Service worker: mette da parte i file dell'app perché si apra anche senza internet |
 | `manifest.json` | Informazioni per installare l'app |
 | `icon.svg`, `icon-180.png`, `icon-512.png` | Icone |
 
@@ -211,6 +220,25 @@ I backup delle versioni precedenti si importano ancora (stato mancante → `atti
 - Nel modulo la frequenza è un menu "Si rinnova" (`#campo-frequenza`, voci da `FREQUENZE`): il controllo
   segmentato con 5 voci non ci stava sull'iPhone. Il segmentato resta per "Accedi / Crea account".
 - Online: la colonna `frequenza` accetta le 5 frequenze (comando in fondo a `supabase/schema.sql`, versione 4.6).
+
+## Funziona senza internet: service worker (versione 4.10)
+- **`sw.js`** (nella cartella principale, così vale per tutto il sito), registrato in fondo ad `app.js` solo su
+  `http(s)` (non con `file://`). Magazzino (Cache) unico: `abbonamenti`.
+- Regole: pagina (`mode: navigate`) → prima internet, se non risponde entro `ATTESA_RETE` (3 s) la copia;
+  file con `?v=` (anche i loghi) → prima il magazzino; altri file del sito → copia subito e intanto si aggiorna;
+  tutto ciò che non è del nostro sito (Supabase, link) NON viene toccato.
+- All'installazione legge `index.html` e mette da parte tutti i file che nomina (`src`/`href`); a ogni pagina nuova
+  toglie i file con un `?v=` vecchio (non i loghi). `sw.js` NON ha numero di versione: va cambiato solo se cambiano
+  le regole (il browser se ne accorge da solo e lo sostituisce, `skipWaiting` + `clients.claim`).
+- Prove automatiche: con Playwright `context.setOffline(true)` dopo una prima visita (aspettare
+  `navigator.serviceWorker.ready` e ricaricare una volta).
+
+## "Ancora da pagare" questo mese (versione 4.10)
+- Nella card dei totali, riga `#da-pagare` larga quanto la card: "Ancora da pagare a novembre · 2 rinnovi entro il
+  30 novembre · 31,99 €" (numero che conta). Sono i pagamenti VERI da oggi (compreso) a fine mese, gli stessi del
+  grafico (`pagamentiDelMese`): niente medie, niente prove gratuite in corso. Se non ne restano: "Per novembre hai
+  già pagato tutto ✓". Nascosta senza abbonamenti attivi. `disegnaDaPagare()` la chiama `disegnaTotali()`.
+- Un tocco (`apriMeseInCorso`) apre Statistiche con il mese in corso scelto nel grafico.
 
 ## Categorie (versione 2)
 - Elenco **fisso** in `categorie.js` (scelta del proprietario): non c'è una schermata per crearle.
