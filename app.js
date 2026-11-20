@@ -63,6 +63,9 @@ const el = {
   gruppi: $('gruppi'),
   listaVuota: $('lista-vuota'),
   sezioneCategorie: $('sezione-categorie'),
+  sezionePagamenti: $('sezione-pagamenti'),
+  perPagamento: $('per-pagamento'),
+  notaPagamenti: $('nota-pagamenti'),
   perCategoria: $('per-categoria'),
   campoCategoria: $('campo-categoria'),
   campoStato: $('campo-stato'),
@@ -303,6 +306,7 @@ function disegna() {
   disegnaFiltri();
   disegnaLista();
   disegnaPerCategoria();
+  disegnaPerPagamento();
   disegnaGraficoMesi();
   // Scheda Statistiche vuota? Mostriamo un messaggio al posto delle due sezioni
   el.statisticheVuote.hidden = !(el.sezioneCategorie.hidden && el.sezioneMesi.hidden);
@@ -713,6 +717,90 @@ function disegnaPerCategoria() {
     riga.append(alto, barra);
     el.perCategoria.append(riga);
   }
+}
+
+
+// ---------- Spesa per metodo di pagamento ----------
+// Quanto va al mese su ogni carta (o PayPal, Apple Pay…), con il logo del circuito.
+// "Visa •••• 1234" e "visa •••• 1234" sono lo stesso metodo: li uniamo con semplifica().
+function disegnaPerPagamento() {
+  const listaAttivi = paganti(); // come per le categorie: attivi e non in prova gratuita
+  const totale = totaleAlMese(listaAttivi);
+  el.perPagamento.replaceChildren();
+  el.sezionePagamenti.hidden = listaAttivi.length === 0;
+  if (totale === 0) return;
+
+  // Raggruppiamo: chiave semplificata → { nome come l'hai scritto, abbonamenti }
+  const gruppi = new Map();
+  for (const abb of listaAttivi) {
+    const chiave = semplifica(abb.pagamento.trim());
+    if (!gruppi.has(chiave)) gruppi.set(chiave, { nome: abb.pagamento.trim(), abbonamenti: [] });
+    gruppi.get(chiave).abbonamenti.push(abb);
+  }
+  // Dal più costoso al meno costoso; "Non indicato" (chiave vuota) sempre in fondo
+  const righe = [...gruppi.entries()]
+    .map(([chiave, gruppo]) => ({ chiave, ...gruppo, alMese: totaleAlMese(gruppo.abbonamenti) }))
+    .sort((a, b) => (a.chiave === '') - (b.chiave === '') || b.alMese - a.alMese);
+
+  for (const riga of righe) {
+    const ignoto = riga.chiave === '';
+    const nome = ignoto ? 'Non indicato' : riga.nome;
+    const quanti = riga.abbonamenti.length === 1 ? '1 abbonamento' : `${riga.abbonamenti.length} abbonamenti`;
+    const percentuale = Math.round((riga.alMese / totale) * 100);
+
+    // Un pulsante (si tocca per vedere i suoi abbonamenti), tranne "Non indicato"
+    const pulsante = crea(ignoto ? 'div' : 'button', `riga-pagamento${ignoto ? ' fissa' : ''}`);
+    if (!ignoto) {
+      pulsante.type = 'button';
+      pulsante.dataset.pagamento = riga.nome;
+      pulsante.setAttribute('aria-label', `${nome}: ${formatoEuro.format(riga.alMese)} al mese, ${percentuale}%, ${quanti}. Tocca per vederli.`);
+    }
+
+    // Il pianetino: logo del circuito dal catalogo ("Visa •••• 1234" → Visa), altrimenti l'iniziale
+    const pianetino = crea('span', `pianetino ${ignoto ? 'ignoto' : Benvenuto.tinta(nome)}`);
+    pianetino.setAttribute('aria-hidden', 'true');
+    if (ignoto) pianetino.textContent = '?';
+    else Loghi.riempi(pianetino, nome, Benvenuto.iniziale(nome));
+
+    const testi = crea('span', 'pagamento-testi');
+    testi.append(crea('span', 'categoria-nome', nome), crea('span', 'pagamento-quanti', quanti));
+    const valore = crea('span', 'categoria-valore', formatoEuro.format(riga.alMese));
+    valore.append(crea('span', 'categoria-percentuale', ` · ${percentuale}%`));
+
+    const alto = crea('div', 'pagamento-alto');
+    alto.append(pianetino, testi, valore);
+    if (!ignoto) alto.append(el.tplFreccia.content.cloneNode(true));
+
+    const barra = crea('div', 'categoria-barra');
+    barra.setAttribute('aria-hidden', 'true');
+    const riempimento = crea('span');
+    riempimento.style.width = `${(riga.alMese / totale) * 100}%`;
+    barra.append(riempimento);
+
+    pulsante.append(alto, barra);
+    const elemento = crea('li');
+    elemento.append(pulsante);
+    el.perPagamento.append(elemento);
+  }
+
+  // La nota sotto: cosa si può toccare, e quanti abbonamenti non hanno il metodo scritto
+  const senza = gruppi.get('')?.abbonamenti.length || 0;
+  el.notaPagamenti.textContent = senza === 0
+    ? 'Importi al mese. Tocca un metodo per vedere i suoi abbonamenti.'
+    : `Importi al mese. ${senza === 1 ? '1 abbonamento non ha' : `${senza} abbonamenti non hanno`} il metodo di pagamento: `
+      + `${senza === 1 ? 'aprilo' : 'aprili'} e compila «Pagamento» (es. Visa •••• 1234).`;
+}
+
+// Tocco su un metodo: torniamo alla lista, cercando quel metodo (la ricerca guarda anche il campo Pagamento)
+function mostraAbbonamentiDi(pagamento) {
+  el.campoRicerca.value = pagamento;
+  filtro = 'tutte';
+  mostraScheda('abbonamenti');
+  disegnaFiltri();
+  disegnaLista();
+  const sopra = el.bloccoRicerca.getBoundingClientRect().top + window.scrollY - 70;
+  const movimentoRidotto = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  window.scrollTo({ top: sopra, behavior: movimentoRidotto ? 'auto' : 'smooth' });
 }
 
 
@@ -1691,6 +1779,12 @@ window.addEventListener('pageshow', (e) => {
 el.serviziRapidi.addEventListener('click', (e) => {
   const pulsante = e.target.closest('.servizio-rapido');
   if (pulsante) scegliServizioRapido(pulsante);
+});
+
+// Spesa per metodo di pagamento: tocco su una riga → i suoi abbonamenti nella lista
+el.perPagamento.addEventListener('click', (e) => {
+  const pulsante = e.target.closest('button[data-pagamento]');
+  if (pulsante) mostraAbbonamentiDi(pulsante.dataset.pagamento);
 });
 
 // "Ancora da pagare a novembre" → il dettaglio del mese nel grafico

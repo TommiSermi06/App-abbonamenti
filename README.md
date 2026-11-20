@@ -12,6 +12,7 @@ quanto spendi al mese e all'anno, e quale rinnovo sta per arrivare.
 - "Ancora da pagare" questo mese: quanto uscirà davvero dal conto da oggi a fine mese
 - Si apre anche senza internet (service worker)
 - Categorie (Streaming, Musica, Giochi, …): lista divisa in gruppi, filtro e spesa al mese per categoria
+- Spesa al mese per metodo di pagamento (Visa, PayPal…): tocchi una carta e vedi i suoi abbonamenti
 - Grafico delle spese dei prossimi 12 mesi, con il dettaglio dei pagamenti di ogni mese
 - Promemoria dei rinnovi nel Calendario dell'iPhone (file .ics con avvisi)
 - Abbonamenti in pausa o disdetti: restano nella lista ma non contano nei totali

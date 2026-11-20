@@ -941,6 +941,72 @@ button:active {
   color: var(--testo-secondario);
 }
 
+/* --- Spesa per metodo di pagamento: come le categorie, con il logo e toccabile --- */
+.riga-pagamento {
+  display: block;
+  width: 100%;
+  min-height: 44px;
+  padding: 12px 16px;
+  border: 0;
+  background: none;
+  color: var(--testo);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* La riga "Non indicato" non si tocca: è solo un'informazione */
+.riga-pagamento.fissa {
+  cursor: default;
+}
+
+.pagamento-alto {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.riga-pagamento .pianetino {
+  width: 30px;
+  height: 30px;
+  font-size: 14px;
+}
+
+.riga-pagamento .pianetino .logo {
+  width: 16px;
+  height: 16px;
+}
+
+/* "Non indicato": pianetino con il punto di domanda, nei colori tenui */
+.riga-pagamento .pianetino.ignoto {
+  background: var(--azzurro-tenue);
+  color: var(--blu);
+  box-shadow: none;
+}
+
+.pagamento-testi {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  margin-right: auto; /* spinge l'importo a destra */
+}
+
+.pagamento-quanti {
+  font-size: 13px;
+  color: var(--testo-secondario);
+}
+
+.riga-pagamento .freccia {
+  flex: none;
+  color: var(--testo-terziario);
+}
+
+/* La barra parte sotto al testo, non sotto al logo */
+.riga-pagamento .categoria-barra {
+  margin-left: 42px;
+}
+
 /* Barra: binario azzurrino, riempimento blu */
 .categoria-barra {
   height: 6px;
