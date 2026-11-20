@@ -63,6 +63,12 @@ const el = {
   daPagareTitolo: $('da-pagare-titolo'),
   daPagareDettaglio: $('da-pagare-dettaglio'),
   daPagareImporto: $('da-pagare-importo'),
+  budget: $('budget'),
+  budgetTitolo: $('budget-titolo'),
+  budgetImporto: $('budget-importo'),
+  budgetRiempimento: $('budget-riempimento'),
+  budgetDettaglio: $('budget-dettaglio'),
+  campoBudget: $('campo-budget'),
   prossimo: $('prossimo'),
   bloccoOrdina: $('blocco-ordina'),
   campoOrdine: $('campo-ordine'),
@@ -425,6 +431,7 @@ function disegnaTotali() {
     el.notaProve.textContent = `🎁 In prova gratuita: ${quanti}, +${formatoEuro.format(totaleAlMese(inProvaOra))} al mese ${finisce}.`;
   }
   disegnaDaPagare();
+  disegnaBudget(alMese);
 }
 
 // ---------- L'occhio: nascondere gli importi in alto ----------
@@ -462,7 +469,10 @@ function applicaImportiNascosti(nascosti, animato = true) {
     trattini.setAttribute('role', 'img');
     trattini.setAttribute('aria-label', 'Importo nascosto');
   }
-  if (appPronta) disegnaDaPagare(); // aggiorna la frase letta da VoiceOver
+  if (appPronta) {
+    disegnaDaPagare(); // aggiorna la frase letta da VoiceOver
+    disegnaBudget(totaleAlMese(paganti())); // col budget nascosto mostriamo la percentuale
+  }
 }
 
 async function cambiaImportiNascosti() {
@@ -768,6 +778,103 @@ async function mandaNotificaDiProva() {
 
 // "Ancora da pagare a novembre: 32,98 €": i pagamenti VERI da oggi (compreso) alla fine del mese.
 // Sono gli stessi del grafico (pagamentiDelMese): niente medie, niente prove gratuite in corso.
+// ---------- Budget mensile (versione 4.19) ----------
+// Il limite di spesa al mese per gli abbonamenti, scelto in Impostazioni → Budget.
+// Si confronta con il totale "Al mese" (la media: annuali / 12 ecc.), così non cambia
+// a seconda del mese. Impostazione "budget": un numero in euro, oppure null = nessun budget.
+// Resta solo su questo dispositivo, come il nome.
+let budget = null;
+
+const SOGLIA_QUASI = 0.9; // dal 90% la barra diventa arancione
+
+// Legge un importo scritto dall'utente: "60", "60,50", "60.50 €"… → numero (NaN se non valido)
+function leggiImporto(testo) {
+  return Number(testo.replace(/[€\s]/g, '').replace(',', '.'));
+}
+
+// Come scriviamo il budget nel campo: "60,00 €" (vuoto se non c'è)
+function testoBudget() {
+  return budget === null ? '' : formatoEuro.format(budget);
+}
+
+function disegnaBudget(alMese) {
+  // Senza budget: la riga invita a sceglierlo, ma solo se c'è qualcosa da controllare
+  if (budget === null) {
+    el.budget.hidden = attivi().length === 0;
+    el.budget.className = 'budget vuoto';
+    el.budgetTitolo.textContent = 'Imposta un budget mensile';
+    el.budgetImporto.textContent = '';
+    el.budgetDettaglio.textContent = 'Scegli quanto spendere al massimo ogni mese';
+    el.budget.setAttribute('aria-label', 'Imposta un budget mensile per gli abbonamenti');
+    return;
+  }
+
+  el.budget.hidden = false;
+  const quota = alMese / budget; // 0,7 = hai usato il 70%
+  const percentuale = Math.round(quota * 100);
+  // Livello: normale (blu), quasi (arancione, dal 90%), oltre (rosso, oltre il 100%)
+  const livello = alMese > budget + 0.004 ? 'oltre' : quota >= SOGLIA_QUASI ? 'quasi' : 'normale';
+  el.budget.className = `budget ${livello}`;
+  el.budgetTitolo.textContent = 'Budget mensile';
+  el.budgetImporto.textContent = `${formatoEuro.format(alMese)} di ${formatoEuro.format(budget)}`;
+
+  // La barra si riempie fino alla percentuale (al massimo piena)
+  el.budgetRiempimento.style.width = `${Math.min(100, quota * 100)}%`;
+
+  // La frase sotto: con l'occhio chiuso niente euro, solo la percentuale
+  const differenza = formatoEuro.format(Math.abs(budget - alMese));
+  if (importiNascosti) {
+    el.budgetDettaglio.textContent = `Hai usato il ${percentuale}% del budget`;
+  } else if (livello === 'oltre') {
+    el.budgetDettaglio.textContent = `Hai superato il budget di ${differenza} al mese`;
+  } else if (livello === 'quasi') {
+    el.budgetDettaglio.textContent = `Attenzione: ti restano solo ${differenza} al mese`;
+  } else {
+    el.budgetDettaglio.textContent = `Ti restano ${differenza} al mese (${percentuale}% usato)`;
+  }
+  const importo = importiNascosti ? 'importi nascosti' : el.budgetImporto.textContent;
+  el.budget.setAttribute('aria-label',
+    `Budget mensile: ${importo}. ${el.budgetDettaglio.textContent}. Tocca per cambiarlo.`);
+}
+
+// Tocco sulla riga del budget: andiamo in Impostazioni con il campo pronto per scrivere
+function apriBudget() {
+  mostraScheda('impostazioni');
+  el.campoBudget.focus();
+  el.campoBudget.select();
+}
+
+// Il campo del budget in Impostazioni: si salva quando hai finito di scrivere
+async function cambiaBudget() {
+  const testo = el.campoBudget.value.trim();
+  const valore = leggiImporto(testo);
+  if (testo === '' || valore === 0) {
+    budget = null;
+  } else if (!Number.isFinite(valore) || valore < 0 || valore > 100000) {
+    el.campoBudget.value = testoBudget(); // non valido: torniamo a quello di prima
+    Animazioni.avviso('Scrivi un importo valido, per esempio 50');
+    return;
+  } else {
+    budget = Math.round(valore * 100) / 100; // al centesimo
+  }
+  el.campoBudget.value = testoBudget();
+  await Archivio.salvaImpostazione('budget', budget);
+  disegnaTotali();
+  Animazioni.avviso(budget === null ? 'Budget tolto' : `Budget: ${formatoEuro.format(budget)} al mese`);
+}
+
+// Dopo aver aggiunto, modificato o riattivato un abbonamento: se adesso sfori il budget
+// (e prima no) lo diciamo nella capsula. Restituisce il pezzo da aggiungere, oppure ''.
+// La capsula sta su una riga sola: chi la usa accorcia il resto del testo.
+function avvisoBudget(primaAlMese) {
+  if (budget === null) return '';
+  const dopo = totaleAlMese(paganti());
+  if (primaAlMese > budget + 0.004 || dopo <= budget + 0.004) return '';
+  return importiNascosti
+    ? ' · oltre il budget'
+    : ` · ${formatoEuro.format(dopo - budget)} oltre il budget`;
+}
+
 function disegnaDaPagare() {
   const oggi = oggiAMezzanotte();
   const mese = NOMI_MESI[oggi.getMonth()];
@@ -992,6 +1099,7 @@ async function azioneRiga(azione, id) {
   const abb = abbonamenti.find((a) => a.id === id);
   if (!abb) return;
   const prima = { ...abb }; // la copia per poter annullare
+  const primaAlMese = totaleAlMese(paganti()); // per l'avviso del budget (riattivando)
 
   // La riga si richiude in altezza (gli altri scivolano su), poi ridisegniamo
   const riga = el.gruppi.querySelector(`button.riga[data-id="${CSS.escape(id)}"]`)?.closest('li');
@@ -1023,6 +1131,9 @@ async function azioneRiga(azione, id) {
   abbonamenti = await Archivio.tutti();
   disegna();
   if (!annulla) return;
+  // Riattivato: se adesso sfori il budget lo diciamo (testo corto, c'è anche "Annulla")
+  const oltre = azione !== 'elimina' && azione !== 'pausa' ? avvisoBudget(primaAlMese) : '';
+  if (oltre) testo = 'Riattivato · oltre il budget'; // l'importo si legge nella card
 
   Animazioni.avviso(testo, {
     azione: 'Annulla',
@@ -1598,6 +1709,7 @@ async function salva(evento) {
 
   try {
     const eraNuovo = !idInModifica;
+    const primaAlMese = totaleAlMese(paganti()); // per capire se con questo salvataggio sfori il budget
     if (idInModifica) {
       await Archivio.aggiorna(idInModifica, dati);
     } else {
@@ -1610,7 +1722,9 @@ async function salva(evento) {
     abbonamenti = await Archivio.tutti();
     chiudiFoglio();
     disegna();
-    Animazioni.avviso(eraNuovo ? 'Abbonamento aggiunto' : 'Modifiche salvate');
+    const oltre = avvisoBudget(primaAlMese);
+    if (oltre) Animazioni.avviso((eraNuovo ? 'Aggiunto' : 'Salvato') + oltre);
+    else Animazioni.avviso(eraNuovo ? 'Abbonamento aggiunto' : 'Modifiche salvate');
   } catch (e) {
     el.errore.textContent = `Non sono riuscito a salvare: ${e.message}`;
   }
@@ -2188,6 +2302,16 @@ el.btnOcchio.addEventListener('animationend', () => el.btnOcchio.classList.remov
 
 // "Ancora da pagare a novembre" → il dettaglio del mese nel grafico
 el.daPagare.addEventListener('click', apriMeseInCorso);
+// Budget: un tocco sulla riga porta al campo; il campo si salva quando hai finito
+el.budget.addEventListener('click', apriBudget);
+el.campoBudget.addEventListener('change', cambiaBudget);
+// Mentre scrivi togliamo il "€" per lasciare solo il numero
+el.campoBudget.addEventListener('focus', () => {
+  if (budget !== null) el.campoBudget.value = String(budget).replace('.', ',');
+});
+el.campoBudget.addEventListener('blur', () => {
+  if (leggiImporto(el.campoBudget.value) === budget) el.campoBudget.value = testoBudget();
+});
 
 // --- Barra delle schede in basso ---
 el.barraSchede.addEventListener('click', (e) => {
@@ -2317,6 +2441,10 @@ async function avvia() {
   preparaTrattini();
   // Gli importi nascosti con l'occhio restano nascosti anche all'apertura (anche nell'orbita)
   applicaImportiNascosti(await Archivio.leggiImpostazione('nascondiImporti', false), false);
+  // Il budget mensile (null = nessuno)
+  const budgetSalvato = await Archivio.leggiImpostazione('budget', null);
+  budget = Number.isFinite(budgetSalvato) && budgetSalvato > 0 ? budgetSalvato : null;
+  el.campoBudget.value = testoBudget();
   scriviNotaCalendario();
 
   // Recuperiamo l'ordine scelto l'ultima volta (se è uno di quelli validi)
