@@ -6,6 +6,7 @@ quanto spendi al mese e all'anno, e quale rinnovo sta per arrivare.
 ## Cosa fa
 - Lista degli abbonamenti con nome, costo, frequenza (settimanale, mensile, ogni 3 mesi, ogni 6 mesi o annuale) e giorno del rinnovo
 - Aggiungi, modifica ed elimina con un modulo che sale dal basso
+- Aggiunta rapida dei servizi più diffusi: tocchi il logo, scrivi solo prezzo e giorno
 - Totale al mese e all'anno (gli annuali contano costo / 12 al mese)
 - Prossimo rinnovo in evidenza, con i giorni mancanti colorati (grigio, arancione, rosso, "Oggi!")
 - "Ancora da pagare" questo mese: quanto uscirà davvero dal conto da oggi a fine mese

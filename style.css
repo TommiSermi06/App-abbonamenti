@@ -1186,8 +1186,92 @@ a.riga {
 
 /* Se il modulo comincia subito con una card, la stacchiamo dalla barra "Annulla / Salva"
    con lo stesso spazio che c'è tra una card e l'altra (prima lo dava il controllo "Mensile / Annuale") */
-.foglio form > .lista:first-child {
-  margin-top: 20px;
+.foglio form > .lista:first-child,
+.foglio form > [hidden]:first-child + .lista {
+  margin-top: 20px; /* anche quando l'aggiunta rapida in cima è nascosta (modifica) */
+}
+
+/* --- Aggiunta rapida: fila di pianetini con il logo, che scorre di lato --- */
+.aggiunta-rapida {
+  margin-top: 12px;
+}
+
+.servizi-rapidi {
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+  padding: 2px 12px 10px;
+  scrollbar-width: none;              /* niente barra di scorrimento (Firefox) */
+}
+
+.servizi-rapidi::-webkit-scrollbar {
+  display: none;                      /* niente barra di scorrimento (Safari, Chrome) */
+}
+
+.servizio-rapido {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 70px;
+  padding: 4px 0;
+  border: 0;
+  background: none;
+  color: var(--testo-secondario);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: color var(--durata) var(--curva);
+}
+
+/* Il nome sotto al pianetino: su una riga, con "…" se è lungo */
+.servizio-rapido > span:last-child {
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.servizio-rapido .pianetino {
+  width: 48px;
+  height: 48px;
+  font-size: 20px;
+  transition: transform var(--durata) var(--curva), box-shadow var(--durata) var(--curva);
+}
+
+.servizio-rapido .pianetino .logo {
+  width: 24px;
+  height: 24px;
+}
+
+.servizio-rapido:active {
+  opacity: 1;
+}
+
+.servizio-rapido:active .pianetino {
+  transform: scale(0.9);
+}
+
+/* Il servizio scelto: anello blu intorno al pianetino e nome blu */
+.servizio-rapido[aria-pressed="true"] {
+  color: var(--blu);
+  font-weight: 600;
+}
+
+.servizio-rapido[aria-pressed="true"] .pianetino {
+  box-shadow: 0 0 0 3px var(--sfondo-foglio), 0 0 0 5px var(--blu);
+}
+
+/* Le righe appena riempite dall'aggiunta rapida si illuminano un attimo */
+@keyframes riempito {
+  from { background-color: var(--azzurro-tenue); }
+  to   { background-color: transparent; }
+}
+
+.campo.appena-riempito {
+  animation: riempito 1.2s var(--curva);
 }
 
 /* --- La riga in cui stai scrivendo ---
