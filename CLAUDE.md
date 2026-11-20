@@ -354,6 +354,8 @@ I backup delle versioni precedenti si importano ancora (stato mancante → `atti
 - Le chiavi VAPID le crea la funzione la prima volta e le salva in `configurazione_push`: la segreta la legge solo il
   server (nessuna regola RLS per gli utenti), la pubblica tutti. Nessuna chiave segreta nel codice o in chat.
   `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` le dà Supabase alla funzione.
+  Nei progetti Supabase nuovi `service_role` NON ha i permessi sulle tabelle create a mano: servono i `grant`
+  in `notifiche.sql` (senza, la funzione risponde "permission denied"). Provato e funzionante il 20/11/2026.
 - **I calcoli delle date sono copiati** nella funzione (blocco "INIZIO/FINE CALCOLI", in UTC): se cambiano le regole di
   `frequenze.js` / `prossimaData` in `app.js`, aggiornare anche lì (prova: confronto su migliaia di date, tutte uguali).
 - `sw.js`: `push` → `showNotification(titolo, { body, icon, data.url })`; `notificationclick` → porta davanti l'app o la apre.
