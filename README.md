@@ -16,6 +16,7 @@ quanto spendi al mese e all'anno, e quale rinnovo sta per arrivare.
 - Abbonamenti in pausa o disdetti: restano nella lista ma non contano nei totali
 - Ricerca per nome e ordinamento della lista (rinnovo, prezzo, nome)
 - Sincronizzazione online con account (Supabase): stessi dati su telefono, iPad e computer, anche offline
+- "Password dimenticata?": email con il link per sceglierne una nuova
 - Prove gratuite: non contano nei totali finché durano, con avviso prima che diventino a pagamento
 - Per ogni abbonamento: link per disdire, metodo di pagamento e note
 - Guida "Come disdire" per i servizi più diffusi, con il link alla pagina ufficiale inserito in automatico

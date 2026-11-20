@@ -18,22 +18,22 @@
 
   <link rel="apple-touch-icon" href="icon-180.png">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <!-- NUMERO DI VERSIONE: "?v=4.10" in fondo ai nomi dei file.
-       Per il browser "app.js?v=4.10" e "app.js?v=4.11" sono file diversi:
+  <!-- NUMERO DI VERSIONE: "?v=4.11" in fondo ai nomi dei file.
+       Per il browser "app.js?v=4.11" e "app.js?v=4.12" sono file diversi:
        cambiando il numero, l'iPhone è costretto a scaricare il codice nuovo
        invece di usare la copia vecchia che tiene in memoria.
        A ogni modifica di CSS o JavaScript aumenta il numero in TUTTI i punti
        di questo file (cerca il numero attuale), anche nella scritta in fondo alla pagina. -->
-  <link rel="manifest" href="manifest.json?v=4.10">
+  <link rel="manifest" href="manifest.json?v=4.11">
 
   <title>Abbonamenti</title>
-  <link rel="stylesheet" href="style.css?v=4.10">
+  <link rel="stylesheet" href="style.css?v=4.11">
   <!-- Lo stile "Liquid Glass": va DOPO style.css perché lo riveste -->
-  <link rel="stylesheet" href="vetro.css?v=4.10">
+  <link rel="stylesheet" href="vetro.css?v=4.11">
   <!-- La schermata di benvenuto "Orbita" e il saluto all'apertura -->
-  <link rel="stylesheet" href="benvenuto.css?v=4.10">
+  <link rel="stylesheet" href="benvenuto.css?v=4.11">
   <!-- Il pianeta serve subito (benvenuto e saluto): il browser lo scarica in anticipo -->
-  <link rel="preload" as="image" href="pianeta.webp?v=4.10" type="image/webp">
+  <link rel="preload" as="image" href="pianeta.webp?v=4.11" type="image/webp">
 </head>
 <body>
   <!-- Sfondo vivo: macchie di luce sfumate dietro al vetro (solo decorazione) -->
@@ -107,7 +107,7 @@
             <option value="nome">Nome</option>
           </select>
           <svg class="ordina-freccia" viewBox="0 0 12 8" width="10" height="7" aria-hidden="true">
-            <path d="M1.5 1.5 6 6l4.10-4.10" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M1.5 1.5 6 6l4.11-4.11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
         </label>
       </div>
@@ -208,7 +208,7 @@
       <p class="nota">Il backup è un file .json con tutti i tuoi abbonamenti. Importarlo sostituisce i dati attuali.</p>
 
       <!-- Versione dell'app: utile per capire se l'iPhone ha già l'ultima -->
-      <p class="versione">Abbonamenti · versione 4.10</p>
+      <p class="versione">Abbonamenti · versione 4.11</p>
     </div>
     <!-- Campo per scegliere il file: è nascosto, lo apre il pulsante "Importa backup" -->
     <input type="file" id="file-importa" accept=".json,application/json" hidden>
@@ -399,10 +399,41 @@
           <input id="campo-password" type="password" autocomplete="current-password" placeholder="almeno 6 caratteri">
         </label>
       </div>
+      <!-- Solo in "Accedi": manda l'email per scegliere una nuova password -->
+      <button type="button" id="btn-password-dimenticata" class="btn-testo link-piccolo">Password dimenticata?</button>
+      <!-- Conferma che l'email è partita (la scrive app.js) -->
+      <p id="nota-recupero" class="nota nota-recupero" role="status" hidden></p>
 
       <p id="errore-account" class="errore" role="alert"></p>
       <button type="submit" id="btn-invia-account" class="btn-principale">Accedi</button>
       <p class="nota">I tuoi abbonamenti verranno salvati online e saranno uguali su tutti i dispositivi in cui entri con questo account.</p>
+    </form>
+  </section>
+
+  <!-- ===== Foglio "Nuova password": si apre quando arrivi dal link dell'email "Password dimenticata" ===== -->
+  <section id="foglio-password" class="foglio" role="dialog" aria-modal="true" aria-labelledby="password-titolo" tabindex="-1">
+    <div class="maniglia" aria-hidden="true"></div>
+    <header class="foglio-barra">
+      <button type="button" id="btn-annulla-password" class="btn-testo">Annulla</button>
+      <h2 id="password-titolo" class="foglio-titolo">Nuova password</h2>
+      <button type="submit" form="modulo-password" id="btn-salva-password" class="btn-testo grassetto">Salva</button>
+    </header>
+
+    <form id="modulo-password" novalidate>
+      <div class="lista card" id="campi-password">
+        <label class="riga campo">
+          <span>Nuova password</span>
+          <!-- new-password: il Portachiavi dell'iPhone propone una password sicura e la ricorda -->
+          <input id="campo-nuova-password" type="password" autocomplete="new-password" placeholder="almeno 6 caratteri">
+        </label>
+        <label class="riga campo">
+          <span>Ripetila</span>
+          <input id="campo-ripeti-password" type="password" autocomplete="new-password" placeholder="uguale a sopra">
+        </label>
+      </div>
+      <p id="errore-password" class="errore" role="alert"></p>
+      <!-- Spiegazione (e, dopo il salvataggio, cosa fare: la scrive app.js) -->
+      <p id="nota-password" class="nota" role="status"></p>
     </form>
   </section>
 
@@ -414,7 +445,7 @@
       <div class="anello-scala interno"><div class="anello" id="anello-interno"></div></div>
       <!-- Al centro il pianeta (immagine creata con Higgsfield) -->
       <div class="orbita-centro">
-        <img class="pianeta-immagine" src="pianeta.webp?v=4.10" alt="" width="520" height="520" decoding="async">
+        <img class="pianeta-immagine" src="pianeta.webp?v=4.11" alt="" width="520" height="520" decoding="async">
       </div>
       <!-- Sotto l'orbita, la capsula di vetro con il totale al mese -->
       <span class="orbita-capsula">
@@ -444,7 +475,7 @@
 
   <!-- Saluto lampo quando torni nell'app dal background: goccia + "Bentornato, Tommaso" (si salta toccando) -->
   <div id="saluto-avvio" class="saluto-avvio" role="status" hidden>
-    <img class="goccia" src="pianeta.webp?v=4.10" alt="" width="520" height="520" decoding="async">
+    <img class="goccia" src="pianeta.webp?v=4.11" alt="" width="520" height="520" decoding="async">
     <p id="saluto-avvio-testo" class="saluto-avvio-testo"></p>
   </div>
 
@@ -457,17 +488,17 @@
 
   <!-- L'ordine conta: prima le categorie, poi supabase.js (il collegamento online),
        storage.js (i dati), calendario.js e servizi.js (le guide per disdire), infine app.js che li usa tutti -->
-  <script src="categorie.js?v=4.10"></script>
+  <script src="categorie.js?v=4.11"></script>
   <!-- Le frequenze (settimanale, mensile, trimestrale, semestrale, annuale) -->
-  <script src="frequenze.js?v=4.10"></script>
-  <script src="supabase.js?v=4.10"></script>
-  <script src="storage.js?v=4.10"></script>
-  <script src="calendario.js?v=4.10"></script>
-  <script src="servizi.js?v=4.10"></script>
+  <script src="frequenze.js?v=4.11"></script>
+  <script src="supabase.js?v=4.11"></script>
+  <script src="storage.js?v=4.11"></script>
+  <script src="calendario.js?v=4.11"></script>
+  <script src="servizi.js?v=4.11"></script>
   <!-- I loghi dei servizi per i pianetini (usa chiaveNome di servizi.js) -->
-  <script src="loghi.js?v=4.10"></script>
-  <script src="animazioni.js?v=4.10"></script>
-  <script src="benvenuto.js?v=4.10"></script>
-  <script src="app.js?v=4.10"></script>
+  <script src="loghi.js?v=4.11"></script>
+  <script src="animazioni.js?v=4.11"></script>
+  <script src="benvenuto.js?v=4.11"></script>
+  <script src="app.js?v=4.11"></script>
 </body>
 </html>

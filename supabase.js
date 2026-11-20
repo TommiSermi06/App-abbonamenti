@@ -82,7 +82,10 @@ const Supabase = (function () {
       signup_disabled: 'La creazione di nuovi account è chiusa.',
       email_not_confirmed: 'Prima devi confermare l\'email (controlla la posta).',
       over_request_rate_limit: 'Troppi tentativi: riprova tra qualche minuto.',
-      over_email_send_rate_limit: 'Troppi tentativi: riprova tra qualche minuto.',
+      over_email_send_rate_limit: 'Troppe email in poco tempo: riprova tra qualche minuto.',
+      same_password: 'La nuova password è uguale a quella di prima: scegline una diversa.',
+      otp_expired: 'Il link dell\'email è scaduto o è già stato usato: chiedine uno nuovo.',
+      session_not_found: 'Il link dell\'email non è più valido: chiedine uno nuovo.',
     };
     if (messaggi[codice]) return messaggi[codice];
     if (codiceHttp === 429) return messaggi.over_request_rate_limit;
@@ -161,6 +164,37 @@ const Supabase = (function () {
     }
   }
 
+  // ---------- Password dimenticata ----------
+  // 1. Supabase manda all'indirizzo un'email con un link. Il link riporta a "indirizzoRitorno"
+  //    (la nostra app) con, dopo il "#", un biglietto temporaneo e "type=recovery".
+  //    Per sicurezza Supabase risponde "ok" anche se l'email non ha un account.
+  async function recuperaPassword(email, indirizzoRitorno) {
+    await chiama(`/auth/v1/recover?redirect_to=${encodeURIComponent(indirizzoRitorno)}`, {
+      metodo: 'POST',
+      corpo: { email },
+    });
+  }
+
+  // 2. Legge quello che c'è dopo il "#" nell'indirizzo della pagina.
+  //    Restituisce { tipo: 'recovery', token } se è il link dell'email,
+  //    { errore: 'messaggio' } se il link è scaduto o sbagliato, null se non c'è niente.
+  function leggiRitornoDaEmail(hash) {
+    const parti = new URLSearchParams(String(hash || '').replace(/^#/, ''));
+    if (parti.get('error') || parti.get('error_code')) {
+      return { errore: messaggioErrore({ error_code: parti.get('error_code') || parti.get('error') }, 400) };
+    }
+    if (parti.get('access_token') && parti.get('type')) {
+      return { tipo: parti.get('type'), token: parti.get('access_token') };
+    }
+    return null;
+  }
+
+  // 3. Salva la nuova password usando il biglietto temporaneo arrivato con il link.
+  //    Non entriamo nell'account qui (siamo in Safari): poi si entra dall'app con la password nuova.
+  async function impostaNuovaPassword(token, password) {
+    await chiama('/auth/v1/user', { metodo: 'PUT', token, corpo: { password } });
+  }
+
   // Chi è entrato? { email, id } oppure null
   function utente() {
     const sessione = leggiSessione();
@@ -205,5 +239,8 @@ const Supabase = (function () {
     }
   }
 
-  return { creaAccount, entra, esci, utente, database, ErroreOnline };
+  return {
+    creaAccount, entra, esci, utente, database, ErroreOnline,
+    recuperaPassword, leggiRitornoDaEmail, impostaNuovaPassword,
+  };
 })();

@@ -96,6 +96,17 @@ const el = {
   campoPassword: $('campo-password'),
   erroreAccount: $('errore-account'),
   btnInviaAccount: $('btn-invia-account'),
+  btnPasswordDimenticata: $('btn-password-dimenticata'),
+  notaRecupero: $('nota-recupero'),
+  foglioPassword: $('foglio-password'),
+  moduloPassword: $('modulo-password'),
+  campiPassword: $('campi-password'),
+  campoNuovaPassword: $('campo-nuova-password'),
+  campoRipetiPassword: $('campo-ripeti-password'),
+  errorePassword: $('errore-password'),
+  notaPassword: $('nota-password'),
+  btnAnnullaPassword: $('btn-annulla-password'),
+  btnSalvaPassword: $('btn-salva-password'),
   notaCalendario: $('nota-calendario'),
   btnAggiungi: $('btn-aggiungi'),
   btnEsporta: $('btn-esporta'),
@@ -1324,12 +1335,93 @@ function aggiornaModoAccount() {
   el.btnInviaAccount.textContent = nuovo ? 'Crea account' : 'Accedi';
   el.campoPassword.autocomplete = nuovo ? 'new-password' : 'current-password';
   el.erroreAccount.textContent = '';
+  // "Password dimenticata?" ha senso solo per entrare in un account che esiste già
+  el.btnPasswordDimenticata.hidden = nuovo;
+  el.notaRecupero.hidden = true;
 }
 
 function apriFoglioAccount() {
   el.campoPassword.value = '';
   aggiornaModoAccount();
   mostraFoglio(el.foglioAccount);
+}
+
+// ---------- Password dimenticata ----------
+// 1. Nel foglio "Accedi": mandiamo l'email con il link per scegliere una nuova password
+async function chiediNuovaPassword() {
+  const email = el.campoEmail.value.trim();
+  el.notaRecupero.hidden = true;
+  if (!email.includes('@')) {
+    el.erroreAccount.textContent = 'Scrivi qui sopra la tua email: ti mandiamo il link per scegliere una nuova password.';
+    el.campoEmail.focus();
+    return;
+  }
+  el.erroreAccount.textContent = '';
+  el.btnPasswordDimenticata.disabled = true;
+  try {
+    await Archivio.recuperaPassword(email);
+    // Lo stesso messaggio sia che l'account esista sia che no: così nessuno può "scoprire" chi è iscritto
+    el.notaRecupero.textContent = `Se ${email} ha un account, ti è arrivata un'email con un link (controlla anche la posta indesiderata). `
+      + 'Toccalo da questo telefono: si aprirà Safari per scegliere la nuova password.';
+    el.notaRecupero.hidden = false;
+  } catch (e) {
+    el.erroreAccount.textContent = e.message;
+  } finally {
+    el.btnPasswordDimenticata.disabled = false;
+  }
+}
+
+// 2. Arrivati dal link dell'email: il foglio "Nuova password".
+//    tokenRecupero è il biglietto temporaneo arrivato con il link (vale poco tempo e una volta sola).
+let tokenRecupero = null;
+
+function apriFoglioPassword(token) {
+  tokenRecupero = token;
+  el.foglioPassword.classList.remove('fatto');
+  el.campiPassword.hidden = false;
+  el.btnSalvaPassword.hidden = false;
+  el.btnAnnullaPassword.textContent = 'Annulla';
+  el.campoNuovaPassword.value = '';
+  el.campoRipetiPassword.value = '';
+  el.errorePassword.textContent = '';
+  el.notaPassword.textContent = 'Scegli la nuova password del tuo account: poi entrerai con questa su tutti i tuoi dispositivi.';
+  mostraFoglio(el.foglioPassword);
+}
+
+async function salvaNuovaPassword(evento) {
+  evento.preventDefault();
+  const password = el.campoNuovaPassword.value;
+  if (!tokenRecupero) return;
+  if (password.length < 6) {
+    el.errorePassword.textContent = 'La password deve avere almeno 6 caratteri.';
+    el.campoNuovaPassword.focus();
+    return;
+  }
+  if (password !== el.campoRipetiPassword.value) {
+    el.errorePassword.textContent = 'Le due password non sono uguali.';
+    el.campoRipetiPassword.focus();
+    return;
+  }
+  el.btnSalvaPassword.disabled = true;
+  try {
+    await Archivio.impostaNuovaPassword(tokenRecupero, password);
+    tokenRecupero = null; // il biglietto è stato usato
+    el.campoNuovaPassword.value = '';
+    el.campoRipetiPassword.value = '';
+    // Il foglio diventa la conferma: niente più campi, solo cosa fare adesso
+    el.foglioPassword.classList.add('fatto');
+    el.campiPassword.hidden = true;
+    el.btnSalvaPassword.hidden = true;
+    el.btnAnnullaPassword.textContent = 'Chiudi';
+    el.errorePassword.textContent = '';
+    el.notaPassword.textContent = '✓ Password cambiata. Ora apri Abbonamenti dalla schermata Home, '
+      + 'vai in Impostazioni → Sincronizzazione ed entra con la nuova password.';
+    Animazioni.avviso('Password cambiata');
+  } catch (e) {
+    el.errorePassword.textContent = e.message;
+  } finally {
+    el.btnSalvaPassword.disabled = false;
+  }
 }
 
 async function inviaAccount(evento) {
@@ -1548,6 +1640,15 @@ el.moduloAccount.addEventListener('change', (e) => {
 });
 el.moduloAccount.addEventListener('input', () => { el.erroreAccount.textContent = ''; });
 
+// --- Password dimenticata ---
+el.btnPasswordDimenticata.addEventListener('click', chiediNuovaPassword);
+el.moduloPassword.addEventListener('submit', salvaNuovaPassword);
+el.btnAnnullaPassword.addEventListener('click', () => {
+  tokenRecupero = null;
+  nascondiFoglio();
+});
+el.moduloPassword.addEventListener('input', () => { el.errorePassword.textContent = ''; });
+
 // storage.js ci avvisa quando cambia lo stato e quando arrivano dati nuovi
 window.addEventListener('archivio-stato', disegnaAccount);
 window.addEventListener('archivio-aggiornato', async () => {
@@ -1669,9 +1770,15 @@ async function avvia() {
 
   Archivio.sincronizza(); // intanto, se sei entrato, controlliamo le novità online
 
+  // Arriviamo dal link dell'email "Password dimenticata"? (i dati sono dopo il "#" nell'indirizzo)
+  const ritorno = Archivio.leggiRitornoDaEmail(location.hash);
+  if (ritorno) history.replaceState(null, '', location.pathname + location.search); // togliamo il biglietto dall'indirizzo
+
   let apriAccesso = false;
   try {
-    if (!benvenutoVisto) {
+    if (ritorno) {
+      // Dal link dell'email: niente benvenuto, si va dritti al foglio (vedi sotto)
+    } else if (!benvenutoVisto) {
       // Primo avvio: la scena "Orbita" con le iniziali dei tuoi abbonamenti
       const scelta = await Benvenuto.mostra({
         nomi: abbonamenti.map((abb) => abb.nome),
@@ -1700,6 +1807,15 @@ async function avvia() {
     entraNellApp();
   }
   if (apriAccesso) setTimeout(apriFoglioAccount, 500); // "Ho già un account": apriamo l'accesso
+  if (ritorno && ritorno.token && ritorno.tipo === 'recovery') {
+    setTimeout(() => apriFoglioPassword(ritorno.token), 500);
+  } else if (ritorno && ritorno.errore) {
+    // Link scaduto o già usato: riapriamo l'accesso con la spiegazione, così se ne chiede uno nuovo
+    setTimeout(() => {
+      apriFoglioAccount();
+      el.erroreAccount.textContent = ritorno.errore;
+    }, 500);
+  }
 }
 
 // "Prossimo rinnovo: Spotify, tra 3 giorni" (per l'orbita delle aperture "da chiusa")
@@ -1731,6 +1847,7 @@ function entraNellApp() {
   Animazioni.barraCompatta($('barra-fissa'), $('titolo-grande'), [el.filtri]);
   Animazioni.trascinaPerChiudere(el.foglio, nascondiFoglio);
   Animazioni.trascinaPerChiudere(el.foglioAccount, nascondiFoglio);
+  Animazioni.trascinaPerChiudere(el.foglioPassword, nascondiFoglio);
   // Righe della lista: scorrendo a sinistra compaiono "Pausa" ed "Elimina"
   Animazioni.scorriRighe(el.gruppi, {
     larghezzaAzioni: 156, // due pulsanti da 78px
