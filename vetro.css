@@ -716,6 +716,63 @@ body.bloccato .app {
 }
 
 
+/* ---------- 10c. Importi nascosti: numeri ↔ linette ----------
+   Nascondere: il numero si "schiaccia" in verticale fino a una riga, si sfoca e svanisce;
+   intanto le 4 linette crescono una dopo l'altra, da sinistra, con un piccolo rimbalzo.
+   Mostrare: al contrario, prima si ritirano le linette (dall'ultima) e poi il numero si "gonfia".
+   (Il ritardo giusto lo dà la regola dello stato di ARRIVO: per questo ce ne sono due.) */
+.nascondibile > :first-child {
+  transform-origin: left center;
+  transition: opacity 0.3s var(--curva) 0.15s, transform 0.45s var(--molla) 0.15s, filter 0.35s var(--curva) 0.15s;
+}
+
+.a-destra > :first-child { transform-origin: right center; }
+.orbita-capsula .nascondibile > :first-child { transform-origin: center; }
+
+.importi-nascosti .nascondibile > :first-child {
+  transform: scaleY(0.08);
+  filter: blur(5px);
+  transition: opacity 0.3s var(--curva), transform 0.35s var(--uscita), filter 0.3s var(--curva);
+}
+
+.trattini i {
+  background: linear-gradient(90deg, var(--blu), var(--blu-chiaro));
+  transition: transform 0.3s var(--uscita) calc((3 - var(--i)) * 40ms), opacity 0.2s var(--curva) calc((3 - var(--i)) * 40ms);
+}
+
+.importi-nascosti .trattini i {
+  transition: transform 0.5s var(--molla) calc(var(--i) * 55ms + 120ms), opacity 0.2s var(--curva) calc(var(--i) * 55ms + 120ms);
+}
+
+/* L'occhio: la barra si disegna/cancella, e a ogni tocco "sbatte la palpebra" */
+.occhio-barra {
+  transition: stroke-dashoffset 0.35s var(--uscita);
+}
+
+.btn-occhio {
+  transition: color 0.3s var(--curva), transform 0.35s var(--molla);
+}
+
+.btn-occhio:active {
+  opacity: 1;
+  transform: scale(0.88);
+}
+
+.occhio-palpebra {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.btn-occhio.sbatte .occhio-palpebra {
+  animation: sbatte 0.32s var(--curva);
+}
+
+@keyframes sbatte {
+  0%, 100% { transform: scaleY(1); }
+  45%      { transform: scaleY(0.1); }
+}
+
+
 /* ---------- 10b. Barra delle schede di vetro ----------
    Come su iOS 26: una capsula di vetro che galleggia in basso, con una goccia
    azzurrina che scivola (con un piccolo rimbalzo) sotto la scheda scelta. */

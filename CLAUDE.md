@@ -31,8 +31,8 @@ Il proprietario del progetto **sta imparando a programmare**:
   (generate da `icon.svg`, con sfondo quadrato: gli angoli li arrotonda iOS).
 
 ## Numero di versione (da aggiornare a OGNI rilascio)
-- Versione attuale: **4.13**. In `index.html` i file hanno il numero di versione (`style.css?v=4.13`, `app.js?v=4.13`…)
-  e c'è la scritta "Abbonamenti · versione 4.13" in fondo alla pagina.
+- Versione attuale: **4.14**. In `index.html` i file hanno il numero di versione (`style.css?v=4.14`, `app.js?v=4.14`…)
+  e c'è la scritta "Abbonamenti · versione 4.14" in fondo alla pagina.
 - A ogni modifica di CSS, JavaScript o manifest **aumenta il numero in tutti i punti di `index.html`**
   (cerca la versione attuale), così l'iPhone scarica i file nuovi invece di usare la copia in memoria.
   Piccole modifiche: 3.0 → 3.1; una nuova versione grande dell'app: 3.x → 4.0.
@@ -236,6 +236,20 @@ I backup delle versioni precedenti si importano ancora (stato mancante → `atti
   grafico (`pagamentiDelMese`): niente medie, niente prove gratuite in corso. Se non ne restano: "Per novembre hai
   già pagato tutto ✓". Nascosta senza abbonamenti attivi. `disegnaDaPagare()` la chiama `disegnaTotali()`.
 - Un tocco (`apriMeseInCorso`) apre Statistiche con il mese in corso scelto nel grafico.
+
+## Nascondere gli importi: l'occhio (versione 4.14)
+- Pulsante `#btn-occhio` nell'angolo in alto a destra della card dei totali (come nelle app delle banche).
+  Nasconde gli importi "in alto": al mese, all'anno, "Ancora da pagare" e il totale nell'orbita dell'apertura.
+  I prezzi dei singoli abbonamenti (lista, Statistiche) restano visibili (scelta da confermare col proprietario).
+- Ogni importo nascondibile è `<span class="nascondibile">` con dentro il numero e `<span class="trattini">`
+  (4 linette `<i style="--i:…">` create da `preparaTrattini()`). Stato = classe `importi-nascosti` sull'`<html>`
+  (`applicaImportiNascosti(nascosti, animato)`), salvato con `Archivio.salvaImpostazione('nascondiImporti', …)` e
+  applicato all'avvio SENZA animazione (classe temporanea `senza-transizioni`).
+- Animazione (`vetro.css`, 10c): il numero si schiaccia (`scaleY`) e si sfoca mentre le linette crescono una dopo
+  l'altra con la molla; al contrario le linette si ritirano dall'ultima e poi il numero si gonfia (i ritardi stanno
+  nella regola dello stato di ARRIVO). L'occhio "sbatte la palpebra" (classe `.sbatte`) e la barra obliqua si
+  disegna con `stroke-dashoffset`. Con Riduci movimento: cambio immediato.
+- VoiceOver: numeri nascosti con `aria-hidden`, linette lette come "Importo nascosto".
 
 ## Categorie (versione 2)
 - Elenco **fisso** in `categorie.js` (scelta del proprietario): non c'è una schermata per crearle.

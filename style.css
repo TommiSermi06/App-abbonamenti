@@ -468,8 +468,12 @@ button:active {
   font-weight: 600;
 }
 
-.da-pagare-importo {
+/* L'importo (con le sue linette) sta in fondo a destra della riga */
+.da-pagare > .nascondibile {
   margin-left: auto;
+}
+
+.da-pagare-importo {
   font-size: 19px;
   font-weight: 700;
   color: var(--blu);
@@ -939,6 +943,91 @@ button:active {
 .categoria-percentuale {
   font-weight: 400;
   color: var(--testo-secondario);
+}
+
+/* ---------- Importi nascosti: l'occhio dei totali ----------
+   Ogni importo nascondibile è un ".nascondibile" con dentro il numero e le ".trattini"
+   (4 linette, le crea app.js). Con la classe "importi-nascosti" sull'<html> il numero
+   sparisce e compaiono le linette. Il movimento (schiacciarsi, crescere) è in vetro.css. */
+.totali {
+  position: relative; /* per mettere l'occhio nell'angolo */
+}
+
+.nascondibile {
+  position: relative;
+  display: block;
+}
+
+.trattini {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.18em;
+  pointer-events: none;
+}
+
+/* Le linette hanno la stessa grandezza del numero che coprono */
+.totale .trattini { font-size: clamp(26px, 8.6vw, 34px); }
+.da-pagare .trattini { font-size: 19px; justify-content: flex-end; }
+.orbita-capsula .trattini { font-size: 22px; justify-content: center; }
+
+.trattini i {
+  display: block;
+  width: 0.55em;
+  height: 0.14em;
+  border-radius: 1em;
+  background: var(--blu);
+  opacity: 0;
+  transform: scaleX(0);
+}
+
+.importi-nascosti .trattini i {
+  opacity: 1;
+  transform: none;
+}
+
+.importi-nascosti .nascondibile > :first-child {
+  opacity: 0;
+}
+
+/* L'occhio: in alto a destra nella card dei totali */
+.btn-occhio {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--testo-secondario);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.importi-nascosti .btn-occhio {
+  color: var(--blu);
+}
+
+/* La barra obliqua dell'occhio: "disegnata" solo con gli importi nascosti */
+.occhio-barra {
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+}
+
+.importi-nascosti .occhio-barra {
+  stroke-dashoffset: 0;
+}
+
+/* All'avvio la scelta salvata si applica di colpo, senza animazione */
+.senza-transizioni *,
+.senza-transizioni *::before,
+.senza-transizioni *::after {
+  transition: none !important;
 }
 
 /* --- Spesa per metodo di pagamento: come le categorie, con il logo e toccabile --- */
