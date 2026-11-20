@@ -533,10 +533,120 @@
 }
 
 /* Mentre il Face ID parte da solo: niente pulsanti, e il pianeta "respira" piano */
-.blocco.in-attesa .btn-principale,
+.blocco.in-attesa .solo-faceid,
 .blocco.in-attesa #btn-blocco-aiuto,
 .blocco.in-attesa .blocco-aiuto {
   visibility: hidden; /* nascosti ma al loro posto: quando ricompaiono non fa sobbalzare niente */
+}
+
+/* Si vede solo la parte del metodo scelto (classe "modo-pin" o "modo-faceid" sulla schermata) */
+.blocco:not(.modo-pin) .solo-pin,
+.blocco:not(.modo-faceid) .solo-faceid {
+  display: none;
+}
+
+/* Con il PIN il pianeta è più piccolo: deve starci anche la tastierina */
+.blocco.modo-pin .blocco-pianeta {
+  width: 72px;
+  height: 72px;
+  margin-bottom: 4px;
+}
+
+/* "Annulla" in alto a sinistra: solo quando scegli o controlli il codice dalle Impostazioni */
+.blocco-annulla {
+  position: absolute;
+  top: calc(env(safe-area-inset-top) + 6px);
+  left: 6px;
+  display: none;
+}
+
+.blocco.configura .blocco-annulla {
+  display: block;
+}
+
+.blocco.configura #btn-blocco-aiuto,
+.blocco.configura .blocco-aiuto {
+  display: none;
+}
+
+/* I 6 pallini del codice: vuoti con il bordo blu, pieni man mano che scrivi */
+.pin-pallini {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin: 6px 0 22px;
+}
+
+.pin-pallini span {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 1.5px solid var(--blu);
+  transition: background-color 0.15s var(--curva), transform 0.3s var(--molla);
+}
+
+.pin-pallini span.pieno {
+  background: var(--blu);
+  transform: scale(1.15);
+}
+
+/* Codice sbagliato: i pallini "scuotono la testa", come sull'iPhone */
+.pin-pallini.scuoti {
+  animation: scuoti 0.4s var(--curva);
+}
+
+@keyframes scuoti {
+  0%, 100% { transform: translateX(0); }
+  20%      { transform: translateX(-12px); }
+  40%      { transform: translateX(10px); }
+  60%      { transform: translateX(-7px); }
+  80%      { transform: translateX(4px); }
+}
+
+/* La tastierina: 3 colonne di tasti rotondi di vetro */
+.tastierino {
+  display: grid;
+  grid-template-columns: repeat(3, 76px);
+  gap: 14px 24px;
+  justify-content: center;
+}
+
+.tasto {
+  width: 76px;
+  height: 76px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--vetro);
+  box-shadow: inset 0 1px 0 var(--vetro-riflesso), inset 0 0 0 1px var(--vetro-bordo);
+  color: var(--testo);
+  font: inherit;
+  font-size: 30px;
+  font-weight: 400;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: background-color 0.25s var(--curva), transform 0.25s var(--molla);
+}
+
+/* Al tocco il tasto si illumina di azzurrino e si schiaccia appena */
+.tasto:active {
+  opacity: 1;
+  background: var(--azzurro-tenue);
+  transform: scale(0.93);
+  transition-duration: 0.05s;
+}
+
+.tasto-cancella {
+  display: grid;
+  place-items: center;
+  background: none;
+  box-shadow: none;
+  color: var(--blu);
+}
+
+/* Dopo troppi codici sbagliati la tastierina si ferma per 30 secondi */
+.blocco.fermo .tastierino {
+  opacity: 0.4;
+  pointer-events: none;
 }
 
 .blocco.in-attesa .blocco-pianeta {
@@ -568,7 +678,8 @@
   .blocco {
     transition: none;
   }
-  .blocco.in-attesa .blocco-pianeta {
+  .blocco.in-attesa .blocco-pianeta,
+  .pin-pallini.scuoti {
     animation: none;
   }
 }

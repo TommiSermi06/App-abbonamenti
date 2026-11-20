@@ -30,8 +30,8 @@ Il proprietario del progetto **sta imparando a programmare**:
   (generate da `icon.svg`, con sfondo quadrato: gli angoli li arrotonda iOS).
 
 ## Numero di versione (da aggiornare a OGNI rilascio)
-- Versione attuale: **4.15**. In `index.html` i file hanno il numero di versione (`style.css?v=4.15`, `app.js?v=4.15`…)
-  e c'è la scritta "Abbonamenti · versione 4.15" in fondo alla pagina.
+- Versione attuale: **4.16**. In `index.html` i file hanno il numero di versione (`style.css?v=4.16`, `app.js?v=4.16`…)
+  e c'è la scritta "Abbonamenti · versione 4.16" in fondo alla pagina.
 - A ogni modifica di CSS, JavaScript o manifest **aumenta il numero in tutti i punti di `index.html`**
   (cerca la versione attuale), così l'iPhone scarica i file nuovi invece di usare la copia in memoria.
   Piccole modifiche: 3.0 → 3.1; una nuova versione grande dell'app: 3.x → 4.0.
@@ -174,7 +174,7 @@ Il proprietario del progetto **sta imparando a programmare**:
 | `calendario.js` | Crea il file .ics dei promemoria (`creaFileCalendario`); impostazioni `GIORNI_PREAVVISO` e `ORA_AVVISO` |
 | `vetro.css` | Stile "Liquid Glass": vetro, sfondo vivo, molle e animazioni CSS (riveste `style.css`) |
 | `animazioni.js` | `Animazioni`: numeri che contano, goccia dei filtri, barra compatta, foglio da trascinare, capsula di avviso |
-| `blocco.js` | `Blocco`: blocco con Face ID (WebAuthn), schermata di blocco, copri/scopri in background |
+| `blocco.js` | `Blocco`: blocco dell'app con codice PIN (tastierina, impronta SHA-256) o Face ID (WebAuthn), schermata di blocco, copri/scopri in background |
 | `benvenuto.js`, `benvenuto.css` | Benvenuto "Orbita" al primo avvio, saluto lampo a ogni apertura, iniziali e colori dei "pianeti" |
 | `loghi.js` | I loghi dei servizi (da Simple Icons) per i pianetini: `LOGHI`, `logoPer(nome)`, `creaSvgLogo(logo)`, `Loghi.riempi` (catalogo) |
 | `loghi/` | Catalogo completo dei loghi: `elenco.js`, `s/<file>.js` (uno per logo), `CREDITI.md` |
@@ -251,18 +251,35 @@ I backup delle versioni precedenti si importano ancora (stato mancante → `atti
   disegna con `stroke-dashoffset`. Con Riduci movimento: cambio immediato.
 - VoiceOver: numeri nascosti con `aria-hidden`, linette lette come "Importo nascosto".
 
-## Blocco con Face ID (versione 4.15)
+## Blocco dell'app: codice PIN o Face ID (versioni 4.15 e 4.16)
+- Impostazioni → **Privacy**: menu "Blocco dell'app" (`#campo-blocco`: Nessuno / Codice PIN / Face ID) e, col PIN,
+  "Cambia il codice PIN" (`#btn-cambia-pin`). Per cambiare o togliere il blocco serve PRIMA il metodo attuale
+  (`controllaMetodoAttuale()`); annullando, il menu torna al metodo attivo.
+- **Codice PIN** (versione 4.16, scelta del proprietario: il Face ID delle app web passa dal foglio "passkey" di iOS,
+  che da un'app web non si può togliere): 6 cifre, tastierina nostra in `#blocco` (classe `modo-pin`: pallini
+  `#pin-pallini` che "scuotono la testa" se sbagli, tasti rotondi di vetro in `#tastierino` creati da blocco.js; anche
+  i tasti del computer funzionano). Salvato SOLO come impronta: `bloccoPin = { sale, impronta }` con
+  `impronta = SHA-256(sale + ":" + codice)` (`Blocco.creaImpronta`, `Blocco.pinGiusto`; `crypto.subtle`, quindi
+  solo https/localhost). Dopo 5 codici sbagliati di fila la tastierina si ferma 30 s (classe `fermo`).
+  `Blocco.chiediPin({ titolo, testo, controlla })` = tastierina dalle Impostazioni con "Annulla" (classe `configura`):
+  nuovo codice scritto due volte uguale (`scegliNuovoPin()`).
+- Al massimo un metodo attivo: `bloccoPin` oppure `bloccoFaceId` (`salvaBlocco(pin, faceId)`, `metodoBlocco()`).
+  Mentre si sceglie il codice (`inConfigurazione`) il passaggio in background non copre/blocca.
+- Con la password dell'account ("Non riesci a sbloccare?") si spegne qualsiasi blocco.
+
+### Il Face ID (versione 4.15)
 - **`blocco.js`** (oggetto `Blocco`): WebAuthn, lo standard delle passkey. `registra(nome)` crea una chiave della
   piattaforma (`authenticatorAttachment: 'platform'`, `userVerification: 'required'`) → id in base64url;
   `verifica(id)` chiede il Face ID (`navigator.credentials.get`) e controlla il bit "UV" (user verified, byte 32
   di `authenticatorData`). Nessun server: è un controllo locale, protegge la SCHERMATA, i dati non sono cifrati.
+- iOS mostra il Face ID delle app web come **passkey** ("Salvare/Usare la passkey per tommisermi06.github.io?"):
+  non si può togliere da un'app web; solo un'app vera dell'App Store avrebbe il Face ID "pulito".
 - **Il Face ID parte da solo** (scelta del proprietario): appena si apre la schermata di blocco, `chiudi()` chiama
   `verifica()` senza aspettare un tocco; intanto classe `.in-attesa` (pulsanti nascosti con `visibility`, testo
   "Sblocco con Face ID…", pianeta che respira). Se fallisce (annullato, non riconosciuto, o Safari che vuole un
   tocco) ricompaiono pulsante "Sblocca con Face ID" e aiuto, senza errore rosso. Poi parte l'orbita come sempre.
-- L'id della chiave sta nell'impostazione `bloccoFaceId` (solo sul dispositivo; `null` = spento). Interruttore in
-  Impostazioni → **Privacy** (`#campo-blocco`, `cambiaBlocco()`): accendere crea la chiave; **spegnere chiede prima
-  il Face ID**. Non disponibile (`isUserVerifyingPlatformAuthenticatorAvailable` falso, o `file://`) → disattivato.
+- L'id della chiave sta nell'impostazione `bloccoFaceId` (solo sul dispositivo; `null` = spento). Non disponibile
+  (`Blocco.faceIdDisponibile()` falso, o `file://`) → la voce "Face ID" del menu è disattivata.
 - Schermata `#blocco` (stile in `benvenuto.css`, sezione 8): sfondo PIENO, z-index 50, sopra a benvenuto e saluto.
   Stati (`Blocco.stato()`): `aperto`, `coperto` (coperta senza bisogno di Face ID), `bloccato` (serve il Face ID).
   - Apertura "da chiusa": in `avvia()` `sbloccaApp()` PRIMA dell'orbita (non dal link dell'email di recupero).

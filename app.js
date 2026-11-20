@@ -51,6 +51,7 @@ const el = {
   daPagare: $('da-pagare'),
   btnOcchio: $('btn-occhio'),
   campoBlocco: $('campo-blocco'),
+  btnCambiaPin: $('btn-cambia-pin'),
   notaBlocco: $('nota-blocco'),
   daPagareTitolo: $('da-pagare-titolo'),
   daPagareDettaglio: $('da-pagare-dettaglio'),
@@ -466,48 +467,134 @@ async function cambiaImportiNascosti() {
   el.btnOcchio.classList.add('sbatte');
 }
 
-// ---------- Blocco con Face ID (la parte WebAuthn è in blocco.js) ----------
-// idBlocco = l'id della chiave creata dall'iPhone (null = blocco spento). Resta solo su questo telefono.
+// ---------- Blocco dell'app: codice PIN o Face ID (la parte tecnica è in blocco.js) ----------
+// Restano solo su questo telefono (impostazioni):
+// - bloccoPin     = { sale, impronta } del codice (null = niente PIN). Il codice vero NON si salva;
+// - bloccoFaceId  = l'id della chiave creata dall'iPhone (null = niente Face ID).
+// Al massimo uno dei due è attivo.
+let bloccoPin = null;
 let idBlocco = null;
+let inConfigurazione = false; // stiamo scegliendo/controllando il codice dalle Impostazioni
 
-// La sezione "Privacy" delle Impostazioni: interruttore e spiegazione
+function metodoBlocco() {
+  if (bloccoPin) return 'pin';
+  if (idBlocco) return 'faceid';
+  return 'nessuno';
+}
+
+function bloccoAttivo() {
+  return metodoBlocco() !== 'nessuno';
+}
+
+async function salvaBlocco(pin, faceId) {
+  bloccoPin = pin;
+  idBlocco = faceId;
+  await Archivio.salvaImpostazione('bloccoPin', pin);
+  await Archivio.salvaImpostazione('bloccoFaceId', faceId);
+}
+
+// La sezione "Privacy" delle Impostazioni: il menu, "Cambia il codice PIN" e la spiegazione
 async function disegnaSezioneBlocco() {
-  const disponibile = await Blocco.disponibile();
-  el.campoBlocco.checked = Boolean(idBlocco);
-  el.campoBlocco.disabled = !disponibile && !idBlocco;
-  if (!disponibile && !idBlocco) {
-    el.notaBlocco.textContent = 'Qui non si può usare: serve l\'app installata sull\'iPhone (o un dispositivo con Face ID o Touch ID).';
-  } else if (idBlocco) {
-    el.notaBlocco.textContent = 'L\'app chiede Face ID quando la apri e quando torni dopo almeno 30 secondi. '
-      + 'Se il Face ID non ti riconosce, l\'iPhone ti chiede il codice del telefono.';
-  } else {
-    el.notaBlocco.textContent = 'Chi prende in mano il telefono non vedrà i tuoi abbonamenti. '
-      + (Archivio.account()
-        ? 'Se un giorno il Face ID non funzionasse, potrai sbloccare con la password del tuo account.'
-        : 'Consiglio: entra prima con un account, così se il Face ID non funzionasse potrai sbloccare con la password.');
+  const faceId = await Blocco.faceIdDisponibile();
+  const pin = Blocco.pinDisponibile();
+  const metodo = metodoBlocco();
+  el.campoBlocco.value = metodo;
+  el.campoBlocco.querySelector('option[value="faceid"]').disabled = !faceId && metodo !== 'faceid';
+  el.campoBlocco.querySelector('option[value="pin"]').disabled = !pin && metodo !== 'pin';
+  el.campoBlocco.disabled = !faceId && !pin && metodo === 'nessuno';
+  el.btnCambiaPin.hidden = metodo !== 'pin';
+
+  const rete = Archivio.account()
+    ? 'Se un giorno non riuscissi a sbloccare, potrai usare la password del tuo account.'
+    : 'Consiglio: entra prima con un account, così se non riuscissi a sbloccare potrai usare la password.';
+  const testi = {
+    nessuno: el.campoBlocco.disabled
+      ? 'Qui non si può usare: serve l\'app installata sull\'iPhone (indirizzo https).'
+      : `Chi prende in mano il telefono non vedrà i tuoi abbonamenti. Scegli il codice PIN (veloce, tutto dentro l'app) o il Face ID. ${rete}`,
+    pin: `L'app chiede il codice quando la apri e quando torni dopo almeno 30 secondi. ${rete}`,
+    faceid: 'L\'app chiede il Face ID quando la apri e quando torni dopo almeno 30 secondi. '
+      + 'iOS lo mostra come "passkey": è il modo in cui funziona il Face ID per le app web. '
+      + 'Se il viso non viene riconosciuto, l\'iPhone ti chiede il codice del telefono.',
+  };
+  el.notaBlocco.textContent = testi[metodo];
+}
+
+// Prima di cambiare o togliere il blocco serve il metodo ATTUALE (così un curioso non lo spegne).
+// Restituisce true se è andata, false se annullato o sbagliato.
+async function controllaMetodoAttuale() {
+  if (metodoBlocco() === 'pin') {
+    const pin = await Blocco.chiediPin({
+      titolo: 'Codice attuale',
+      testo: 'Per cambiare il blocco, scrivi il codice che usi adesso.',
+      controlla: (scritto) => Blocco.pinGiusto(scritto, bloccoPin),
+    });
+    return pin !== null;
+  }
+  if (metodoBlocco() === 'faceid') {
+    try {
+      await Blocco.verifica(idBlocco);
+      return true;
+    } catch (e) {
+      alert(Blocco.messaggio(e));
+      return false;
+    }
+  }
+  return true;
+}
+
+// Sceglie un codice nuovo (scritto due volte uguale). null se annullato.
+async function scegliNuovoPin() {
+  let testo = 'Scegli un codice di 6 cifre: lo userai per aprire l\'app.';
+  for (;;) {
+    const primo = await Blocco.chiediPin({ titolo: 'Nuovo codice', testo });
+    if (primo === null) return null;
+    const secondo = await Blocco.chiediPin({ titolo: 'Ripeti il codice', testo: 'Scrivilo di nuovo, per sicurezza.' });
+    if (secondo === null) return null;
+    if (primo === secondo) return Blocco.creaImpronta(primo);
+    testo = 'I due codici non erano uguali: scegline uno e riprova.';
   }
 }
 
-// L'interruttore: accendere crea la chiave; spegnere chiede prima il Face ID (così un curioso non lo spegne)
+// Il menu "Blocco dell'app": Nessuno / Codice PIN / Face ID
 async function cambiaBlocco() {
-  const accendi = el.campoBlocco.checked;
-  el.campoBlocco.disabled = true;
+  const scelto = el.campoBlocco.value;
+  const prima = metodoBlocco();
+  if (scelto === prima) return;
+  inConfigurazione = true;
   try {
-    if (accendi) {
-      idBlocco = await Blocco.registra(nomeUtente);
-      await Archivio.salvaImpostazione('bloccoFaceId', idBlocco);
+    if (!(await controllaMetodoAttuale())) return; // annullato: il menu torna com'era (vedi finally)
+    if (scelto === 'pin') {
+      const impronta = await scegliNuovoPin();
+      if (!impronta) return;
+      await salvaBlocco(impronta, null);
+      Animazioni.avviso('Codice PIN attivo');
+    } else if (scelto === 'faceid') {
+      const id = await Blocco.registra(nomeUtente);
+      await salvaBlocco(null, id);
       Animazioni.avviso('Blocco con Face ID attivo');
     } else {
-      await Blocco.verifica(idBlocco);
-      idBlocco = null;
-      await Archivio.salvaImpostazione('bloccoFaceId', null);
+      await salvaBlocco(null, null);
       Animazioni.avviso('Blocco disattivato');
     }
   } catch (e) {
-    el.campoBlocco.checked = !accendi; // non è andata: l'interruttore torna com'era
     alert(Blocco.messaggio(e));
   } finally {
-    el.campoBlocco.disabled = false;
+    inConfigurazione = false;
+    disegnaSezioneBlocco(); // il menu mostra il metodo davvero attivo
+  }
+}
+
+// "Cambia il codice PIN": prima quello vecchio, poi quello nuovo
+async function cambiaPin() {
+  inConfigurazione = true;
+  try {
+    if (!(await controllaMetodoAttuale())) return;
+    const impronta = await scegliNuovoPin();
+    if (!impronta) return;
+    await salvaBlocco(impronta, null);
+    Animazioni.avviso('Codice cambiato');
+  } finally {
+    inConfigurazione = false;
     disegnaSezioneBlocco();
   }
 }
@@ -515,7 +602,9 @@ async function cambiaBlocco() {
 // Mostra la schermata di blocco e aspetta lo sblocco
 async function sbloccaApp() {
   const come = await Blocco.chiudi({
+    modo: metodoBlocco(),
     id: idBlocco,
+    impronta: bloccoPin,
     conAccount: Boolean(Archivio.account()),
     verificaPassword: (password) => Archivio.verificaPassword(password),
     cancellaTutto: async () => {
@@ -524,11 +613,10 @@ async function sbloccaApp() {
     },
   });
   if (come === 'password') {
-    // Sbloccata con la password: il Face ID evidentemente non va, spegniamo il blocco
-    idBlocco = null;
-    await Archivio.salvaImpostazione('bloccoFaceId', null);
+    // Sbloccata con la password dell'account: spegniamo il blocco (si riattiva dalle Impostazioni)
+    await salvaBlocco(null, null);
     disegnaSezioneBlocco();
-    setTimeout(() => Animazioni.avviso('Blocco con Face ID spento'), 500);
+    setTimeout(() => Animazioni.avviso('Blocco dell\'app spento'), 500);
   }
 }
 
@@ -1883,12 +1971,12 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') {
     nascostaDalle = Date.now();
     // Con il blocco attivo copriamo subito l'app: nell'anteprima delle app aperte non si vede niente
-    if (idBlocco && appPronta) Blocco.copri();
+    if (bloccoAttivo() && appPronta && !inConfigurazione) Blocco.copri();
     return;
   }
   const lunga = Boolean(nascostaDalle) && Date.now() - nascostaDalle >= PAUSA_BENTORNATO;
   nascostaDalle = null;
-  if (idBlocco && appPronta) {
+  if (bloccoAttivo() && appPronta && !inConfigurazione) {
     // Assenza lunga: serve il Face ID. Assenza breve: si scopre e basta.
     // (Se la schermata di blocco sta già aspettando il Face ID, non si tocca: niente scorciatoie.)
     if (Blocco.stato() === 'coperto') {
@@ -1904,7 +1992,7 @@ document.addEventListener('visibilitychange', () => {
 // Alcuni browser rimettono la pagina "dalla memoria" invece di ricaricarla: conta come un ritorno
 window.addEventListener('pageshow', (e) => {
   if (!e.persisted) return;
-  if (idBlocco && appPronta) {
+  if (bloccoAttivo() && appPronta && !inConfigurazione) {
     Blocco.copri();
     sbloccaApp();
   } else {
@@ -1926,6 +2014,7 @@ el.perPagamento.addEventListener('click', (e) => {
 
 // Privacy: l'interruttore del blocco con Face ID
 el.campoBlocco.addEventListener('change', cambiaBlocco);
+el.btnCambiaPin.addEventListener('click', cambiaPin);
 
 // L'occhio dei totali: nasconde o mostra gli importi
 el.btnOcchio.addEventListener('click', cambiaImportiNascosti);
@@ -2090,7 +2179,8 @@ async function avvia() {
   // Blocco con Face ID: prima di far vedere qualunque cosa (anche l'orbita) si sblocca.
   // Non dal link dell'email "Password dimenticata" (lì si apre Safari, dove il blocco non c'è).
   idBlocco = await Archivio.leggiImpostazione('bloccoFaceId', null);
-  if (idBlocco && !ritorno) await sbloccaApp();
+  bloccoPin = await Archivio.leggiImpostazione('bloccoPin', null);
+  if (bloccoAttivo() && !ritorno) await sbloccaApp();
 
   let apriAccesso = false;
   try {

@@ -9,7 +9,7 @@ quanto spendi al mese e all'anno, e quale rinnovo sta per arrivare.
 - Aggiunta rapida dei servizi più diffusi: tocchi il logo, scrivi solo prezzo e giorno
 - Totale al mese e all'anno (gli annuali contano costo / 12 al mese)
 - Occhio per nascondere gli importi in alto (come nelle app delle banche), con l'animazione numeri ↔ linette
-- Blocco con Face ID (Impostazioni → Privacy): si sblocca all'apertura e al ritorno dopo 30 secondi
+- Blocco dell'app con codice PIN o Face ID (Impostazioni → Privacy): all'apertura e al ritorno dopo 30 secondi
 - Prossimo rinnovo in evidenza, con i giorni mancanti colorati (grigio, arancione, rosso, "Oggi!")
 - "Ancora da pagare" questo mese: quanto uscirà davvero dal conto da oggi a fine mese
 - Si apre anche senza internet (service worker)
