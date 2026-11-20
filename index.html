@@ -4,8 +4,10 @@
   <meta charset="utf-8">
 
   <!-- viewport-fit=cover: la pagina usa tutto lo schermo dell'iPhone,
-       poi nel CSS lasciamo spazio al notch e alla barra in basso -->
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+       poi nel CSS lasciamo spazio al notch e alla barra in basso.
+       maximum-scale=1 e user-scalable=no: la pagina non si ingrandisce con le dita, come un'app vera
+       (scelta del proprietario; lo Zoom di Accessibilità dell'iPhone, con tre dita, funziona lo stesso) -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 
   <!-- Questi meta servono per l'app installata nella schermata Home -->
   <meta name="apple-mobile-web-app-capable" content="yes">

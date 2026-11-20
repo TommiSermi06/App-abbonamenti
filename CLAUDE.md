@@ -53,8 +53,10 @@ Il proprietario del progetto **sta imparando a programmare**:
 - Liste raggruppate: card di vetro con angoli 20px (`--raggio-card`), margini laterali 16px, righe alte almeno 44px.
 - Animazioni morbide 0.25–0.35s; rispettare sempre `prefers-reduced-motion`.
 - Aree sicure dell'iPhone con `env(safe-area-inset-*)`.
-- **Niente zoom con il doppio tocco** (versione 4.17, scelta del proprietario): `touch-action: manipulation` su `html`.
-  Lo zoom con due dita resta (accessibilità). Non togliere questa regola.
+- **La pagina non si ingrandisce mai** (versione 4.17, scelta del proprietario), né con il doppio tocco né pizzicando:
+  meta viewport con `maximum-scale=1, user-scalable=no`, `touch-action: pan-x pan-y` su `html` (con le dita si può
+  solo scorrere) e `gesturestart`/`gesturechange` fermati in `app.js` (il pizzico di Safari). Lo Zoom di
+  Accessibilità dell'iPhone (tre dita) funziona lo stesso. Non togliere queste regole.
 - Moduli: foglio che sale dal basso con "Annulla" a sinistra e "Salva" a destra.
   La prima card del modulo sta a 20px dalla barra "Annulla / Salva" (`.foglio form > .lista:first-child`):
   mai attaccata alla barra (scelta del proprietario).

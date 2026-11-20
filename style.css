@@ -125,10 +125,10 @@
 html {
   -webkit-text-size-adjust: 100%;          /* niente ingrandimenti automatici del testo */
   -webkit-tap-highlight-color: transparent; /* niente riquadro grigio al tocco */
-  /* Niente zoom con il DOPPIO TOCCO (es. due volte lo stesso numero del codice PIN):
-     i tocchi restano tocchi, come nelle app vere. Scorrere e lo zoom con due dita
-     (utile a chi vuole ingrandire per leggere) funzionano come sempre. */
-  touch-action: manipulation;
+  /* Con le dita si può solo SCORRERE: niente zoom con il doppio tocco (es. due volte lo stesso
+     numero del codice PIN) e niente zoom pizzicando, come nelle app vere (scelta del proprietario).
+     Vedi anche il meta "viewport" in index.html e "gesturestart" in app.js. */
+  touch-action: pan-x pan-y;
 }
 
 body {
