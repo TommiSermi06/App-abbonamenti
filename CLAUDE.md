@@ -95,7 +95,7 @@ Il proprietario del progetto **sta imparando a programmare**:
   (classe `.automatico`), titolo "Buongiorno/Buon pomeriggio/Buonasera, Nome", sottotitolo
   `testoProssimoRinnovo()` ("Prossimo rinnovo: Spotify, tra 3 giorni."), dopo 1,7 s parte da solo il risucchio
   (un tocco lo fa partire subito). Nome e accesso si chiedono SOLO alla primissima apertura.
-- **Ritorno dal background** (`visibilitychange`, assenza di almeno `PAUSA_BENTORNATO` = 10 s, così aprire un
+- **Ritorno dal background** (`visibilitychange`, assenza di almeno `PAUSA_BENTORNATO` = 30 s (scelta del proprietario), così aprire un
   link o il calendario e tornare subito non conta; anche `pageshow` con `persisted`): saluto lampo con la goccia e
   "Bentornato, Nome" (`Benvenuto.salutoLampo`, < 1 s, un tocco lo salta). Solo dopo che l'app è entrata (`appPronta`).
   Nella Home il saluto "Buongiorno, Nome" sta sopra il titolo (`#saluto`).

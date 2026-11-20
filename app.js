@@ -1463,7 +1463,7 @@ document.addEventListener('keydown', (e) => {
 // L'app va in background (schermata Home, altra app…) e poi torna.
 // Se è stata via almeno PAUSA_BENTORNATO, la salutiamo con il lampo "Bentornato, Tommaso".
 // (Le uscite brevissime, come aprire un link o il file del calendario e tornare subito, non contano.)
-const PAUSA_BENTORNATO = 10 * 1000; // 10 secondi
+const PAUSA_BENTORNATO = 30 * 1000; // 30 secondi (scelta del proprietario)
 let nascostaDalle = null;            // quando l'app è andata in background
 let appPronta = false;               // l'app è già entrata (finito il benvenuto)?
 
