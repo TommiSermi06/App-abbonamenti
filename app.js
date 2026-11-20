@@ -49,6 +49,7 @@ const el = {
   totaleMese: $('totale-mese'),
   totaleAnno: $('totale-anno'),
   daPagare: $('da-pagare'),
+  btnOcchio: $('btn-occhio'),
   daPagareTitolo: $('da-pagare-titolo'),
   daPagareDettaglio: $('da-pagare-dettaglio'),
   daPagareImporto: $('da-pagare-importo'),
@@ -416,6 +417,53 @@ function disegnaTotali() {
   disegnaDaPagare();
 }
 
+// ---------- L'occhio: nascondere gli importi in alto ----------
+// Come nelle app delle banche: un tocco e i totali diventano linette (—— ——).
+// La scelta si ricorda (impostazione "nascondiImporti") e vale anche per l'orbita all'apertura.
+let importiNascosti = false;
+
+// Dentro ogni ".trattini" mettiamo 4 linette; --i serve al CSS per farle comparire una dopo l'altra
+function preparaTrattini() {
+  for (const contenitore of document.querySelectorAll('.trattini')) {
+    contenitore.replaceChildren();
+    for (let i = 0; i < 4; i++) {
+      const linetta = document.createElement('i');
+      linetta.style.setProperty('--i', String(i));
+      contenitore.append(linetta);
+    }
+  }
+}
+
+// animato = false all'avvio: la scelta salvata si applica di colpo, senza far vedere la transizione
+function applicaImportiNascosti(nascosti, animato = true) {
+  importiNascosti = nascosti;
+  const radice = document.documentElement;
+  if (!animato) radice.classList.add('senza-transizioni');
+  radice.classList.toggle('importi-nascosti', nascosti);
+  if (!animato) requestAnimationFrame(() => requestAnimationFrame(() => radice.classList.remove('senza-transizioni')));
+
+  el.btnOcchio.setAttribute('aria-pressed', String(nascosti));
+  el.btnOcchio.setAttribute('aria-label', nascosti ? 'Mostra gli importi' : 'Nascondi gli importi');
+  // VoiceOver non deve leggere ad alta voce i numeri nascosti
+  for (const blocco of document.querySelectorAll('.nascondibile')) {
+    blocco.firstElementChild.setAttribute('aria-hidden', String(nascosti));
+    const trattini = blocco.querySelector('.trattini');
+    trattini.setAttribute('aria-hidden', String(!nascosti));
+    trattini.setAttribute('role', 'img');
+    trattini.setAttribute('aria-label', 'Importo nascosto');
+  }
+  if (appPronta) disegnaDaPagare(); // aggiorna la frase letta da VoiceOver
+}
+
+async function cambiaImportiNascosti() {
+  applicaImportiNascosti(!importiNascosti);
+  await Archivio.salvaImpostazione('nascondiImporti', importiNascosti);
+  // L'occhio "sbatte la palpebra" (vedi vetro.css)
+  el.btnOcchio.classList.remove('sbatte');
+  el.btnOcchio.getBoundingClientRect(); // fa ripartire l'animazione
+  el.btnOcchio.classList.add('sbatte');
+}
+
 // "Ancora da pagare a novembre: 32,98 €": i pagamenti VERI da oggi (compreso) alla fine del mese.
 // Sono gli stessi del grafico (pagamentiDelMese): niente medie, niente prove gratuite in corso.
 function disegnaDaPagare() {
@@ -438,9 +486,10 @@ function disegnaDaPagare() {
     Animazioni.conta(el.daPagareImporto, somma, (v) => formatoEuro.format(v));
   }
   // Per VoiceOver: tutta la frase in una volta
+  const importo = importiNascosti ? 'importo nascosto' : formatoEuro.format(somma);
   el.daPagare.setAttribute('aria-label', restano.length === 0
     ? `Per ${mese} hai già pagato tutto. Tocca per vedere il dettaglio del mese.`
-    : `Ancora da pagare a ${mese}: ${formatoEuro.format(somma)}, ${el.daPagareDettaglio.textContent}. Tocca per vedere il dettaglio.`);
+    : `Ancora da pagare a ${mese}: ${importo}, ${el.daPagareDettaglio.textContent}. Tocca per vedere il dettaglio.`);
 }
 
 // Tocco su "Ancora da pagare": apriamo Statistiche con il grafico sul mese in corso
@@ -1787,6 +1836,10 @@ el.perPagamento.addEventListener('click', (e) => {
   if (pulsante) mostraAbbonamentiDi(pulsante.dataset.pagamento);
 });
 
+// L'occhio dei totali: nasconde o mostra gli importi
+el.btnOcchio.addEventListener('click', cambiaImportiNascosti);
+el.btnOcchio.addEventListener('animationend', () => el.btnOcchio.classList.remove('sbatte'));
+
 // "Ancora da pagare a novembre" → il dettaglio del mese nel grafico
 el.daPagare.addEventListener('click', apriMeseInCorso);
 
@@ -1915,6 +1968,9 @@ function preparaMenuFrequenze() {
 async function avvia() {
   preparaMenuCategorie();
   preparaMenuFrequenze();
+  preparaTrattini();
+  // Gli importi nascosti con l'occhio restano nascosti anche all'apertura (anche nell'orbita)
+  applicaImportiNascosti(await Archivio.leggiImpostazione('nascondiImporti', false), false);
   scriviNotaCalendario();
 
   // Recuperiamo l'ordine scelto l'ultima volta (se è uno di quelli validi)
