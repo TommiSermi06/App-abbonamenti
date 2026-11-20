@@ -64,6 +64,14 @@
   --mono-3: linear-gradient(135deg, #173E85, #2E6FD0);
   --mono-4: linear-gradient(135deg, #3A86D9, #9DD0F7);
   --mono-5: linear-gradient(135deg, #4F78D8, #A9C8F8);
+  /* Le 5 fette della torta delle spese (versione 4.21): dalla più grande (blu scuro) alla più
+     piccola (azzurrino chiaro). Sono sfumature dello stesso blu: per riconoscerle ci sono anche
+     l'emoji sulla fetta e la legenda scritta. */
+  --torta-1: #173E85;
+  --torta-2: #2B62C4;
+  --torta-3: #5590DE;
+  --torta-4: #8DBCEC;
+  --torta-5: #C6DFF6;
   --lettera-pianeta: #FFFFFF;   /* iniziale e logo, sopra il pianeta */
   --ombra-pianeta: rgba(31, 79, 168, 0.28);
 
@@ -112,6 +120,12 @@
     --mono-3: linear-gradient(135deg, #22489A, #5B8DEF);
     --mono-4: linear-gradient(135deg, #4C93E0, #B7DDFB);
     --mono-5: linear-gradient(135deg, #5A82E0, #C3D7FA);
+    /* Al buio la fetta più grande è la più chiara (risalta di più sullo sfondo scuro) */
+    --torta-1: #BBD8FA;
+    --torta-2: #8AB8F2;
+    --torta-3: #5E93E6;
+    --torta-4: #3C6FCF;
+    --torta-5: #284F9C;
     --ombra-pianeta: rgba(0, 0, 0, 0.4);
   }
 }
@@ -1869,6 +1883,155 @@ body:has(.app input:focus) .barra-schede {
 .spese-vuote {
   margin-top: 24px;
   text-align: center;
+}
+
+/* ---------- Spese per categoria: barre e torta (versione 4.21) ---------- */
+/* Riga a barre: è un pulsante (toccandola filtri la lista dei giorni) */
+.riga-categoria-spesa {
+  display: block;
+  width: 100%;
+  border: 0;
+  background: none;
+  color: var(--testo);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: opacity 0.3s var(--curva);
+}
+
+/* Con una categoria scelta, le altre si fanno tenui */
+.con-scelta .riga-categoria-spesa[aria-pressed="false"],
+.con-scelta .voce-legenda[aria-pressed="false"] {
+  opacity: 0.45;
+}
+
+.torta {
+  padding: 16px;
+}
+
+/* Il disegno: quadrato, con il testo al centro sopra la ciambella */
+.torta-disegno {
+  position: relative;
+  width: min(100%, 260px);
+  margin: 0 auto;
+  aspect-ratio: 1;
+}
+
+.torta-disegno svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: visible; /* la fetta scelta "esce" un po' dal cerchio */
+}
+
+/* Le fette: il colore lo dà la classe; un bordo del colore della card fa da spazio tra le fette */
+.fetta {
+  stroke: var(--sfondo-card);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  cursor: pointer;
+  transition: transform 0.35s var(--molla), opacity 0.3s var(--curva);
+}
+
+.fetta.colore-1 { fill: var(--torta-1); }
+.fetta.colore-2 { fill: var(--torta-2); }
+.fetta.colore-3 { fill: var(--torta-3); }
+.fetta.colore-4 { fill: var(--torta-4); }
+.fetta.colore-5 { fill: var(--torta-5); }
+
+.con-scelta .fetta:not(.scelta),
+.con-scelta .emoji-fetta:not(.scelta) {
+  opacity: 0.3;
+}
+
+.emoji-fetta {
+  font-size: 15px;
+  text-anchor: middle;
+  dominant-baseline: central;
+  pointer-events: none; /* il tocco va alla fetta sotto */
+  transition: transform 0.35s var(--molla), opacity 0.3s var(--curva);
+}
+
+.torta-centro {
+  position: absolute;
+  inset: 26%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  text-align: center;
+  pointer-events: none;
+}
+
+.torta-centro .nascondibile { align-self: stretch; }
+.torta-centro .trattini { justify-content: center; font-size: 20px; }
+
+.torta-valore {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--blu);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* La legenda: un pallino del colore della fetta, nome, importo e percentuale */
+.torta-legenda {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.voce-legenda {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 6px 4px;
+  border: 0;
+  background: none;
+  color: var(--testo);
+  font: inherit;
+  font-size: 15px;
+  text-align: left;
+  cursor: pointer;
+  transition: opacity 0.3s var(--curva);
+}
+
+.pallino-legenda {
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+}
+
+.pallino-legenda.colore-1 { background: var(--torta-1); }
+.pallino-legenda.colore-2 { background: var(--torta-2); }
+.pallino-legenda.colore-3 { background: var(--torta-3); }
+.pallino-legenda.colore-4 { background: var(--torta-4); }
+.pallino-legenda.colore-5 { background: var(--torta-5); }
+
+.voce-legenda .categoria-valore { margin-left: auto; }
+
+/* "Mostra tutte le categorie": compare sopra la lista quando ne hai scelta una */
+.btn-tutte-spese {
+  display: block;
+  margin: 16px auto 0;
+  padding: 8px 16px;
+  min-height: 44px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--azzurro-tenue);
+  color: var(--blu);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fetta, .emoji-fetta { transition: none; }
 }
 
 /* Messaggio della scheda Statistiche quando non c'è niente da mostrare */

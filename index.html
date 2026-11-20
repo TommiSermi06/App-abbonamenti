@@ -20,22 +20,22 @@
 
   <link rel="apple-touch-icon" href="icon-180.png">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <!-- NUMERO DI VERSIONE: "?v=4.20" in fondo ai nomi dei file.
-       Per il browser "app.js?v=4.20" e "app.js?v=4.21" sono file diversi:
+  <!-- NUMERO DI VERSIONE: "?v=4.21" in fondo ai nomi dei file.
+       Per il browser "app.js?v=4.21" e "app.js?v=4.21" sono file diversi:
        cambiando il numero, l'iPhone è costretto a scaricare il codice nuovo
        invece di usare la copia vecchia che tiene in memoria.
        A ogni modifica di CSS o JavaScript aumenta il numero in TUTTI i punti
        di questo file (cerca il numero attuale), anche nella scritta in fondo alla pagina. -->
-  <link rel="manifest" href="manifest.json?v=4.20">
+  <link rel="manifest" href="manifest.json?v=4.21">
 
   <title>Abbonamenti</title>
-  <link rel="stylesheet" href="style.css?v=4.20">
+  <link rel="stylesheet" href="style.css?v=4.21">
   <!-- Lo stile "Liquid Glass": va DOPO style.css perché lo riveste -->
-  <link rel="stylesheet" href="vetro.css?v=4.20">
+  <link rel="stylesheet" href="vetro.css?v=4.21">
   <!-- La schermata di benvenuto "Orbita" e il saluto all'apertura -->
-  <link rel="stylesheet" href="benvenuto.css?v=4.20">
+  <link rel="stylesheet" href="benvenuto.css?v=4.21">
   <!-- Il pianeta serve subito (benvenuto e saluto): il browser lo scarica in anticipo -->
-  <link rel="preload" as="image" href="pianeta.webp?v=4.20" type="image/webp">
+  <link rel="preload" as="image" href="pianeta.webp?v=4.21" type="image/webp">
 </head>
 <body>
   <!-- Sfondo vivo: macchie di luce sfumate dietro al vetro (solo decorazione) -->
@@ -204,6 +204,38 @@
         </div>
       </section>
 
+      <!-- ===== Per categoria (versione 4.21): due modi di vederle, a BARRE (come la spesa per
+           categoria degli abbonamenti) oppure a TORTA (ciambella animata). Toccando una categoria
+           la lista dei giorni qui sotto mostra solo quella (la disegna app.js). ===== -->
+      <section id="sezione-spese-categorie" hidden>
+        <h2 class="titolo-sezione">Per categoria</h2>
+        <div class="segmentato" role="radiogroup" aria-label="Come vedere le categorie">
+          <label><input type="radio" name="vista-spese" value="barre" checked><span>Barre</span></label>
+          <label><input type="radio" name="vista-spese" value="torta"><span>Torta</span></label>
+        </div>
+        <ul id="spese-barre" class="lista card"></ul>
+        <div id="spese-torta" class="card torta" hidden>
+          <div class="torta-disegno">
+            <!-- Le fette le disegna app.js (un <path> per categoria) -->
+            <svg id="torta-svg" viewBox="0 0 200 200" role="img" aria-label="Grafico a torta delle spese per categoria"></svg>
+            <!-- Al centro: il totale del mese, oppure la categoria toccata -->
+            <div class="torta-centro" aria-live="polite">
+              <span id="torta-etichetta" class="etichetta">Totale</span>
+              <span class="nascondibile">
+                <span id="torta-valore" class="torta-valore"></span>
+                <span class="trattini" aria-hidden="true"></span>
+              </span>
+              <span id="torta-percentuale" class="etichetta"></span>
+            </div>
+          </div>
+          <!-- Legenda: ogni fetta con il suo nome, l'importo e la percentuale -->
+          <ul id="torta-legenda" class="torta-legenda"></ul>
+        </div>
+      </section>
+
+      <!-- Si vede quando hai scelto una categoria: per tornare a vederle tutte -->
+      <button type="button" id="btn-tutte-spese" class="btn-tutte-spese" hidden></button>
+
       <!-- Le spese del mese, un gruppo per giorno (la riempie app.js) -->
       <div id="spese-giorni"></div>
       <p id="spese-vuote" class="nota spese-vuote" hidden></p>
@@ -345,7 +377,7 @@
       <p class="nota">Il backup è un file .json con tutti i tuoi abbonamenti. Importarlo sostituisce i dati attuali.</p>
 
       <!-- Versione dell'app: utile per capire se l'iPhone ha già l'ultima -->
-      <p class="versione">Abbonamenti · versione 4.20</p>
+      <p class="versione">Abbonamenti · versione 4.21</p>
     </div>
     <!-- Campo per scegliere il file: è nascosto, lo apre il pulsante "Importa backup" -->
     <input type="file" id="file-importa" accept=".json,application/json" hidden>
@@ -639,7 +671,7 @@
       <div class="anello-scala interno"><div class="anello" id="anello-interno"></div></div>
       <!-- Al centro il pianeta (immagine creata con Higgsfield) -->
       <div class="orbita-centro">
-        <img class="pianeta-immagine" src="pianeta.webp?v=4.20" alt="" width="520" height="520" decoding="async">
+        <img class="pianeta-immagine" src="pianeta.webp?v=4.21" alt="" width="520" height="520" decoding="async">
       </div>
       <!-- Sotto l'orbita, la capsula di vetro con il totale al mese -->
       <span class="orbita-capsula">
@@ -678,7 +710,7 @@
   <section id="blocco" class="blocco" role="dialog" aria-modal="true" aria-labelledby="blocco-titolo" tabindex="-1" hidden>
     <!-- "Annulla" solo quando scegli o controlli il codice dalle Impostazioni -->
     <button type="button" id="btn-blocco-annulla" class="btn-testo blocco-annulla">Annulla</button>
-    <img class="blocco-pianeta" src="pianeta.webp?v=4.20" alt="" width="520" height="520" decoding="async">
+    <img class="blocco-pianeta" src="pianeta.webp?v=4.21" alt="" width="520" height="520" decoding="async">
     <h2 id="blocco-titolo" class="blocco-titolo">Abbonamenti è bloccato</h2>
     <!-- I testi li cambia blocco.js -->
     <p id="blocco-testo" class="blocco-testo">Usa Face ID per vedere i tuoi abbonamenti.</p>
@@ -717,7 +749,7 @@
 
   <!-- Saluto lampo quando torni nell'app dal background: goccia + "Bentornato, Tommaso" (si salta toccando) -->
   <div id="saluto-avvio" class="saluto-avvio" role="status" hidden>
-    <img class="goccia" src="pianeta.webp?v=4.20" alt="" width="520" height="520" decoding="async">
+    <img class="goccia" src="pianeta.webp?v=4.21" alt="" width="520" height="520" decoding="async">
     <p id="saluto-avvio-testo" class="saluto-avvio-testo"></p>
   </div>
 
@@ -730,19 +762,19 @@
 
   <!-- L'ordine conta: prima le categorie, poi supabase.js (il collegamento online),
        storage.js (i dati), calendario.js e servizi.js (le guide per disdire), infine app.js che li usa tutti -->
-  <script src="categorie.js?v=4.20"></script>
+  <script src="categorie.js?v=4.21"></script>
   <!-- Le frequenze (settimanale, mensile, trimestrale, semestrale, annuale) -->
-  <script src="frequenze.js?v=4.20"></script>
-  <script src="supabase.js?v=4.20"></script>
-  <script src="storage.js?v=4.20"></script>
-  <script src="calendario.js?v=4.20"></script>
-  <script src="servizi.js?v=4.20"></script>
+  <script src="frequenze.js?v=4.21"></script>
+  <script src="supabase.js?v=4.21"></script>
+  <script src="storage.js?v=4.21"></script>
+  <script src="calendario.js?v=4.21"></script>
+  <script src="servizi.js?v=4.21"></script>
   <!-- I loghi dei servizi per i pianetini (usa chiaveNome di servizi.js) -->
-  <script src="loghi.js?v=4.20"></script>
-  <script src="animazioni.js?v=4.20"></script>
-  <script src="benvenuto.js?v=4.20"></script>
+  <script src="loghi.js?v=4.21"></script>
+  <script src="animazioni.js?v=4.21"></script>
+  <script src="benvenuto.js?v=4.21"></script>
   <!-- Il blocco con Face ID (WebAuthn) -->
-  <script src="blocco.js?v=4.20"></script>
-  <script src="app.js?v=4.20"></script>
+  <script src="blocco.js?v=4.21"></script>
+  <script src="app.js?v=4.21"></script>
 </body>
 </html>
