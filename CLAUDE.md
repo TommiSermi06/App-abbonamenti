@@ -10,7 +10,8 @@ pensata per l'iPhone e installabile nella schermata Home.
 - **"Lo uso davvero?"**: segnare quanto si usa ogni abbonamento e suggerire dove risparmiare.
 - **Idee "fondamentali" scelte il 20/11/2026**: tutte fatte (1 e 3 nella 4.10, 2 nella 4.11, 4 nella 4.12,
   5 nella 4.13, 6 nella 4.15).
-- Altre idee già proposte: abbonamenti condivisi (quota), budget mensile, valute diverse, riepilogo annuale.
+- Altre idee già proposte: abbonamenti condivisi (quota), valute diverse, riepilogo annuale.
+- **Budget mensile**: fatto nella 4.19 (primo pezzo della parte Risparmio; poi spese e obiettivi).
 - Progetto più grande (pagina Notion "App di organizzazione e risparmio"): Risparmio (spese, budget, obiettivi),
   Organizzazione (cose da fare, appuntamenti, note, liste), Sezione per lei, e più avanti l'App Store.
 
@@ -31,8 +32,8 @@ Il proprietario del progetto **sta imparando a programmare**:
   (generate da `icon.svg`, con sfondo quadrato: gli angoli li arrotonda iOS).
 
 ## Numero di versione (da aggiornare a OGNI rilascio)
-- Versione attuale: **4.18**. In `index.html` i file hanno il numero di versione (`style.css?v=4.18`, `app.js?v=4.18`…)
-  e c'è la scritta "Abbonamenti · versione 4.18" in fondo alla pagina.
+- Versione attuale: **4.19**. In `index.html` i file hanno il numero di versione (`style.css?v=4.19`, `app.js?v=4.19`…)
+  e c'è la scritta "Abbonamenti · versione 4.19" in fondo alla pagina.
 - A ogni modifica di CSS, JavaScript o manifest **aumenta il numero in tutti i punti di `index.html`**
   (cerca la versione attuale), così l'iPhone scarica i file nuovi invece di usare la copia in memoria.
   Piccole modifiche: 3.0 → 3.1; una nuova versione grande dell'app: 3.x → 4.0.
@@ -336,6 +337,20 @@ I backup delle versioni precedenti si importano ancora (stato mancante → `atti
 - `storage.js` avvisa `app.js` con gli eventi `archivio-stato` (stato: `in-corso`, `sincronizzato`, `offline`,
   `errore`, `disconnesso`) e `archivio-aggiornato` (sono arrivati dati nuovi: ridisegnare).
 - Uscendo dall'account i dati restano sul dispositivo, ma non si sincronizzano più.
+
+## Budget mensile (versione 4.19)
+- Impostazione locale `budget` (euro, `null` = nessuno; solo sul dispositivo, come il nome). Si sceglie in
+  Impostazioni → **Budget** (`#campo-budget`, salva al `change`; vuoto o 0 = tolto) oppure toccando la riga nella card.
+- Nella card dei totali, sotto "Ancora da pagare", la riga `#budget` (`disegnaBudget(alMese)`, chiamata da
+  `disegnaTotali()`): "42,00 € di 60,00 €" + barra (riusa `.categoria-barra`) + frase. Si confronta con il totale
+  **Al mese** (la media), non con i pagamenti veri del mese, così non cambia da un mese all'altro.
+  Classi: `normale` (blu), `quasi` (dal 90%, `SOGLIA_QUASI`, arancione), `oltre` (rosso), `vuoto` (invito "Imposta un
+  budget mensile", solo con abbonamenti attivi). Con l'occhio chiuso: importi a linette e frase con la percentuale.
+- Se salvando o riattivando un abbonamento si passa sopra il budget (prima no): capsula "Aggiunto · 9,97 € oltre il
+  budget" (`avvisoBudget`). La capsula è su una riga sola (`nowrap`): testi corti.
+- Nella 4.19 anche: `.nascondibile > :first-child` è `inline-block` (e `display: block` per `.numero-grande`): da `<span>`
+  in riga aveva larghezza 0, quindi `adattaLarghezza` non rimpiccioliva i numeri lunghi e lo "schiacciarsi" non si vedeva.
+- Idea per dopo: avviso con notifica quando si supera il budget (servirebbe il budget online).
 
 ## Notifiche dei rinnovi (versione 4.18)
 - Web Push: funzionano solo con l'app **aggiunta alla schermata Home** (iOS 16.4+) e con un **account** (il server legge
