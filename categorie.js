@@ -36,3 +36,29 @@ function trovaCategoria(id) {
   return CATEGORIE.find((c) => c.id === id)
     || CATEGORIE.find((c) => c.id === CATEGORIA_PREDEFINITA);
 }
+
+
+/* ---------- Categorie delle SPESE (versione 4.20) ----------
+   Le spese di tutti i giorni hanno categorie diverse da quelle degli abbonamenti.
+   Stesse regole: puoi cambiare "nome" ed "emoji", NON l'"id" (è salvato nei dati). */
+const CATEGORIE_SPESE = [
+  { id: 'alimentari', nome: 'Spesa e alimentari', emoji: '🛒' },
+  { id: 'ristoranti', nome: 'Bar e ristoranti', emoji: '🍕' },
+  { id: 'trasporti', nome: 'Trasporti e auto', emoji: '🚗' },
+  { id: 'casa', nome: 'Casa e bollette', emoji: '🏠' },
+  { id: 'shopping', nome: 'Shopping', emoji: '🛍️' },
+  { id: 'svago', nome: 'Svago e uscite', emoji: '🎉' },
+  { id: 'salute', nome: 'Salute', emoji: '💊' },
+  { id: 'regali', nome: 'Regali', emoji: '🎁' },
+  { id: 'altro', nome: 'Altro', emoji: '📦' },
+];
+
+function categoriaSpesaEsiste(id) {
+  return CATEGORIE_SPESE.some((c) => c.id === id);
+}
+
+// La categoria di una spesa con questo id (o "Altro" se non esiste)
+function trovaCategoriaSpesa(id) {
+  return CATEGORIE_SPESE.find((c) => c.id === id)
+    || CATEGORIE_SPESE.find((c) => c.id === 'altro');
+}

@@ -20,22 +20,22 @@
 
   <link rel="apple-touch-icon" href="icon-180.png">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
-  <!-- NUMERO DI VERSIONE: "?v=4.19" in fondo ai nomi dei file.
-       Per il browser "app.js?v=4.19" e "app.js?v=4.20" sono file diversi:
+  <!-- NUMERO DI VERSIONE: "?v=4.20" in fondo ai nomi dei file.
+       Per il browser "app.js?v=4.20" e "app.js?v=4.21" sono file diversi:
        cambiando il numero, l'iPhone è costretto a scaricare il codice nuovo
        invece di usare la copia vecchia che tiene in memoria.
        A ogni modifica di CSS o JavaScript aumenta il numero in TUTTI i punti
        di questo file (cerca il numero attuale), anche nella scritta in fondo alla pagina. -->
-  <link rel="manifest" href="manifest.json?v=4.19">
+  <link rel="manifest" href="manifest.json?v=4.20">
 
   <title>Abbonamenti</title>
-  <link rel="stylesheet" href="style.css?v=4.19">
+  <link rel="stylesheet" href="style.css?v=4.20">
   <!-- Lo stile "Liquid Glass": va DOPO style.css perché lo riveste -->
-  <link rel="stylesheet" href="vetro.css?v=4.19">
+  <link rel="stylesheet" href="vetro.css?v=4.20">
   <!-- La schermata di benvenuto "Orbita" e il saluto all'apertura -->
-  <link rel="stylesheet" href="benvenuto.css?v=4.19">
+  <link rel="stylesheet" href="benvenuto.css?v=4.20">
   <!-- Il pianeta serve subito (benvenuto e saluto): il browser lo scarica in anticipo -->
-  <link rel="preload" as="image" href="pianeta.webp?v=4.19" type="image/webp">
+  <link rel="preload" as="image" href="pianeta.webp?v=4.20" type="image/webp">
 </head>
 <body>
   <!-- Sfondo vivo: macchie di luce sfumate dietro al vetro (solo decorazione) -->
@@ -179,7 +179,38 @@
     </div>
 
     <!-- =====================================================================
-         SCHEDA 2 — STATISTICHE: dove vanno i soldi e quando
+         SCHEDA 2 — SPESE (versione 4.20): le spese di tutti i giorni, mese per mese.
+         Il totale del mese scelto in alto, sotto la lista divisa per giorno (la disegna app.js).
+         ===================================================================== -->
+    <div class="scheda" id="scheda-spese" data-scheda="spese" hidden>
+      <section class="card totali totali-spese" aria-label="Spese del mese">
+        <!-- Il mese che stai guardando, con le frecce per andare indietro e avanti -->
+        <div class="scegli-mese">
+          <button type="button" id="btn-mese-prima" class="btn-mese" aria-label="Mese precedente">
+            <svg viewBox="0 0 8 14" width="9" height="15" aria-hidden="true"><path d="M6.5 1.5 1.5 7l5 5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <h2 id="spese-mese" class="spese-mese" aria-live="polite">Novembre 2026</h2>
+          <button type="button" id="btn-mese-dopo" class="btn-mese" aria-label="Mese successivo">
+            <svg viewBox="0 0 8 14" width="9" height="15" aria-hidden="true"><path d="M1.5 1.5 6.5 7l-5 5.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+        <div class="totale">
+          <span id="spese-etichetta" class="etichetta">Speso a novembre</span>
+          <span class="nascondibile">
+            <span id="spese-totale" class="numero-grande">—</span>
+            <span class="trattini" aria-hidden="true"></span>
+          </span>
+          <span id="spese-conteggio" class="etichetta"></span>
+        </div>
+      </section>
+
+      <!-- Le spese del mese, un gruppo per giorno (la riempie app.js) -->
+      <div id="spese-giorni"></div>
+      <p id="spese-vuote" class="nota spese-vuote" hidden></p>
+    </div>
+
+    <!-- =====================================================================
+         SCHEDA 3 — STATISTICHE: dove vanno i soldi e quando
          ===================================================================== -->
     <div class="scheda" id="scheda-statistiche" data-scheda="statistiche" hidden>
       <!-- Quando non c'è niente da contare (nessun abbonamento attivo) -->
@@ -219,7 +250,7 @@
     </div>
 
     <!-- =====================================================================
-         SCHEDA 3 — IMPOSTAZIONI: profilo, account, promemoria e backup
+         SCHEDA 4 — IMPOSTAZIONI: profilo, account, promemoria e backup
          ===================================================================== -->
     <div class="scheda" id="scheda-impostazioni" data-scheda="impostazioni" hidden>
 
@@ -314,7 +345,7 @@
       <p class="nota">Il backup è un file .json con tutti i tuoi abbonamenti. Importarlo sostituisce i dati attuali.</p>
 
       <!-- Versione dell'app: utile per capire se l'iPhone ha già l'ultima -->
-      <p class="versione">Abbonamenti · versione 4.19</p>
+      <p class="versione">Abbonamenti · versione 4.20</p>
     </div>
     <!-- Campo per scegliere il file: è nascosto, lo apre il pulsante "Importa backup" -->
     <input type="file" id="file-importa" accept=".json,application/json" hidden>
@@ -333,6 +364,14 @@
         <path d="M8 16h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
       </svg>
       <span>Abbonamenti</span>
+    </button>
+    <button type="button" class="scheda-btn" data-scheda="spese">
+      <!-- Icona: uno scontrino con il bordo a zig-zag -->
+      <svg viewBox="0 0 28 28" width="26" height="26" aria-hidden="true">
+        <path d="M7 4h14v20l-2.33-1.6-2.34 1.6L14 22.4l-2.33 1.6-2.34-1.6L7 24z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+        <path d="M10.5 10h7M10.5 14.5h7" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+      </svg>
+      <span>Spese</span>
     </button>
     <button type="button" class="scheda-btn" data-scheda="statistiche">
       <!-- Icona: tre colonne del grafico -->
@@ -522,6 +561,49 @@
     </form>
   </section>
 
+  <!-- ===== Foglio "Nuova spesa" (versione 4.20): stesso stile del modulo degli abbonamenti ===== -->
+  <section id="foglio-spesa" class="foglio" role="dialog" aria-modal="true" aria-labelledby="spesa-titolo" tabindex="-1">
+    <div class="maniglia" aria-hidden="true"></div>
+    <header class="foglio-barra">
+      <button type="button" id="btn-annulla-spesa" class="btn-testo">Annulla</button>
+      <h2 id="spesa-titolo" class="foglio-titolo">Nuova spesa</h2>
+      <button type="submit" form="modulo-spesa" class="btn-testo grassetto">Salva</button>
+    </header>
+
+    <form id="modulo-spesa" novalidate>
+      <div class="lista card">
+        <label class="riga campo">
+          <span>Importo (€)</span>
+          <input id="campo-spesa-importo" type="text" inputmode="decimal" placeholder="0,00" autocomplete="off">
+        </label>
+        <label class="riga campo">
+          <span>Descrizione</span>
+          <!-- list = suggerimenti con le descrizioni già usate (es. "Supermercato") -->
+          <input id="campo-spesa-descrizione" type="text" maxlength="40" placeholder="es. Supermercato" autocomplete="off" list="descrizioni-spese">
+        </label>
+        <!-- Le voci le aggiunge app.js leggendo CATEGORIE_SPESE di categorie.js -->
+        <label class="riga campo">
+          <span>Categoria</span>
+          <select id="campo-spesa-categoria"></select>
+        </label>
+        <label class="riga campo">
+          <span>Giorno</span>
+          <input id="campo-spesa-data" type="date">
+        </label>
+      </div>
+      <datalist id="descrizioni-spese"></datalist>
+      <div class="lista card spazio-sopra">
+        <textarea id="campo-spesa-note" class="campo-note" rows="2" maxlength="200" aria-label="Note" placeholder="Note"></textarea>
+      </div>
+
+      <p id="errore-spesa" class="errore" role="alert"></p>
+
+      <div class="lista card" id="blocco-elimina-spesa" hidden>
+        <button type="button" id="btn-elimina-spesa" class="riga riga-elimina">Elimina spesa</button>
+      </div>
+    </form>
+  </section>
+
   <!-- ===== Foglio "Nuova password": si apre quando arrivi dal link dell'email "Password dimenticata" ===== -->
   <section id="foglio-password" class="foglio" role="dialog" aria-modal="true" aria-labelledby="password-titolo" tabindex="-1">
     <div class="maniglia" aria-hidden="true"></div>
@@ -557,7 +639,7 @@
       <div class="anello-scala interno"><div class="anello" id="anello-interno"></div></div>
       <!-- Al centro il pianeta (immagine creata con Higgsfield) -->
       <div class="orbita-centro">
-        <img class="pianeta-immagine" src="pianeta.webp?v=4.19" alt="" width="520" height="520" decoding="async">
+        <img class="pianeta-immagine" src="pianeta.webp?v=4.20" alt="" width="520" height="520" decoding="async">
       </div>
       <!-- Sotto l'orbita, la capsula di vetro con il totale al mese -->
       <span class="orbita-capsula">
@@ -596,7 +678,7 @@
   <section id="blocco" class="blocco" role="dialog" aria-modal="true" aria-labelledby="blocco-titolo" tabindex="-1" hidden>
     <!-- "Annulla" solo quando scegli o controlli il codice dalle Impostazioni -->
     <button type="button" id="btn-blocco-annulla" class="btn-testo blocco-annulla">Annulla</button>
-    <img class="blocco-pianeta" src="pianeta.webp?v=4.19" alt="" width="520" height="520" decoding="async">
+    <img class="blocco-pianeta" src="pianeta.webp?v=4.20" alt="" width="520" height="520" decoding="async">
     <h2 id="blocco-titolo" class="blocco-titolo">Abbonamenti è bloccato</h2>
     <!-- I testi li cambia blocco.js -->
     <p id="blocco-testo" class="blocco-testo">Usa Face ID per vedere i tuoi abbonamenti.</p>
@@ -635,7 +717,7 @@
 
   <!-- Saluto lampo quando torni nell'app dal background: goccia + "Bentornato, Tommaso" (si salta toccando) -->
   <div id="saluto-avvio" class="saluto-avvio" role="status" hidden>
-    <img class="goccia" src="pianeta.webp?v=4.19" alt="" width="520" height="520" decoding="async">
+    <img class="goccia" src="pianeta.webp?v=4.20" alt="" width="520" height="520" decoding="async">
     <p id="saluto-avvio-testo" class="saluto-avvio-testo"></p>
   </div>
 
@@ -648,19 +730,19 @@
 
   <!-- L'ordine conta: prima le categorie, poi supabase.js (il collegamento online),
        storage.js (i dati), calendario.js e servizi.js (le guide per disdire), infine app.js che li usa tutti -->
-  <script src="categorie.js?v=4.19"></script>
+  <script src="categorie.js?v=4.20"></script>
   <!-- Le frequenze (settimanale, mensile, trimestrale, semestrale, annuale) -->
-  <script src="frequenze.js?v=4.19"></script>
-  <script src="supabase.js?v=4.19"></script>
-  <script src="storage.js?v=4.19"></script>
-  <script src="calendario.js?v=4.19"></script>
-  <script src="servizi.js?v=4.19"></script>
+  <script src="frequenze.js?v=4.20"></script>
+  <script src="supabase.js?v=4.20"></script>
+  <script src="storage.js?v=4.20"></script>
+  <script src="calendario.js?v=4.20"></script>
+  <script src="servizi.js?v=4.20"></script>
   <!-- I loghi dei servizi per i pianetini (usa chiaveNome di servizi.js) -->
-  <script src="loghi.js?v=4.19"></script>
-  <script src="animazioni.js?v=4.19"></script>
-  <script src="benvenuto.js?v=4.19"></script>
+  <script src="loghi.js?v=4.20"></script>
+  <script src="animazioni.js?v=4.20"></script>
+  <script src="benvenuto.js?v=4.20"></script>
   <!-- Il blocco con Face ID (WebAuthn) -->
-  <script src="blocco.js?v=4.19"></script>
-  <script src="app.js?v=4.19"></script>
+  <script src="blocco.js?v=4.20"></script>
+  <script src="app.js?v=4.20"></script>
 </body>
 </html>

@@ -1739,7 +1739,7 @@ a.riga {
   max-width: 420px;
   margin: 0 auto;
   display: grid;
-  grid-template-columns: repeat(3, 1fr); /* tre colonne uguali */
+  grid-template-columns: repeat(4, 1fr); /* quattro colonne uguali (versione 4.20: c'è anche "Spese") */
   padding: 5px;
   border-radius: 999px;
   background: var(--sfondo-card);
@@ -1792,6 +1792,83 @@ a.riga {
 body:has(.app input:focus) .barra-schede {
   opacity: 0;
   pointer-events: none;
+}
+
+/* ---------- Scheda Spese (versione 4.20) ---------- */
+/* La card in alto ha una colonna sola: il mese con le frecce e, sotto, il totale */
+.totali-spese {
+  grid-template-columns: 1fr;
+}
+
+.scegli-mese {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 8px 0;
+}
+
+.spese-mese {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--testo);
+}
+
+/* Le frecce: pulsanti rotondi da 44px (la misura minima per un dito) */
+.btn-mese {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--blu);
+  cursor: pointer;
+}
+
+.btn-mese:disabled {
+  color: var(--azzurro);
+  opacity: 0.5;
+  cursor: default;
+}
+
+.totali-spese .totale {
+  align-items: center;
+  text-align: center;
+  padding-top: 4px;
+}
+
+.totali-spese .nascondibile { align-self: stretch; }
+.totali-spese .trattini { justify-content: center; }
+
+/* Titoletto di un giorno: "Oggi" a sinistra, quanto hai speso quel giorno a destra */
+.titolo-giorno {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.somma-giorno {
+  font-variant-numeric: tabular-nums;
+}
+
+/* La riga di una spesa: l'emoji della categoria nel pianetino, l'importo a destra in blu */
+.pianetino-spesa {
+  font-size: 18px;
+}
+
+.spesa-importo {
+  margin-left: auto;
+  flex: none;
+  font-weight: 600;
+  color: var(--blu);
+  font-variant-numeric: tabular-nums;
+}
+
+.spese-vuote {
+  margin-top: 24px;
+  text-align: center;
 }
 
 /* Messaggio della scheda Statistiche quando non c'è niente da mostrare */
