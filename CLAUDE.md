@@ -258,7 +258,9 @@ I backup delle versioni precedenti si importano ancora (stato mancante → `atti
 - **Codice PIN** (versione 4.16, scelta del proprietario: il Face ID delle app web passa dal foglio "passkey" di iOS,
   che da un'app web non si può togliere): 6 cifre, tastierina nostra in `#blocco` (classe `modo-pin`: pallini
   `#pin-pallini` che "scuotono la testa" se sbagli, tasti rotondi di vetro in `#tastierino` creati da blocco.js; anche
-  i tasti del computer funzionano). Salvato SOLO come impronta: `bloccoPin = { sale, impronta }` con
+  i tasti del computer funzionano). Tasto toccato: piccolo zoom e lampo blu con numero bianco e alone (classe
+  `premuto` messa da `illumina()` al `pointerdown`, perché su iPhone `:active` spesso non si vede; animazione
+  `tasto-premuto` in `benvenuto.css`). Salvato SOLO come impronta: `bloccoPin = { sale, impronta }` con
   `impronta = SHA-256(sale + ":" + codice)` (`Blocco.creaImpronta`, `Blocco.pinGiusto`; `crypto.subtle`, quindi
   solo https/localhost). Dopo 5 codici sbagliati di fila la tastierina si ferma 30 s (classe `fermo`).
   `Blocco.chiediPin({ titolo, testo, controlla })` = tastierina dalle Impostazioni con "Annulla" (classe `configura`):

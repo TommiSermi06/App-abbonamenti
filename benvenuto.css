@@ -627,12 +627,31 @@
   transition: background-color 0.25s var(--curva), transform 0.25s var(--molla);
 }
 
-/* Al tocco il tasto si illumina di azzurrino e si schiaccia appena */
 .tasto:active {
-  opacity: 1;
-  background: var(--azzurro-tenue);
-  transform: scale(0.93);
-  transition-duration: 0.05s;
+  opacity: 1; /* niente "sbiadito" generico dei pulsanti: c'è l'animazione qui sotto */
+}
+
+/* Il tasto toccato: piccolo zoom in avanti e lampo blu con il numero bianco e un alone,
+   poi torna morbido al vetro (la classe "premuto" la mette blocco.js al tocco) */
+.tasto.premuto {
+  animation: tasto-premuto 0.45s var(--uscita);
+}
+
+@keyframes tasto-premuto {
+  0%   { transform: scale(1); }
+  22%  { transform: scale(1.12); background-color: var(--blu); color: var(--su-blu); box-shadow: 0 0 24px var(--alone-blu); }
+  100% { transform: scale(1); }
+}
+
+/* Il tasto "cancella" (che non ha il cerchio) fa lo stesso zoom, con il blu più chiaro */
+.tasto-cancella.premuto {
+  animation-name: cancella-premuto;
+}
+
+@keyframes cancella-premuto {
+  0%   { transform: scale(1); }
+  22%  { transform: scale(1.18); color: var(--blu-chiaro); }
+  100% { transform: scale(1); }
 }
 
 .tasto-cancella {
@@ -679,7 +698,8 @@
     transition: none;
   }
   .blocco.in-attesa .blocco-pianeta,
-  .pin-pallini.scuoti {
+  .pin-pallini.scuoti,
+  .tasto.premuto {
     animation: none;
   }
 }

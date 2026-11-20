@@ -150,6 +150,16 @@ const Blocco = (function () {
     setTimeout(svuota, 350);
   }
 
+  // L'animazione del tasto toccato: piccolo zoom e lampo blu (vedi benvenuto.css, "tasto-premuto").
+  // La facciamo partire dal codice perché sull'iPhone lo stato ":active" del CSS spesso non si vede.
+  function illumina(tasto) {
+    const pulsante = $('tastierino').querySelector(`[data-tasto="${tasto}"]`);
+    if (!pulsante) return;
+    pulsante.classList.remove('premuto');
+    pulsante.getBoundingClientRect(); // fa ripartire l'animazione anche se tocchi due volte lo stesso tasto
+    pulsante.classList.add('premuto');
+  }
+
   function premi(tasto) {
     if (!quandoCompleto) return;
     if (Date.now() < fermoFinoA) return;
@@ -187,6 +197,12 @@ const Blocco = (function () {
       }
       tastierino.append(pulsante);
     }
+    // Appena il dito tocca il tasto parte l'animazione; la cifra si scrive al "click"
+    tastierino.addEventListener('pointerdown', (e) => {
+      const pulsante = e.target.closest('.tasto');
+      if (pulsante && Date.now() >= fermoFinoA) illumina(pulsante.dataset.tasto);
+    });
+    tastierino.addEventListener('animationend', (e) => e.target.classList.remove('premuto'));
     tastierino.addEventListener('click', (e) => {
       const pulsante = e.target.closest('.tasto');
       if (pulsante) premi(pulsante.dataset.tasto);
@@ -195,8 +211,8 @@ const Blocco = (function () {
     document.addEventListener('keydown', (e) => {
       if ($('blocco').hidden || !$('blocco').classList.contains('modo-pin')) return;
       if (e.target.closest && e.target.closest('input')) return;
-      if (/^[0-9]$/.test(e.key)) premi(e.key);
-      if (e.key === 'Backspace') premi('cancella');
+      if (/^[0-9]$/.test(e.key)) { illumina(e.key); premi(e.key); }
+      if (e.key === 'Backspace') { illumina('cancella'); premi('cancella'); }
     });
   }
 
