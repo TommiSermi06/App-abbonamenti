@@ -245,8 +245,26 @@ const Supabase = (function () {
     }
   }
 
+  // Chiama una "Edge Function" di Supabase (es. invia-avvisi per la notifica di prova).
+  // La funzione delle notifiche non chiede chiavi: nel corpo va solo l'indirizzo del telefono.
+  async function funzione(nome, corpo) {
+    let risposta;
+    try {
+      risposta = await fetch(`${URL_PROGETTO}/functions/v1/${nome}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(corpo || {}),
+      });
+    } catch (e) {
+      throw new ErroreOnline('Nessuna connessione a internet.', 'rete');
+    }
+    const dati = await risposta.json().catch(() => null);
+    if (!risposta.ok) throw new ErroreOnline((dati && dati.errore) || `Errore del servizio online (${risposta.status}).`, 'server', risposta.status);
+    return dati;
+  }
+
   return {
-    creaAccount, entra, esci, utente, database, ErroreOnline,
+    creaAccount, entra, esci, utente, database, funzione, ErroreOnline,
     recuperaPassword, leggiRitornoDaEmail, impostaNuovaPassword, verificaPassword,
   };
 })();

@@ -16,6 +16,7 @@ quanto spendi al mese e all'anno, e quale rinnovo sta per arrivare.
 - Categorie (Streaming, Musica, Giochi, …): lista divisa in gruppi, filtro e spesa al mese per categoria
 - Spesa al mese per metodo di pagamento (Visa, PayPal…): tocchi una carta e vedi i suoi abbonamenti
 - Grafico delle spese dei prossimi 12 mesi, con il dettaglio dei pagamenti di ogni mese
+- Notifiche dei rinnovi sul telefono (giorni prima e il giorno stesso), anche ad app chiusa
 - Promemoria dei rinnovi nel Calendario dell'iPhone (file .ics con avvisi)
 - Abbonamenti in pausa o disdetti: restano nella lista ma non contano nei totali
 - Ricerca per nome e ordinamento della lista (rinnovo, prezzo, nome)
