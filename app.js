@@ -1460,11 +1460,31 @@ document.addEventListener('keydown', (e) => {
 
 // Quando torni sull'app (magari il giorno dopo) ricalcoliamo i giorni mancanti
 // e chiediamo a internet se sull'altro dispositivo è cambiato qualcosa
+// L'app va in background (schermata Home, altra app…) e poi torna.
+// Se è stata via almeno PAUSA_BENTORNATO, la salutiamo con il lampo "Bentornato, Tommaso".
+// (Le uscite brevissime, come aprire un link o il file del calendario e tornare subito, non contano.)
+const PAUSA_BENTORNATO = 10 * 1000; // 10 secondi
+let nascostaDalle = null;            // quando l'app è andata in background
+let appPronta = false;               // l'app è già entrata (finito il benvenuto)?
+
+function salutaAlRitorno() {
+  if (!appPronta) return;
+  Benvenuto.salutoLampo(nomeUtente ? `Bentornato, ${nomeUtente}` : 'Bentornato');
+}
+
 document.addEventListener('visibilitychange', () => {
-  if (document.visibilityState === 'visible') {
-    disegna();
-    Archivio.sincronizza();
+  if (document.visibilityState === 'hidden') {
+    nascostaDalle = Date.now();
+    return;
   }
+  if (nascostaDalle && Date.now() - nascostaDalle >= PAUSA_BENTORNATO) salutaAlRitorno();
+  nascostaDalle = null;
+  disegna();
+  Archivio.sincronizza();
+});
+// Alcuni browser rimettono la pagina "dalla memoria" invece di ricaricarla: conta come un ritorno
+window.addEventListener('pageshow', (e) => {
+  if (e.persisted) salutaAlRitorno();
 });
 
 // --- Barra delle schede in basso ---
@@ -1619,8 +1639,16 @@ async function avvia() {
       await Archivio.salvaImpostazione('benvenutoVisto', true);
       apriAccesso = scelta.account && !Archivio.account();
     } else {
-      // Le altre volte: il saluto lampo ("Buonasera, Tommaso")
-      await Benvenuto.salutoLampo(Benvenuto.testoSaluto(nomeUtente));
+      // Ogni apertura "da chiusa": l'orbita breve con il risucchio, senza domande.
+      // (Il saluto lampo "Bentornato" invece compare quando torni dal background: vedi visibilitychange)
+      await Benvenuto.mostra({
+        nomi: abbonamenti.map((abb) => abb.nome),
+        totale: totaleAlMese(paganti()),
+        formatta: (v) => formatoEuro.format(v),
+        automatico: true,
+        saluto: Benvenuto.testoSaluto(nomeUtente),
+        sottotitolo: testoProssimoRinnovo(),
+      });
     }
   } finally {
     // Qualunque cosa succeda, l'app deve comparire
@@ -1629,8 +1657,20 @@ async function avvia() {
   if (apriAccesso) setTimeout(apriFoglioAccount, 500); // "Ho già un account": apriamo l'accesso
 }
 
+// "Prossimo rinnovo: Spotify, tra 3 giorni" (per l'orbita delle aperture "da chiusa")
+function testoProssimoRinnovo() {
+  const oggi = oggiAMezzanotte();
+  const primo = attivi()
+    .map((abb) => ({ abb, info: infoRinnovo(abb, oggi) }))
+    .sort((a, b) => a.info.giorni - b.info.giorni)[0];
+  if (!primo) return 'Aggiungi il tuo primo abbonamento con il +.';
+  const quando = primo.info.giorni === 0 ? 'oggi' : testoGiorni(primo.info.giorni, false);
+  return `Prossimo rinnovo: ${primo.abb.nome}, ${quando}.`;
+}
+
 // Mostra la Home con l'entrata a cascata e i totali che contano
 function entraNellApp() {
+  appPronta = true;
   disegnaSaluto();
   const app = document.querySelector('.app');
   app.classList.add('entra');

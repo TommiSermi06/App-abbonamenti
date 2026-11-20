@@ -1,12 +1,14 @@
 /* =====================================================================
    benvenuto.js — La schermata di benvenuto "Orbita" e il saluto lampo.
 
-   - mostra(...)       → la scena "Orbita" (solo al primo avvio): i pianeti con
-                         le iniziali girano intorno al totale; poi chiede il nome.
+   - mostra(...)       → la scena "Orbita": i pianeti con i loghi girano intorno al totale.
+                         · al primo avvio: "Inizia / Ho già un account", poi chiede il nome;
+                         · a ogni apertura "da chiusa" (automatico: true): niente pulsanti,
+                           solo il saluto e il prossimo rinnovo, poi il risucchio parte da solo.
                          Restituisce una "promessa" che si risolve quando hai finito,
                          con { nome, account } (account = hai toccato "Ho già un account").
-   - salutoLampo(...)  → a ogni apertura, per meno di un secondo, la goccia con
-                         "Buonasera, Tommaso". Si salta toccando.
+   - salutoLampo(...)  → quando torni nell'app dal background, per meno di un secondo,
+                         la goccia con "Bentornato, Tommaso". Si salta toccando.
    - testoSaluto(nome) → "Buongiorno", "Buon pomeriggio" o "Buonasera" (+ nome).
    - iniziale / tinta  → l'iniziale e il colore del "pianeta" di un abbonamento.
 
@@ -79,13 +81,20 @@ const Benvenuto = (function () {
   }
 
   // ---------- La scena "Orbita" ----------
-  function mostra({ nomi, totale, formatta }) {
+  // automatico: true → la versione breve delle aperture "da chiusa":
+  // al posto di titolo e sottotitolo ci sono "saluto" e "sottotitolo" (testi passati da app.js).
+  function mostra({ nomi, totale, formatta, automatico = false, saluto = '', sottotitolo = '' }) {
     return new Promise((risolvi) => {
       const schermata = $('benvenuto');
       const passo1 = $('benvenuto-passo-1');
       const passo2 = $('benvenuto-passo-2');
       const campoNome = $('benvenuto-nome');
+      const titolo = $('benvenuto-titolo');
+      const testoSotto = passo1.querySelector('.benvenuto-sottotitolo');
+      const titoloOriginale = titolo.innerHTML;       // per rimetterli com'erano alla fine
+      const sottoOriginale = testoSotto.textContent;
       let account = false;
+      let finito = false;
 
       preparaOrbita(nomi);
       schermata.hidden = false;
@@ -112,6 +121,8 @@ const Benvenuto = (function () {
 
       // Fine: gli anelli si raccolgono al centro e la schermata svanisce
       const finisci = async (nome) => {
+        if (finito) return; // può arrivare due volte (tempo scaduto + tocco): conta solo la prima
+        finito = true;
         campoNome.blur();
         schermata.classList.add('atterra');
         // Avvisiamo app.js quando le lune stanno per raggiungere il pianeta:
@@ -123,8 +134,22 @@ const Benvenuto = (function () {
         schermata.classList.remove('visibile', 'passo-nome', 'atterra');
         passo1.hidden = false;
         passo2.hidden = true;
+        schermata.classList.remove('automatico');
+        titolo.innerHTML = titoloOriginale;
+        testoSotto.textContent = sottoOriginale;
         document.body.classList.remove('bloccato');
       };
+
+      // Versione automatica: niente domande, dopo un attimo il risucchio parte da solo.
+      // Un tocco in qualunque punto lo fa partire subito.
+      if (automatico) {
+        schermata.classList.add('automatico'); // nasconde i pulsanti (vedi benvenuto.css)
+        titolo.textContent = saluto;
+        testoSotto.textContent = sottotitolo;
+        setTimeout(() => finisci(''), movimentoRidotto() ? 700 : 1700);
+        schermata.addEventListener('click', () => finisci(''), { once: true });
+        return;
+      }
       passo2.onsubmit = (e) => {
         e.preventDefault(); // non ricaricare la pagina
         finisci(campoNome.value);

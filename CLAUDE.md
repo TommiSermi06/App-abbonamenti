@@ -28,8 +28,8 @@ Il proprietario del progetto **sta imparando a programmare**:
   (generate da `icon.svg`, con sfondo quadrato: gli angoli li arrotonda iOS).
 
 ## Numero di versione (da aggiornare a OGNI rilascio)
-- Versione attuale: **4.8**. In `index.html` i file hanno il numero di versione (`style.css?v=4.8`, `app.js?v=4.8`…)
-  e c'è la scritta "Abbonamenti · versione 4.8" in fondo alla pagina.
+- Versione attuale: **4.9**. In `index.html` i file hanno il numero di versione (`style.css?v=4.9`, `app.js?v=4.9`…)
+  e c'è la scritta "Abbonamenti · versione 4.9" in fondo alla pagina.
 - A ogni modifica di CSS, JavaScript o manifest **aumenta il numero in tutti i punti di `index.html`**
   (cerca la versione attuale), così l'iPhone scarica i file nuovi invece di usare la copia in memoria.
   Piccole modifiche: 3.0 → 3.1; una nuova versione grande dell'app: 3.x → 4.0.
@@ -90,8 +90,15 @@ Il proprietario del progetto **sta imparando a programmare**:
   Gli anelli girano **piano** (interno 70 s per giro, esterno 84 s: le lune esterne sembrano solo un po' più
   veloci): scelta del proprietario, le lune veloci disturbano. L'**accelerazione** c'è solo nell'atterraggio
   (gli anelli prendono velocità mentre vengono risucchiati verso il pianeta, curva ease-in, ~1 s).
-- **Ogni apertura dopo**: saluto lampo con la goccia e "Buongiorno/Buon pomeriggio/Buonasera, Nome"
-  (`Benvenuto.salutoLampo`, < 1 s, un tocco lo salta). Nella Home il saluto sta sopra il titolo (`#saluto`).
+- **Ogni apertura "da chiusa"** (la pagina si carica da zero; versione 4.9, scelta del proprietario):
+  orbita automatica, `Benvenuto.mostra({ …, automatico: true, saluto, sottotitolo })`: niente pulsanti
+  (classe `.automatico`), titolo "Buongiorno/Buon pomeriggio/Buonasera, Nome", sottotitolo
+  `testoProssimoRinnovo()` ("Prossimo rinnovo: Spotify, tra 3 giorni."), dopo 1,7 s parte da solo il risucchio
+  (un tocco lo fa partire subito). Nome e accesso si chiedono SOLO alla primissima apertura.
+- **Ritorno dal background** (`visibilitychange`, assenza di almeno `PAUSA_BENTORNATO` = 10 s, così aprire un
+  link o il calendario e tornare subito non conta; anche `pageshow` con `persisted`): saluto lampo con la goccia e
+  "Bentornato, Nome" (`Benvenuto.salutoLampo`, < 1 s, un tocco lo salta). Solo dopo che l'app è entrata (`appPronta`).
+  Nella Home il saluto "Buongiorno, Nome" sta sopra il titolo (`#saluto`).
 - Il nome (impostazione `nome`) si cambia dalla sezione "Profilo"; resta SOLO sul dispositivo (non va online).
 - L'entrata a cascata della Home parte quando `app.js` aggiunge la classe `entra` a `.app` (`entraNellApp()`).
 - Il **pianeta** (`pianeta.webp`, 520×520 con trasparenza, ~59 KB) è un'immagine generata con Higgsfield
@@ -99,8 +106,8 @@ Il proprietario del progetto **sta imparando a programmare**:
   girano intorno come lune) e nel saluto lampo. Il totale è nella capsula di vetro sotto l'orbita.
 - Iniziale e colore di un abbonamento: `Benvenuto.iniziale(nome)` e `Benvenuto.tinta(nome)` (`mono-1…5`,
   sempre nella tinta blu/azzurrino; riutilizzabili per le icone della lista).
-- **Prove automatiche**: per saltare benvenuto e saluto impostare `abbonamenti:impostazioni` =
-  `{"benvenutoVisto": true}` prima di aprire la pagina (il saluto lampo dura comunque < 1 s).
+- **Prove automatiche**: con `abbonamenti:impostazioni` = `{"benvenutoVisto": true}` prima di aprire la pagina si salta
+  il benvenuto completo, ma l'orbita automatica dura ~2,5 s: aspettare ~3 s (o toccare `#benvenuto`) prima di provare.
 
 ## Barra delle schede in basso (versione 4.2)
 - Tre schede (`.scheda` con `data-scheda` dentro a `<main>`): **Abbonamenti** (totali, prossimo rinnovo, lista),
