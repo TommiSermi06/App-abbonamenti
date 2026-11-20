@@ -164,6 +164,12 @@ const Supabase = (function () {
     }
   }
 
+  // Controlla che la password dell'account sia giusta, SENZA aprire una nuova sessione
+  // (serve per "Non riesci a sbloccare?" della schermata di blocco)
+  async function verificaPassword(email, password) {
+    await chiama('/auth/v1/token?grant_type=password', { metodo: 'POST', corpo: { email, password } });
+  }
+
   // ---------- Password dimenticata ----------
   // 1. Supabase manda all'indirizzo un'email con un link. Il link riporta a "indirizzoRitorno"
   //    (la nostra app) con, dopo il "#", un biglietto temporaneo e "type=recovery".
@@ -241,6 +247,6 @@ const Supabase = (function () {
 
   return {
     creaAccount, entra, esci, utente, database, ErroreOnline,
-    recuperaPassword, leggiRitornoDaEmail, impostaNuovaPassword,
+    recuperaPassword, leggiRitornoDaEmail, impostaNuovaPassword, verificaPassword,
   };
 })();

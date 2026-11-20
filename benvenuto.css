@@ -461,3 +461,114 @@
     backdrop-filter: none;
   }
 }
+
+
+/* ---------- 8. Schermata di blocco (Face ID) ----------
+   Copre tutta l'app con uno sfondo PIENO (non di vetro): dietro non si deve
+   intravedere niente. Sta sopra a tutto, anche al benvenuto e al saluto. */
+.blocco {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: calc(env(safe-area-inset-top) + 24px) 24px calc(env(safe-area-inset-bottom) + 24px);
+  background: var(--sfondo);
+  text-align: center;
+  overflow-y: auto;
+  opacity: 0;
+  transition: opacity 0.35s var(--curva);
+}
+
+.blocco.visibile {
+  opacity: 1;
+}
+
+.blocco:focus {
+  outline: none;
+}
+
+/* Quando l'app va in background la copriamo di colpo, senza dissolvenza */
+.blocco.istantaneo {
+  transition: none;
+}
+
+.blocco-pianeta {
+  width: 120px;
+  height: 120px;
+  margin-bottom: 10px;
+  filter: drop-shadow(0 0 26px var(--alone-pianeta));
+}
+
+.blocco-titolo {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.blocco-testo {
+  max-width: 340px;
+  margin: 0 0 14px;
+  font-size: 17px;
+  line-height: 1.4;
+  color: var(--testo-secondario);
+}
+
+.blocco-testo.piccolo {
+  font-size: 15px;
+}
+
+.blocco .btn-principale {
+  width: 100%;
+  max-width: 340px;
+  margin: 0;
+}
+
+.blocco .errore {
+  margin: 4px 0 0;
+  text-align: center;
+}
+
+/* Mentre il Face ID parte da solo: niente pulsanti, e il pianeta "respira" piano */
+.blocco.in-attesa .btn-principale,
+.blocco.in-attesa #btn-blocco-aiuto,
+.blocco.in-attesa .blocco-aiuto {
+  visibility: hidden; /* nascosti ma al loro posto: quando ricompaiono non fa sobbalzare niente */
+}
+
+.blocco.in-attesa .blocco-pianeta {
+  animation: respira-blocco 1.6s var(--curva) infinite alternate;
+}
+
+@keyframes respira-blocco {
+  from { transform: scale(1); }
+  to   { transform: scale(1.06); }
+}
+
+/* L'aiuto si vede solo dopo aver toccato "Non riesci a sbloccare?" */
+.blocco-aiuto {
+  display: none;
+  width: 100%;
+  max-width: 340px;
+  margin-top: 8px;
+}
+
+.blocco.aiuto .blocco-aiuto {
+  display: block;
+}
+
+.testo-rosso {
+  color: var(--rosso);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .blocco {
+    transition: none;
+  }
+  .blocco.in-attesa .blocco-pianeta {
+    animation: none;
+  }
+}

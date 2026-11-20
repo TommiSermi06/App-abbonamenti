@@ -8,9 +8,8 @@ pensata per l'iPhone e installabile nella schermata Home.
 - **Nuova icona**: la disegna la sua ragazza (PNG 1024×1024, angoli dritti, sfondo pieno); poi rigenerare
   `icon-180.png`, `icon-512.png` e `icon.svg`.
 - **"Lo uso davvero?"**: segnare quanto si usa ogni abbonamento e suggerire dove risparmiare.
-- **Idee "fondamentali" scelte il 20/11/2026** (1 e 3 fatte nella 4.10, 2 nella 4.11, 4 nella 4.12, 5 nella 4.13;
-  resta da fare):
-  6) blocco con Face ID all'apertura (WebAuthn, interruttore in Impostazioni).
+- **Idee "fondamentali" scelte il 20/11/2026**: tutte fatte (1 e 3 nella 4.10, 2 nella 4.11, 4 nella 4.12,
+  5 nella 4.13, 6 nella 4.15).
 - Altre idee già proposte: abbonamenti condivisi (quota),
   notifiche vere sul telefono (serve una parte su Supabase), budget mensile, valute diverse, riepilogo annuale.
 
@@ -31,8 +30,8 @@ Il proprietario del progetto **sta imparando a programmare**:
   (generate da `icon.svg`, con sfondo quadrato: gli angoli li arrotonda iOS).
 
 ## Numero di versione (da aggiornare a OGNI rilascio)
-- Versione attuale: **4.14**. In `index.html` i file hanno il numero di versione (`style.css?v=4.14`, `app.js?v=4.14`…)
-  e c'è la scritta "Abbonamenti · versione 4.14" in fondo alla pagina.
+- Versione attuale: **4.15**. In `index.html` i file hanno il numero di versione (`style.css?v=4.15`, `app.js?v=4.15`…)
+  e c'è la scritta "Abbonamenti · versione 4.15" in fondo alla pagina.
 - A ogni modifica di CSS, JavaScript o manifest **aumenta il numero in tutti i punti di `index.html`**
   (cerca la versione attuale), così l'iPhone scarica i file nuovi invece di usare la copia in memoria.
   Piccole modifiche: 3.0 → 3.1; una nuova versione grande dell'app: 3.x → 4.0.
@@ -175,6 +174,7 @@ Il proprietario del progetto **sta imparando a programmare**:
 | `calendario.js` | Crea il file .ics dei promemoria (`creaFileCalendario`); impostazioni `GIORNI_PREAVVISO` e `ORA_AVVISO` |
 | `vetro.css` | Stile "Liquid Glass": vetro, sfondo vivo, molle e animazioni CSS (riveste `style.css`) |
 | `animazioni.js` | `Animazioni`: numeri che contano, goccia dei filtri, barra compatta, foglio da trascinare, capsula di avviso |
+| `blocco.js` | `Blocco`: blocco con Face ID (WebAuthn), schermata di blocco, copri/scopri in background |
 | `benvenuto.js`, `benvenuto.css` | Benvenuto "Orbita" al primo avvio, saluto lampo a ogni apertura, iniziali e colori dei "pianeti" |
 | `loghi.js` | I loghi dei servizi (da Simple Icons) per i pianetini: `LOGHI`, `logoPer(nome)`, `creaSvgLogo(logo)`, `Loghi.riempi` (catalogo) |
 | `loghi/` | Catalogo completo dei loghi: `elenco.js`, `s/<file>.js` (uno per logo), `CREDITI.md` |
@@ -250,6 +250,31 @@ I backup delle versioni precedenti si importano ancora (stato mancante → `atti
   nella regola dello stato di ARRIVO). L'occhio "sbatte la palpebra" (classe `.sbatte`) e la barra obliqua si
   disegna con `stroke-dashoffset`. Con Riduci movimento: cambio immediato.
 - VoiceOver: numeri nascosti con `aria-hidden`, linette lette come "Importo nascosto".
+
+## Blocco con Face ID (versione 4.15)
+- **`blocco.js`** (oggetto `Blocco`): WebAuthn, lo standard delle passkey. `registra(nome)` crea una chiave della
+  piattaforma (`authenticatorAttachment: 'platform'`, `userVerification: 'required'`) → id in base64url;
+  `verifica(id)` chiede il Face ID (`navigator.credentials.get`) e controlla il bit "UV" (user verified, byte 32
+  di `authenticatorData`). Nessun server: è un controllo locale, protegge la SCHERMATA, i dati non sono cifrati.
+- **Il Face ID parte da solo** (scelta del proprietario): appena si apre la schermata di blocco, `chiudi()` chiama
+  `verifica()` senza aspettare un tocco; intanto classe `.in-attesa` (pulsanti nascosti con `visibility`, testo
+  "Sblocco con Face ID…", pianeta che respira). Se fallisce (annullato, non riconosciuto, o Safari che vuole un
+  tocco) ricompaiono pulsante "Sblocca con Face ID" e aiuto, senza errore rosso. Poi parte l'orbita come sempre.
+- L'id della chiave sta nell'impostazione `bloccoFaceId` (solo sul dispositivo; `null` = spento). Interruttore in
+  Impostazioni → **Privacy** (`#campo-blocco`, `cambiaBlocco()`): accendere crea la chiave; **spegnere chiede prima
+  il Face ID**. Non disponibile (`isUserVerifyingPlatformAuthenticatorAvailable` falso, o `file://`) → disattivato.
+- Schermata `#blocco` (stile in `benvenuto.css`, sezione 8): sfondo PIENO, z-index 50, sopra a benvenuto e saluto.
+  Stati (`Blocco.stato()`): `aperto`, `coperto` (coperta senza bisogno di Face ID), `bloccato` (serve il Face ID).
+  - Apertura "da chiusa": in `avvia()` `sbloccaApp()` PRIMA dell'orbita (non dal link dell'email di recupero).
+  - In background: `Blocco.copri()` subito (l'anteprima delle app non mostra niente). Al ritorno: dopo almeno
+    `PAUSA_BENTORNATO` (30 s) serve il Face ID (al posto del "Bentornato"), se prima si scopre e basta.
+    Se la schermata è già `bloccato` (aspetta il Face ID) un ritorno breve NON la scopre (niente scorciatoie).
+- "Non riesci a sbloccare?": con un account → password dell'account (`Archivio.verificaPassword`, controlla senza
+  aprire una sessione nuova), poi il blocco si spegne; senza account → "Cancella i dati e ricomincia"
+  (`Archivio.cancellaTutto()`, con conferma). Se il Face ID non riconosce il viso, iOS propone da solo il codice.
+- Prove automatiche: autenticatore virtuale di Chromium via CDP (`WebAuthn.enable`, `WebAuthn.addVirtualAuthenticator`
+  con `transport: 'internal'`, `hasUserVerification: true`; `WebAuthn.setUserVerified` per simulare il Face ID fallito).
+  Sul vero iPhone (app sulla schermata Home) va provato a mano.
 
 ## Categorie (versione 2)
 - Elenco **fisso** in `categorie.js` (scelta del proprietario): non c'è una schermata per crearle.
