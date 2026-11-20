@@ -291,6 +291,18 @@
   min-height: 44px;
 }
 
+/* Apertura "da chiusa" (versione automatica): niente pulsanti, solo saluto e prossimo rinnovo.
+   I testi entrano un po' prima, perché dopo 1,7 secondi parte già il risucchio. */
+.benvenuto.automatico .btn-principale,
+.benvenuto.automatico .benvenuto-link {
+  display: none;
+}
+
+.benvenuto.automatico .benvenuto-testi {
+  animation-delay: 0.15s;
+  cursor: pointer;
+}
+
 /* Campo del nome: una capsula di vetro grande e centrata */
 .benvenuto-campo {
   width: 100%;
