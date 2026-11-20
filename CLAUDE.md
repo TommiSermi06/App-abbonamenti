@@ -30,8 +30,8 @@ Il proprietario del progetto **sta imparando a programmare**:
   (generate da `icon.svg`, con sfondo quadrato: gli angoli li arrotonda iOS).
 
 ## Numero di versione (da aggiornare a OGNI rilascio)
-- Versione attuale: **4.16**. In `index.html` i file hanno il numero di versione (`style.css?v=4.16`, `app.js?v=4.16`…)
-  e c'è la scritta "Abbonamenti · versione 4.16" in fondo alla pagina.
+- Versione attuale: **4.17**. In `index.html` i file hanno il numero di versione (`style.css?v=4.17`, `app.js?v=4.17`…)
+  e c'è la scritta "Abbonamenti · versione 4.17" in fondo alla pagina.
 - A ogni modifica di CSS, JavaScript o manifest **aumenta il numero in tutti i punti di `index.html`**
   (cerca la versione attuale), così l'iPhone scarica i file nuovi invece di usare la copia in memoria.
   Piccole modifiche: 3.0 → 3.1; una nuova versione grande dell'app: 3.x → 4.0.
@@ -53,6 +53,8 @@ Il proprietario del progetto **sta imparando a programmare**:
 - Liste raggruppate: card di vetro con angoli 20px (`--raggio-card`), margini laterali 16px, righe alte almeno 44px.
 - Animazioni morbide 0.25–0.35s; rispettare sempre `prefers-reduced-motion`.
 - Aree sicure dell'iPhone con `env(safe-area-inset-*)`.
+- **Niente zoom con il doppio tocco** (versione 4.17, scelta del proprietario): `touch-action: manipulation` su `html`.
+  Lo zoom con due dita resta (accessibilità). Non togliere questa regola.
 - Moduli: foglio che sale dal basso con "Annulla" a sinistra e "Salva" a destra.
   La prima card del modulo sta a 20px dalla barra "Annulla / Salva" (`.foglio form > .lista:first-child`):
   mai attaccata alla barra (scelta del proprietario).
