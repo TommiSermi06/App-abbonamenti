@@ -8,8 +8,7 @@ pensata per l'iPhone e installabile nella schermata Home.
 - **Nuova icona**: la disegna la sua ragazza (PNG 1024×1024, angoli dritti, sfondo pieno); poi rigenerare
   `icon-180.png`, `icon-512.png` e `icon.svg`.
 - **"Lo uso davvero?"**: segnare quanto si usa ogni abbonamento e suggerire dove risparmiare.
-- **Idee "fondamentali" scelte il 20/11/2026** (1 e 3 fatte nella versione 4.10; le altre da fare):
-  2) "Ho dimenticato la password" nel foglio dell'accesso (email di Supabase per reimpostarla);
+- **Idee "fondamentali" scelte il 20/11/2026** (1 e 3 fatte nella versione 4.10, 2 nella 4.11; le altre da fare):
   4) aggiunta rapida dei servizi più diffusi (pianetini con logo in cima al modulo: nome, categoria e link
      si riempiono da soli, l'utente scrive solo prezzo e giorno);
   5) "Spesa per metodo di pagamento" in Statistiche (quanto va al mese su ogni carta);
@@ -34,8 +33,8 @@ Il proprietario del progetto **sta imparando a programmare**:
   (generate da `icon.svg`, con sfondo quadrato: gli angoli li arrotonda iOS).
 
 ## Numero di versione (da aggiornare a OGNI rilascio)
-- Versione attuale: **4.10**. In `index.html` i file hanno il numero di versione (`style.css?v=4.10`, `app.js?v=4.10`…)
-  e c'è la scritta "Abbonamenti · versione 4.10" in fondo alla pagina.
+- Versione attuale: **4.11**. In `index.html` i file hanno il numero di versione (`style.css?v=4.11`, `app.js?v=4.11`…)
+  e c'è la scritta "Abbonamenti · versione 4.11" in fondo alla pagina.
 - A ogni modifica di CSS, JavaScript o manifest **aumenta il numero in tutti i punti di `index.html`**
   (cerca la versione attuale), così l'iPhone scarica i file nuovi invece di usare la copia in memoria.
   Piccole modifiche: 3.0 → 3.1; una nuova versione grande dell'app: 3.x → 4.0.
@@ -269,6 +268,19 @@ I backup delle versioni precedenti si importano ancora (stato mancante → `atti
 - `storage.js` avvisa `app.js` con gli eventi `archivio-stato` (stato: `in-corso`, `sincronizzato`, `offline`,
   `errore`, `disconnesso`) e `archivio-aggiornato` (sono arrivati dati nuovi: ridisegnare).
 - Uscendo dall'account i dati restano sul dispositivo, ma non si sincronizzano più.
+
+## Password dimenticata (versione 4.11)
+- Nel foglio dell'accesso, solo in "Accedi": "Password dimenticata?" → `Archivio.recuperaPassword(email)` →
+  `POST /auth/v1/recover?redirect_to=<indirizzo dell'app>`. Messaggio uguale che l'account esista o no.
+- Il link dell'email apre **Safari** (non l'app sulla Home) con `#access_token=…&type=recovery`: in `avvia()`
+  `Archivio.leggiRitornoDaEmail(location.hash)` lo riconosce, toglie il "#…" dall'indirizzo, salta il benvenuto e
+  apre il foglio `#foglio-password` ("Nuova password" + "Ripetila"). `PUT /auth/v1/user { password }` con quel
+  biglietto; la sessione NON viene salvata (si entra poi dall'app). Dopo il salvataggio il foglio diventa la
+  conferma con le istruzioni. Link scaduto (`#error_code=otp_expired`) → si riapre l'accesso con la spiegazione.
+- Su Supabase: Authentication → URL Configuration, l'indirizzo dell'app deve essere il Site URL o tra i
+  Redirect URLs. Il servizio email di base di Supabase manda poche email all'ora e solo agli indirizzi dei membri
+  del progetto: per altri utenti serve un SMTP proprio (Authentication → Emails → SMTP Settings).
+- Prove automatiche: intercettare `https://rjsdckmaadbevnadgrkb.supabase.co/**` con `context.route` (niente email vere).
 
 ## Prova gratuita (versione 3.1)
 - Nel modulo: interruttore "Prova gratuita" + data "Finisce il" (`fineProva`). Accendendolo propone oggi + 7 giorni;

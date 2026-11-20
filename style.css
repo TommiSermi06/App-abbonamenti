@@ -1165,6 +1165,20 @@ a.riga {
   color: var(--testo-secondario);
 }
 
+/* "Password dimenticata?": link piccolo sotto la card dell'accesso, allineato al testo */
+.link-piccolo {
+  display: block;
+  min-height: 44px; /* comodo da toccare, anche se il testo è piccolo */
+  margin: 2px 16px 0 auto;
+  padding: 0 16px;
+  font-size: 15px;
+}
+
+/* La conferma "Ti abbiamo mandato un'email…" in blu, perché è una buona notizia */
+.nota-recupero {
+  color: var(--blu);
+}
+
 /* Un po' di spazio tra due card dello stesso modulo */
 .spazio-sopra {
   margin-top: 20px;

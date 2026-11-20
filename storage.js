@@ -560,6 +560,20 @@ const Archivio = (function () {
     return utente;
   }
 
+  // ---------- Password dimenticata (le chiamate vere sono in supabase.js) ----------
+  // Il link nell'email riporterà a questa stessa pagina (l'indirizzo dell'app, senza "#…")
+  async function recuperaPassword(email) {
+    await Supabase.recuperaPassword(email, location.origin + location.pathname);
+  }
+
+  function leggiRitornoDaEmail(hash) {
+    return Supabase.leggiRitornoDaEmail(hash);
+  }
+
+  async function impostaNuovaPassword(token, password) {
+    await Supabase.impostaNuovaPassword(token, password);
+  }
+
   // Esci: i dati restano su questo dispositivo, ma non si sincronizzano più
   async function esci() {
     await Supabase.esci();
@@ -586,6 +600,7 @@ const Archivio = (function () {
     tutti, aggiungi, aggiorna, elimina, ripristina, esportaBackup, leggiBackup, sostituisciTutti,
     leggiImpostazione, salvaImpostazione,
     account, accedi, creaAccount, esci, sincronizza, statoSincronizzazione,
+    recuperaPassword, leggiRitornoDaEmail, impostaNuovaPassword,
     controllaLink,
   };
 })();
