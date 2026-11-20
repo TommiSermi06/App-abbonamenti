@@ -28,8 +28,8 @@ Il proprietario del progetto **sta imparando a programmare**:
   (generate da `icon.svg`, con sfondo quadrato: gli angoli li arrotonda iOS).
 
 ## Numero di versione (da aggiornare a OGNI rilascio)
-- Versione attuale: **4.7**. In `index.html` i file hanno il numero di versione (`style.css?v=4.7`, `app.js?v=4.7`…)
-  e c'è la scritta "Abbonamenti · versione 4.7" in fondo alla pagina.
+- Versione attuale: **4.8**. In `index.html` i file hanno il numero di versione (`style.css?v=4.8`, `app.js?v=4.8`…)
+  e c'è la scritta "Abbonamenti · versione 4.8" in fondo alla pagina.
 - A ogni modifica di CSS, JavaScript o manifest **aumenta il numero in tutti i punti di `index.html`**
   (cerca la versione attuale), così l'iPhone scarica i file nuovi invece di usare la copia in memoria.
   Piccole modifiche: 3.0 → 3.1; una nuova versione grande dell'app: 3.x → 4.0.
@@ -50,6 +50,11 @@ Il proprietario del progetto **sta imparando a programmare**:
 - Animazioni morbide 0.25–0.35s; rispettare sempre `prefers-reduced-motion`.
 - Aree sicure dell'iPhone con `env(safe-area-inset-*)`.
 - Moduli: foglio che sale dal basso con "Annulla" a sinistra e "Salva" a destra.
+  La prima card del modulo sta a 20px dalla barra "Annulla / Salva" (`.foglio form > .lista:first-child`):
+  mai attaccata alla barra (scelta del proprietario).
+- Riga in cui stai scrivendo (`.campo:focus-within`, anche menu e note; non l'interruttore): sfondo azzurrino
+  (`--azzurro-tenue`) e nome blu (style.css); in `vetro.css` goccia blu che cresce a sinistra con la molla,
+  nome che scivola di 4px e alone azzurrino intorno alla card del foglio.
 - Vedi anche la skill `stile-ios` se disponibile.
 
 ## Stile "Liquid Glass" futuristico (versione 4.0)

@@ -1132,6 +1132,41 @@ a.riga {
   margin-top: 20px;
 }
 
+/* Se il modulo comincia subito con una card, la stacchiamo dalla barra "Annulla / Salva"
+   con lo stesso spazio che c'è tra una card e l'altra (prima lo dava il controllo "Mensile / Annuale") */
+.foglio form > .lista:first-child {
+  margin-top: 20px;
+}
+
+/* --- La riga in cui stai scrivendo ---
+   Quando tocchi un campo (o apri un menu) la sua riga si illumina di azzurrino
+   e il nome a sinistra diventa blu: si vede subito dove stai scrivendo.
+   :focus-within = "un elemento qui dentro è selezionato". L'interruttore è escluso. */
+.campo > span {
+  transition: color var(--durata) var(--curva), transform var(--durata) var(--curva);
+}
+
+.campo:not(.campo-interruttore) {
+  transition: background-color var(--durata) var(--curva);
+}
+
+.campo:not(.campo-interruttore):focus-within {
+  background: var(--azzurro-tenue);
+}
+
+.campo:not(.campo-interruttore):focus-within > span {
+  color: var(--blu);
+}
+
+/* Il campo delle note (su più righe) si illumina allo stesso modo */
+.campo-note {
+  transition: background-color var(--durata) var(--curva);
+}
+
+.campo-note:focus {
+  background: var(--azzurro-tenue);
+}
+
 /* Nota sotto una card del modulo (es. spiegazione della prova gratuita) */
 .spazio-sopra + .nota {
   margin-bottom: 4px;
