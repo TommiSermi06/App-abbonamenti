@@ -8,7 +8,7 @@ pensata per l'iPhone e installabile nella schermata Home.
 - **Nuova icona**: la disegna la sua ragazza (PNG 1024×1024, angoli dritti, sfondo pieno); poi rigenerare
   `icon-180.png`, `icon-512.png` e `icon.svg`.
 - **"Lo uso davvero?"**: segnare quanto si usa ogni abbonamento e suggerire dove risparmiare.
-- Altre idee già proposte: più frequenze (settimanale, trimestrale, semestrale), abbonamenti condivisi (quota),
+- Altre idee già proposte: abbonamenti condivisi (quota),
   notifiche vere sul telefono (serve una parte su Supabase), budget mensile, valute diverse, riepilogo annuale.
 
 ## Chi ci lavora
@@ -28,8 +28,8 @@ Il proprietario del progetto **sta imparando a programmare**:
   (generate da `icon.svg`, con sfondo quadrato: gli angoli li arrotonda iOS).
 
 ## Numero di versione (da aggiornare a OGNI rilascio)
-- Versione attuale: **4.5**. In `index.html` i file hanno il numero di versione (`style.css?v=4.5`, `app.js?v=4.5`…)
-  e c'è la scritta "Abbonamenti · versione 4.5" in fondo alla pagina.
+- Versione attuale: **4.6**. In `index.html` i file hanno il numero di versione (`style.css?v=4.6`, `app.js?v=4.6`…)
+  e c'è la scritta "Abbonamenti · versione 4.6" in fondo alla pagina.
 - A ogni modifica di CSS, JavaScript o manifest **aumenta il numero in tutti i punti di `index.html`**
   (cerca la versione attuale), così l'iPhone scarica i file nuovi invece di usare la copia in memoria.
   Piccole modifiche: 3.0 → 3.1; una nuova versione grande dell'app: 3.x → 4.0.
@@ -151,6 +151,7 @@ Il proprietario del progetto **sta imparando a programmare**:
 | --- | --- |
 | `index.html` | Struttura della pagina, foglio del modulo, meta tag per iPhone |
 | `style.css` | Tutto l'aspetto: variabili colore, liste, foglio, etichette, animazioni |
+| `frequenze.js` | Le frequenze (`FREQUENZE`) e i calcoli che ne dipendono: volte all'anno, mesi in cui si paga, giorni della settimana |
 | `categorie.js` | Elenco fisso delle categorie (`CATEGORIE`), unico punto dove modificarle |
 | `calendario.js` | Crea il file .ics dei promemoria (`creaFileCalendario`); impostazioni `GIORNI_PREAVVISO` e `ORA_AVVISO` |
 | `vetro.css` | Stile "Liquid Glass": vetro, sfondo vivo, molle e animazioni CSS (riveste `style.css`) |
@@ -169,8 +170,10 @@ Il proprietario del progetto **sta imparando a programmare**:
 
 ## Modello dei dati
 ```js
-{ id: "…", nome: "Spotify", costo: 16.99, frequenza: "mensile" | "annuale",
-  giorno: 1-31, mese: 1-12 (solo annuali, altrimenti null),
+{ id: "…", nome: "Spotify", costo: 16.99,
+  frequenza: "settimanale" | "mensile" | "trimestrale" | "semestrale" | "annuale",   // frequenze.js
+  giorno: 1-31 (settimanale: 1-7 = lunedì…domenica),
+  mese: 1-12 (trimestrale, semestrale, annuale: UN mese in cui si paga; altrimenti null),
   categoria: "streaming" | "musica" | … (id di categorie.js),
   stato: "attivo" | "pausa" | "disdetto",
   fineProva: "2026-11-25" | null,    // online: colonna fine_prova (date)
@@ -179,6 +182,21 @@ Il proprietario del progetto **sta imparando a programmare**:
 Chiave nel localStorage: `abbonamenti:v1` (invariata: i dati della versione 1 restano compatibili).
 Backup: file JSON `{ app, versione: 5, esportatoIl, abbonamenti: [...] }`.
 I backup delle versioni precedenti si importano ancora (stato mancante → `attivo`, categoria mancante → `altro`).
+
+## Più frequenze (versione 4.6)
+- Tutto quello che dipende dalla frequenza sta in **`frequenze.js`** (caricato subito dopo `categorie.js`):
+  `FREQUENZE` (id, nome "Ogni 3 mesi", aggettivo "trimestrale", periodo "ogni 3 mesi", `mesi`), `GIORNI_SETTIMANA`,
+  `trovaFrequenza`, `usaMese`, `volteAllAnno` (52, 12, 4, 2, 1), `pagaNelMese(abb, mese)`, `mesiDiPagamento`,
+  `giornoJS` / `giornoSettimanaDi` (il nostro 1 = lunedì … 7 = domenica ↔ `getDay()` di JavaScript).
+- Trimestrale e semestrale: `mese` è UNO dei mesi in cui si paga; si paga quando la distanza da quel mese è
+  multipla di 3 (o 6). Nel modulo la riga si chiama "A partire da" e sotto c'è la nota "Si rinnova a gennaio, aprile…".
+- Settimanale: `giorno` = giorno della settimana; nel modulo un menu "Giorno" al posto di "Giorno del rinnovo".
+  Nel grafico ogni settimana è un pagamento (4 o 5 al mese); nel calendario un evento per settimana.
+- Costo al mese = costo × `volteAllAnno` / 12 (settimanale: × 52 / 12). La somma dei 12 mesi del grafico è uguale
+  al totale all'anno, salvo gli anni con 53 volte lo stesso giorno della settimana (differenza di una settimana).
+- Nel modulo la frequenza è un menu "Si rinnova" (`#campo-frequenza`, voci da `FREQUENZE`): il controllo
+  segmentato con 5 voci non ci stava sull'iPhone. Il segmentato resta per "Accedi / Crea account".
+- Online: la colonna `frequenza` accetta le 5 frequenze (comando in fondo a `supabase/schema.sql`, versione 4.6).
 
 ## Categorie (versione 2)
 - Elenco **fisso** in `categorie.js` (scelta del proprietario): non c'è una schermata per crearle.
@@ -259,7 +277,8 @@ I backup delle versioni precedenti si importano ancora (stato mancante → `atti
   Non usare grigio pieno, arancione o rosso per loro: sono riservati ai giorni mancanti.
 
 ## Regole di calcolo
-- Totale al mese = somma dei mensili + (annuali / 12). Totale all'anno = totale al mese × 12.
+- Totale al mese = somma di costo × volte all'anno / 12 (mensili interi, annuali / 12, trimestrali / 3,
+  semestrali / 6, settimanali × 52 / 12). Totale all'anno = totale al mese × 12.
 - Prossimo rinnovo: la prima data uguale o successiva a oggi; se il giorno non esiste
   nel mese (es. 31 in febbraio) si usa l'ultimo giorno del mese.
 - Grafico "Spese mese per mese": i 12 mesi a partire da quello attuale; ogni colonna è

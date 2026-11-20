@@ -15,9 +15,9 @@
      id: "k3x9...",          // codice unico, creato in automatico
      nome: "Spotify",
      costo: 16.99,           // numero con il punto, in euro
-     frequenza: "mensile",   // "mensile" oppure "annuale"
-     giorno: 2,              // giorno del mese in cui si rinnova (1-31)
-     mese: null,             // solo per gli annuali: mese del rinnovo (1-12)
+     frequenza: "mensile",   // "settimanale", "mensile", "trimestrale", "semestrale" o "annuale" (frequenze.js)
+     giorno: 2,              // giorno del mese (1-31); per i settimanali giorno della settimana (1 = lunedì … 7)
+     mese: null,             // trimestrali, semestrali e annuali: un mese in cui si rinnova (1-12)
      categoria: "musica",    // id di una categoria di categorie.js
      stato: "attivo",        // "attivo", "pausa" oppure "disdetto"
      fineProva: null,        // se è in prova gratuita: il giorno in cui finisce, es. "2026-11-25"
@@ -66,9 +66,8 @@ const Archivio = (function () {
     const nome = String(grezzo.nome ?? '').trim().slice(0, 40);
     // Arrotondiamo ai centesimi (es. 15.999 → 16.00)
     const costo = Math.round(Number(grezzo.costo) * 100) / 100;
-    const frequenza = grezzo.frequenza === 'annuale' || grezzo.frequenza === 'mensile'
-      ? grezzo.frequenza
-      : null;
+    // Solo le frequenze di frequenze.js
+    const frequenza = trovaFrequenza(grezzo.frequenza) ? grezzo.frequenza : null;
     const giorno = Number(grezzo.giorno);
     const mese = Number(grezzo.mese);
     // Categoria mancante o sconosciuta (es. dati della versione 1) → "Altro"
@@ -87,8 +86,10 @@ const Archivio = (function () {
     if (!nome) return null;
     if (!(costo > 0)) return null;
     if (!frequenza) return null;
-    if (!Number.isInteger(giorno) || giorno < 1 || giorno > 31) return null;
-    if (frequenza === 'annuale' && (!Number.isInteger(mese) || mese < 1 || mese > 12)) return null;
+    // Il giorno: della settimana (1-7) per i settimanali, del mese (1-31) per gli altri
+    const giornoMassimo = frequenza === 'settimanale' ? 7 : 31;
+    if (!Number.isInteger(giorno) || giorno < 1 || giorno > giornoMassimo) return null;
+    if (usaMese(frequenza) && (!Number.isInteger(mese) || mese < 1 || mese > 12)) return null;
 
     return {
       id: typeof grezzo.id === 'string' && grezzo.id ? grezzo.id : nuovoId(),
@@ -96,7 +97,7 @@ const Archivio = (function () {
       costo,
       frequenza,
       giorno,
-      mese: frequenza === 'annuale' ? mese : null,
+      mese: usaMese(frequenza) ? mese : null,
       categoria,
       stato,
       fineProva,

@@ -10,7 +10,8 @@ create table public.abbonamenti (
   user_id uuid not null default auth.uid() references auth.users (id) on delete cascade,
   nome text not null check (char_length(nome) between 1 and 40),
   costo numeric(10, 2) not null check (costo > 0),
-  frequenza text not null check (frequenza in ('mensile', 'annuale')),
+  -- Versione 4.6: aggiunte settimanale, trimestrale e semestrale (vedi in fondo il comando di modifica)
+  frequenza text not null check (frequenza in ('settimanale', 'mensile', 'trimestrale', 'semestrale', 'annuale')),
   giorno smallint not null check (giorno between 1 and 31),
   mese smallint check (mese between 1 and 12),
   categoria text not null default 'altro',
@@ -59,3 +60,13 @@ alter table public.abbonamenti
 -- Impostazioni fatte dal sito di Supabase (non con SQL):
 -- - Authentication → URL Configuration → Site URL: https://tommisermi06.github.io/App-abbonamenti/
 -- - Authentication → Sign In / Providers → Email → "Confirm email": spento
+
+-- ---------------------------------------------------------------------
+-- Versione 4.6 — più frequenze (eseguito su un database già esistente).
+-- Il controllo sulla colonna "frequenza" accettava solo mensile e annuale:
+-- lo togliamo e lo rimettiamo con le cinque frequenze di frequenze.js.
+-- (Il giorno resta tra 1 e 31: i settimanali usano 1-7 = lunedì…domenica.)
+-- ---------------------------------------------------------------------
+alter table public.abbonamenti drop constraint if exists abbonamenti_frequenza_check;
+alter table public.abbonamenti add constraint abbonamenti_frequenza_check
+  check (frequenza in ('settimanale', 'mensile', 'trimestrale', 'semestrale', 'annuale'));
