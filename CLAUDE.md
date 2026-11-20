@@ -8,8 +8,8 @@ pensata per l'iPhone e installabile nella schermata Home.
 - **Nuova icona**: la disegna la sua ragazza (PNG 1024×1024, angoli dritti, sfondo pieno); poi rigenerare
   `icon-180.png`, `icon-512.png` e `icon.svg`.
 - **"Lo uso davvero?"**: segnare quanto si usa ogni abbonamento e suggerire dove risparmiare.
-- **Idee "fondamentali" scelte il 20/11/2026** (1 e 3 fatte nella 4.10, 2 nella 4.11, 4 nella 4.12; le altre da fare):
-  5) "Spesa per metodo di pagamento" in Statistiche (quanto va al mese su ogni carta);
+- **Idee "fondamentali" scelte il 20/11/2026** (1 e 3 fatte nella 4.10, 2 nella 4.11, 4 nella 4.12, 5 nella 4.13;
+  resta da fare):
   6) blocco con Face ID all'apertura (WebAuthn, interruttore in Impostazioni).
 - Altre idee già proposte: abbonamenti condivisi (quota),
   notifiche vere sul telefono (serve una parte su Supabase), budget mensile, valute diverse, riepilogo annuale.
@@ -31,8 +31,8 @@ Il proprietario del progetto **sta imparando a programmare**:
   (generate da `icon.svg`, con sfondo quadrato: gli angoli li arrotonda iOS).
 
 ## Numero di versione (da aggiornare a OGNI rilascio)
-- Versione attuale: **4.12**. In `index.html` i file hanno il numero di versione (`style.css?v=4.12`, `app.js?v=4.12`…)
-  e c'è la scritta "Abbonamenti · versione 4.12" in fondo alla pagina.
+- Versione attuale: **4.13**. In `index.html` i file hanno il numero di versione (`style.css?v=4.13`, `app.js?v=4.13`…)
+  e c'è la scritta "Abbonamenti · versione 4.13" in fondo alla pagina.
 - A ogni modifica di CSS, JavaScript o manifest **aumenta il numero in tutti i punti di `index.html`**
   (cerca la versione attuale), così l'iPhone scarica i file nuovi invece di usare la copia in memoria.
   Piccole modifiche: 3.0 → 3.1; una nuova versione grande dell'app: 3.x → 4.0.
@@ -245,6 +245,11 @@ I backup delle versioni precedenti si importano ancora (stato mancante → `atti
 - Filtro a pillole ("Tutte" + categorie usate). Se la categoria filtrata resta vuota, o salvi
   un abbonamento di un'altra categoria, il filtro torna a "Tutte".
 - "Spesa per categoria": importo al mese (annuali / 12), percentuale e barra, dalla più costosa.
+- **"Spesa per metodo di pagamento"** (versione 4.13, in Statistiche sotto le categorie, `disegnaPerPagamento()`):
+  stessi abbonamenti (`paganti()`) raggruppati per il campo `pagamento` (uniti con `semplifica()`: "Visa •••• 1234"
+  = "visa •••• 1234"), dal più costoso, con "Non indicato" (pianetino "?") sempre in fondo e una nota per compilarli.
+  Pianetino con il logo del circuito tramite `Loghi.riempi` sul testo del pagamento ("Visa •••• 1234" → Visa).
+  Un tocco su un metodo (`mostraAbbonamentiDi`) torna alla lista con quel metodo nella ricerca (compresi i non attivi).
 
 ## Sincronizzazione online (versione 3.0)
 - Servizio: **Supabase**, progetto `https://rjsdckmaadbevnadgrkb.supabase.co`, tabella `public.abbonamenti`
