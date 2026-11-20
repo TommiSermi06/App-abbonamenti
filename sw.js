@@ -20,6 +20,9 @@
 
    Questo file NON ha bisogno del numero di versione: si accorge da solo dei
    file nuovi leggendo index.html. Va cambiato solo se cambiano queste regole.
+
+   In fondo: le NOTIFICHE dei rinnovi (versione 4.18). Le manda la funzione
+   invia-avvisi di Supabase; qui le riceviamo e le mostriamo, anche ad app chiusa.
    ===================================================================== */
 
 const MAGAZZINO = 'abbonamenti';  // nome della cache
@@ -119,4 +122,33 @@ self.addEventListener('fetch', (evento) => {
   } else {
     evento.respondWith(altroFile(richiesta));
   }
+});
+
+// ---------- Notifiche dei rinnovi ----------
+// Arriva una notifica (la manda la funzione invia-avvisi di Supabase): la mostriamo.
+// Il messaggio è { titolo, corpo, url }.
+self.addEventListener('push', (evento) => {
+  let dati = {};
+  try {
+    dati = evento.data ? evento.data.json() : {};
+  } catch (e) {
+    dati = { corpo: evento.data ? evento.data.text() : '' };
+  }
+  evento.waitUntil(self.registration.showNotification(dati.titolo || 'Abbonamenti', {
+    body: dati.corpo || '',
+    icon: 'icon-180.png',
+    data: { url: dati.url || self.registration.scope },
+  }));
+});
+
+// Tocco sulla notifica: se l'app è già aperta la portiamo davanti, altrimenti la apriamo
+self.addEventListener('notificationclick', (evento) => {
+  evento.notification.close();
+  evento.waitUntil((async () => {
+    const finestre = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    for (const finestra of finestre) {
+      if ('focus' in finestra) return finestra.focus();
+    }
+    return self.clients.openWindow(evento.notification.data.url);
+  })());
 });

@@ -560,6 +560,52 @@ const Archivio = (function () {
     return utente;
   }
 
+  // ---------- Notifiche dei rinnovi (versione 4.18) ----------
+  // Il telefono si "iscrive" agli avvisi: il server (funzione invia-avvisi) userà questi dati
+  // per mandargli le notifiche. Serve l'account: il server legge gli abbonamenti online.
+
+  // La chiave PUBBLICA per iscriversi. La crea la funzione la prima volta che parte:
+  // se non c'è ancora, la facciamo partire e la rileggiamo.
+  async function chiavePubblicaNotifiche() {
+    const leggi = async () => {
+      const righe = await Supabase.database('configurazione_push?select=valore&nome=eq.vapid_pubblica');
+      return righe && righe[0] ? righe[0].valore : null;
+    };
+    let chiave = await leggi();
+    if (!chiave) {
+      await Supabase.funzione('invia-avvisi', {});
+      chiave = await leggi();
+    }
+    if (!chiave) throw new Error('Il servizio delle notifiche non è ancora pronto su Supabase.');
+    return chiave;
+  }
+
+  // Salva (o aggiorna) l'iscrizione di questo telefono con le preferenze
+  // iscrizione = quella del browser trasformata in testo (toJSON): { endpoint, keys: { p256dh, auth } }
+  async function salvaIscrizioneNotifiche(iscrizione, { giorni, ora, fuso }) {
+    await Supabase.database('iscrizioni_push?on_conflict=endpoint', {
+      metodo: 'POST',
+      prefer: 'resolution=merge-duplicates,return=minimal',
+      corpo: {
+        endpoint: iscrizione.endpoint,
+        p256dh: iscrizione.keys.p256dh,
+        auth: iscrizione.keys.auth,
+        giorni_preavviso: giorni,
+        ora,
+        fuso,
+      },
+    });
+  }
+
+  async function eliminaIscrizioneNotifiche(endpoint) {
+    await Supabase.database(`iscrizioni_push?endpoint=eq.${encodeURIComponent(endpoint)}`, { metodo: 'DELETE' });
+  }
+
+  // Una notifica di prova, subito, a questo telefono
+  async function provaNotifica(endpoint) {
+    await Supabase.funzione('invia-avvisi', { prova: endpoint });
+  }
+
   // Cancella TUTTO quello che l'app ha salvato su questo telefono (dati, impostazioni, account).
   // Serve solo come ultima spiaggia dalla schermata di blocco, se non si riesce più a sbloccare.
   async function cancellaTutto() {
@@ -621,6 +667,7 @@ const Archivio = (function () {
     leggiImpostazione, salvaImpostazione,
     account, accedi, creaAccount, esci, sincronizza, statoSincronizzazione,
     recuperaPassword, leggiRitornoDaEmail, impostaNuovaPassword, verificaPassword, cancellaTutto,
+    chiavePubblicaNotifiche, salvaIscrizioneNotifiche, eliminaIscrizioneNotifiche, provaNotifica,
     controllaLink,
   };
 })();

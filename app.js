@@ -51,6 +51,13 @@ const el = {
   daPagare: $('da-pagare'),
   btnOcchio: $('btn-occhio'),
   campoBlocco: $('campo-blocco'),
+  campoNotifiche: $('campo-notifiche'),
+  rigaPreavviso: $('riga-preavviso'),
+  campoPreavviso: $('campo-preavviso'),
+  rigaOraAvviso: $('riga-ora-avviso'),
+  campoOraAvviso: $('campo-ora-avviso'),
+  btnProvaNotifica: $('btn-prova-notifica'),
+  notaNotifiche: $('nota-notifiche'),
   btnCambiaPin: $('btn-cambia-pin'),
   notaBlocco: $('nota-blocco'),
   daPagareTitolo: $('da-pagare-titolo'),
@@ -617,6 +624,145 @@ async function sbloccaApp() {
     await salvaBlocco(null, null);
     disegnaSezioneBlocco();
     setTimeout(() => Animazioni.avviso('Blocco dell\'app spento'), 500);
+  }
+}
+
+// ---------- Notifiche dei rinnovi (versione 4.18) ----------
+// Come funziona: il telefono si "iscrive" (pushManager.subscribe) e l'iscrizione va su Supabase.
+// Ogni ora la funzione invia-avvisi (supabase/functions) controlla i rinnovi e manda le notifiche;
+// sw.js le riceve e le mostra, anche ad app chiusa. Qui ci sono solo l'interruttore e le preferenze.
+// L'impostazione "notifiche" (solo su questo telefono) = { attive, giorni, ora, endpoint }.
+let notifiche = { attive: false, giorni: 2, ora: 9, endpoint: null };
+
+// Le notifiche si possono usare qui? Restituisce null se sì, altrimenti il motivo
+function motivoNotificheNonDisponibili() {
+  const supportate = 'serviceWorker' in navigator && 'PushManager' in window && 'Notification' in window;
+  const suIos = /iPhone|iPad|iPod/.test(navigator.userAgent)
+    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1); // gli iPad si presentano come Mac
+  if (!supportate) {
+    return suIos
+      ? 'Sull\'iPhone le notifiche arrivano solo all\'app aggiunta alla schermata Home (iOS 16.4 o più nuovo): aprila da lì.'
+      : 'Questo browser non può ricevere notifiche.';
+  }
+  if (!location.protocol.startsWith('http')) return 'Le notifiche funzionano solo dall\'app pubblicata online.';
+  if (!Archivio.account()) return 'Per le notifiche serve un account: entra qui sotto in "Sincronizzazione" (il server deve vedere i tuoi rinnovi).';
+  return null;
+}
+
+function disegnaSezioneNotifiche() {
+  const motivo = motivoNotificheNonDisponibili();
+  const negate = !motivo && Notification.permission === 'denied';
+  const accese = notifiche.attive && !motivo && !negate;
+  el.campoNotifiche.checked = accese;
+  el.campoNotifiche.disabled = Boolean(motivo) || negate;
+  el.rigaPreavviso.hidden = !accese;
+  el.rigaOraAvviso.hidden = !accese;
+  el.btnProvaNotifica.hidden = !accese;
+  el.campoPreavviso.value = String(notifiche.giorni);
+  el.campoOraAvviso.value = String(notifiche.ora);
+
+  if (motivo) {
+    el.notaNotifiche.textContent = motivo;
+  } else if (negate) {
+    el.notaNotifiche.textContent = 'Hai negato il permesso alle notifiche: per riattivarle vai in Impostazioni dell\'iPhone → Notifiche → Abbonamenti.';
+  } else if (accese) {
+    const prima = notifiche.giorni === 0 ? '' : `${notifiche.giorni === 1 ? 'il giorno prima' : `${notifiche.giorni} giorni prima`} e `;
+    el.notaNotifiche.textContent = `Ricevi un avviso ${prima}il giorno stesso di ogni rinnovo (e della fine delle prove gratuite), alle ${notifiche.ora}:00. `
+      + 'Valgono per tutti i tuoi abbonamenti attivi, anche quelli aggiunti da altri dispositivi.';
+  } else {
+    el.notaNotifiche.textContent = 'Accendi gli avvisi per ricevere una notifica prima di ogni rinnovo, anche ad app chiusa.';
+  }
+}
+
+// Dal testo "base64url" della chiave pubblica ai byte che vuole pushManager.subscribe
+function chiaveInByte(testo) {
+  const base64 = testo.replace(/-/g, '+').replace(/_/g, '/') + '='.repeat((4 - (testo.length % 4)) % 4);
+  return Uint8Array.from(atob(base64), (c) => c.charCodeAt(0));
+}
+
+function preferenzeNotifiche() {
+  return {
+    giorni: Number(el.campoPreavviso.value),
+    ora: Number(el.campoOraAvviso.value),
+    fuso: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Europe/Rome',
+  };
+}
+
+async function salvaNotifiche(nuove) {
+  notifiche = { ...notifiche, ...nuove };
+  await Archivio.salvaImpostazione('notifiche', notifiche);
+}
+
+// Accendere: permesso dell'iPhone → iscrizione del telefono → salvataggio su Supabase
+async function attivaNotifiche() {
+  // Il permesso va chiesto SUBITO, dentro al tocco: l'iPhone non lo chiede in altri momenti
+  const permesso = await Notification.requestPermission();
+  if (permesso !== 'granted') {
+    el.campoNotifiche.checked = false;
+    disegnaSezioneNotifiche();
+    return;
+  }
+  el.campoNotifiche.disabled = true;
+  el.notaNotifiche.textContent = 'Collego il telefono agli avvisi…';
+  try {
+    const registrazione = await navigator.serviceWorker.ready;
+    const chiave = await Archivio.chiavePubblicaNotifiche();
+    const iscrizione = await registrazione.pushManager.subscribe({
+      userVisibleOnly: true, // ogni messaggio diventa una notifica visibile (Apple lo esige)
+      applicationServerKey: chiaveInByte(chiave),
+    });
+    const preferenze = preferenzeNotifiche();
+    await Archivio.salvaIscrizioneNotifiche(iscrizione.toJSON(), preferenze);
+    await salvaNotifiche({ attive: true, giorni: preferenze.giorni, ora: preferenze.ora, endpoint: iscrizione.endpoint });
+    Animazioni.avviso('Notifiche attive');
+  } catch (e) {
+    alert(`Non sono riuscito ad attivare le notifiche: ${e.message}`);
+    await salvaNotifiche({ attive: false });
+  } finally {
+    disegnaSezioneNotifiche();
+  }
+}
+
+// Spegnere: il telefono si disiscrive e l'iscrizione sparisce da Supabase
+async function disattivaNotifiche() {
+  try {
+    const registrazione = await navigator.serviceWorker.ready;
+    const iscrizione = await registrazione.pushManager.getSubscription();
+    const endpoint = (iscrizione && iscrizione.endpoint) || notifiche.endpoint;
+    if (iscrizione) await iscrizione.unsubscribe();
+    if (endpoint && Archivio.account()) await Archivio.eliminaIscrizioneNotifiche(endpoint);
+  } catch (e) {
+    console.warn('Notifiche: disattivazione incompleta', e); // senza internet il server la toglierà da solo (410)
+  }
+  await salvaNotifiche({ attive: false, endpoint: null });
+  disegnaSezioneNotifiche();
+}
+
+// Cambiano "Avvisami" o "All'ora": aggiorniamo le preferenze sul server
+async function cambiaPreferenzeNotifiche() {
+  if (!notifiche.attive) return;
+  const preferenze = preferenzeNotifiche();
+  try {
+    const registrazione = await navigator.serviceWorker.ready;
+    const iscrizione = await registrazione.pushManager.getSubscription();
+    if (iscrizione) await Archivio.salvaIscrizioneNotifiche(iscrizione.toJSON(), preferenze);
+    await salvaNotifiche({ giorni: preferenze.giorni, ora: preferenze.ora });
+    Animazioni.avviso('Preferenze salvate');
+  } catch (e) {
+    alert(`Non sono riuscito a salvare: ${e.message}`);
+  }
+  disegnaSezioneNotifiche();
+}
+
+async function mandaNotificaDiProva() {
+  el.btnProvaNotifica.disabled = true;
+  try {
+    await Archivio.provaNotifica(notifiche.endpoint);
+    Animazioni.avviso('Notifica di prova inviata');
+  } catch (e) {
+    alert(`La notifica di prova non è partita: ${e.message}`);
+  } finally {
+    el.btnProvaNotifica.disabled = false;
   }
 }
 
@@ -1637,6 +1783,7 @@ function disegnaAccount() {
       || 'Entra con un account per avere gli stessi abbonamenti su telefono, iPad e computer. '
       + 'Senza account i dati restano solo su questo dispositivo.';
     disegnaSezioneBlocco();
+    disegnaSezioneNotifiche();
     return;
   }
 
@@ -1663,6 +1810,8 @@ function disegnaAccount() {
   esci.type = 'button';
   esci.addEventListener('click', async () => {
     if (!confirm('Vuoi uscire dall\'account? I dati restano su questo dispositivo, ma non verranno più sincronizzati.')) return;
+    // Senza account il server non può più mandare gli avvisi: li spegniamo prima di uscire
+    if (notifiche.attive) await disattivaNotifiche();
     await Archivio.esci();
     disegnaAccount();
   });
@@ -1675,6 +1824,7 @@ function disegnaAccount() {
   );
   el.notaAccount.textContent = note[stato] || 'Le modifiche si sincronizzano da sole. Sull\'altro dispositivo compaiono quando apri l\'app.';
   disegnaSezioneBlocco(); // la nota della Privacy cambia se entri o esci dall'account
+  disegnaSezioneNotifiche(); // le notifiche servono l'account
 }
 
 // --- Il foglio dell'account ---
@@ -2012,6 +2162,15 @@ el.perPagamento.addEventListener('click', (e) => {
   if (pulsante) mostraAbbonamentiDi(pulsante.dataset.pagamento);
 });
 
+// Notifiche dei rinnovi
+el.campoNotifiche.addEventListener('change', () => {
+  if (el.campoNotifiche.checked) attivaNotifiche();
+  else disattivaNotifiche();
+});
+el.campoPreavviso.addEventListener('change', cambiaPreferenzeNotifiche);
+el.campoOraAvviso.addEventListener('change', cambiaPreferenzeNotifiche);
+el.btnProvaNotifica.addEventListener('click', mandaNotificaDiProva);
+
 // Privacy: l'interruttore del blocco con Face ID
 el.campoBlocco.addEventListener('change', cambiaBlocco);
 el.btnCambiaPin.addEventListener('click', cambiaPin);
@@ -2187,6 +2346,7 @@ async function avvia() {
   // Non dal link dell'email "Password dimenticata" (lì si apre Safari, dove il blocco non c'è).
   idBlocco = await Archivio.leggiImpostazione('bloccoFaceId', null);
   bloccoPin = await Archivio.leggiImpostazione('bloccoPin', null);
+  notifiche = { ...notifiche, ...(await Archivio.leggiImpostazione('notifiche', {})) };
   if (bloccoAttivo() && !ritorno) await sbloccaApp();
 
   let apriAccesso = false;
@@ -2256,6 +2416,7 @@ function entraNellApp() {
   disegna();
   disegnaAccount();
   disegnaSezioneBlocco();
+  disegnaSezioneNotifiche();
   posizionaGocciaSchede();
 
   // Animazioni: barra in alto che diventa compatta, fogli che si chiudono tirandoli giù

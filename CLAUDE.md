@@ -10,8 +10,9 @@ pensata per l'iPhone e installabile nella schermata Home.
 - **"Lo uso davvero?"**: segnare quanto si usa ogni abbonamento e suggerire dove risparmiare.
 - **Idee "fondamentali" scelte il 20/11/2026**: tutte fatte (1 e 3 nella 4.10, 2 nella 4.11, 4 nella 4.12,
   5 nella 4.13, 6 nella 4.15).
-- Altre idee già proposte: abbonamenti condivisi (quota),
-  notifiche vere sul telefono (serve una parte su Supabase), budget mensile, valute diverse, riepilogo annuale.
+- Altre idee già proposte: abbonamenti condivisi (quota), budget mensile, valute diverse, riepilogo annuale.
+- Progetto più grande (pagina Notion "App di organizzazione e risparmio"): Risparmio (spese, budget, obiettivi),
+  Organizzazione (cose da fare, appuntamenti, note, liste), Sezione per lei, e più avanti l'App Store.
 
 ## Chi ci lavora
 Il proprietario del progetto **sta imparando a programmare**:
@@ -30,8 +31,8 @@ Il proprietario del progetto **sta imparando a programmare**:
   (generate da `icon.svg`, con sfondo quadrato: gli angoli li arrotonda iOS).
 
 ## Numero di versione (da aggiornare a OGNI rilascio)
-- Versione attuale: **4.17**. In `index.html` i file hanno il numero di versione (`style.css?v=4.17`, `app.js?v=4.17`…)
-  e c'è la scritta "Abbonamenti · versione 4.17" in fondo alla pagina.
+- Versione attuale: **4.18**. In `index.html` i file hanno il numero di versione (`style.css?v=4.18`, `app.js?v=4.18`…)
+  e c'è la scritta "Abbonamenti · versione 4.18" in fondo alla pagina.
 - A ogni modifica di CSS, JavaScript o manifest **aumenta il numero in tutti i punti di `index.html`**
   (cerca la versione attuale), così l'iPhone scarica i file nuovi invece di usare la copia in memoria.
   Piccole modifiche: 3.0 → 3.1; una nuova versione grande dell'app: 3.x → 4.0.
@@ -186,6 +187,8 @@ Il proprietario del progetto **sta imparando a programmare**:
 | `servizi.js` | Come disdire i servizi più diffusi (`SERVIZI`: alias, link ufficiale, passi, nota) e `guidaDisdetta(nome, pagamento)` |
 | `supabase.js` | `Supabase`: collegamento con il database online (account, sessione, richieste con `fetch`). Lo usa solo `storage.js` |
 | `storage.js` | `Archivio`: lettura/scrittura dati, dati iniziali, controllo e backup, impostazioni, account e sincronizzazione online |
+| `supabase/notifiche.sql` | Tabelle e orologio (pg_cron) delle notifiche. Da eseguire una volta nel SQL Editor |
+| `supabase/functions/invia-avvisi/index.ts` | Edge Function che ogni ora manda le notifiche dei rinnovi (Web Push) |
 | `supabase/schema.sql` | Com'è fatto il database online (tabella, regole di protezione, permessi). Già eseguito: è documentazione |
 | `app.js` | Logica: calcolo date e totali, filtro, lista divisa in gruppi, spesa per categoria, grafico mese per mese, promemoria nel calendario, modulo, backup |
 | `sw.js` | Service worker: mette da parte i file dell'app perché si apra anche senza internet |
@@ -333,6 +336,28 @@ I backup delle versioni precedenti si importano ancora (stato mancante → `atti
 - `storage.js` avvisa `app.js` con gli eventi `archivio-stato` (stato: `in-corso`, `sincronizzato`, `offline`,
   `errore`, `disconnesso`) e `archivio-aggiornato` (sono arrivati dati nuovi: ridisegnare).
 - Uscendo dall'account i dati restano sul dispositivo, ma non si sincronizzano più.
+
+## Notifiche dei rinnovi (versione 4.18)
+- Web Push: funzionano solo con l'app **aggiunta alla schermata Home** (iOS 16.4+) e con un **account** (il server legge
+  gli abbonamenti online). Impostazioni → **Notifiche**: "Avvisi dei rinnovi" (`#campo-notifiche`), "Avvisami"
+  (`#campo-preavviso`: 1, 2, 3, 7 giorni prima o solo il giorno stesso), "All'ora" (`#campo-ora-avviso`), "Manda una
+  notifica di prova". Sempre anche l'avviso del giorno stesso. Impostazione locale `notifiche` = `{ attive, giorni, ora,
+  endpoint }`. Uscendo dall'account le notifiche si spengono.
+- Accendere (`attivaNotifiche()`): `Notification.requestPermission()` SUBITO nel tocco → `pushManager.subscribe` con la
+  chiave pubblica VAPID (`Archivio.chiavePubblicaNotifiche()`, tabella `configurazione_push`) →
+  `Archivio.salvaIscrizioneNotifiche()` (upsert `iscrizioni_push?on_conflict=endpoint`, con giorni, ora e fuso).
+- **Server**: `supabase/functions/invia-avvisi/index.ts` (Edge Function, Deno, unica libreria `npm:web-push`), chiamata
+  OGNI ORA da pg_cron (`supabase/notifiche.sql`). Tiene i telefoni per cui nel loro fuso è l'ora scelta, calcola per i
+  loro abbonamenti attivi il prossimo evento (fine prova o rinnovo) e manda l'avviso se mancano 0 giorni o i giorni
+  scelti; `avvisi_inviati` evita i doppioni; 404/410 → iscrizione tolta. Con `{ "prova": endpoint }` manda subito una
+  notifica di prova. **Deve essere pubblicata con "Verify JWT" SPENTO** (la chiamano l'orologio e l'app senza chiavi).
+- Le chiavi VAPID le crea la funzione la prima volta e le salva in `configurazione_push`: la segreta la legge solo il
+  server (nessuna regola RLS per gli utenti), la pubblica tutti. Nessuna chiave segreta nel codice o in chat.
+  `SUPABASE_URL` e `SUPABASE_SERVICE_ROLE_KEY` le dà Supabase alla funzione.
+- **I calcoli delle date sono copiati** nella funzione (blocco "INIZIO/FINE CALCOLI", in UTC): se cambiano le regole di
+  `frequenze.js` / `prossimaData` in `app.js`, aggiornare anche lì (prova: confronto su migliaia di date, tutte uguali).
+- `sw.js`: `push` → `showNotification(titolo, { body, icon, data.url })`; `notificationclick` → porta davanti l'app o la apre.
+- Il promemoria con il file .ics del Calendario resta, per chi non usa le notifiche.
 
 ## Password dimenticata (versione 4.11)
 - Nel foglio dell'accesso, solo in "Accedi": "Password dimenticata?" → `Archivio.recuperaPassword(email)` →
