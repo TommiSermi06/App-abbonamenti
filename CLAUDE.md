@@ -12,7 +12,8 @@ pensata per l'iPhone e installabile nella schermata Home.
   5 nella 4.13, 6 nella 4.15).
 - Altre idee già proposte: abbonamenti condivisi (quota), valute diverse, riepilogo annuale.
 - **Budget mensile**: fatto nella 4.19. **Spese**: parte 1 nella 4.20 (scheda, lista, sincronizzazione).
-  Prossimo: parte 2 = spese nel budget + grafico per categoria; poi obiettivi di risparmio.
+  Categorie a barre/torta nella 4.21, budget delle spese a parte nella 4.22. Prossimo: obiettivi di risparmio.
+  **Il budget degli abbonamenti resta SOLO per gli abbonamenti** (scelta del proprietario): le spese hanno il loro.
 - Progetto più grande (pagina Notion "App di organizzazione e risparmio"): Risparmio (spese, budget, obiettivi),
   Organizzazione (cose da fare, appuntamenti, note, liste), Sezione per lei, e più avanti l'App Store.
 
@@ -33,8 +34,8 @@ Il proprietario del progetto **sta imparando a programmare**:
   (generate da `icon.svg`, con sfondo quadrato: gli angoli li arrotonda iOS).
 
 ## Numero di versione (da aggiornare a OGNI rilascio)
-- Versione attuale: **4.21**. In `index.html` i file hanno il numero di versione (`style.css?v=4.21`, `app.js?v=4.21`…)
-  e c'è la scritta "Abbonamenti · versione 4.21" in fondo alla pagina.
+- Versione attuale: **4.22**. In `index.html` i file hanno il numero di versione (`style.css?v=4.22`, `app.js?v=4.22`…)
+  e c'è la scritta "Abbonamenti · versione 4.22" in fondo alla pagina.
 - A ogni modifica di CSS, JavaScript o manifest **aumenta il numero in tutti i punti di `index.html`**
   (cerca la versione attuale), così l'iPhone scarica i file nuovi invece di usare la copia in memoria.
   Piccole modifiche: 3.0 → 3.1; una nuova versione grande dell'app: 3.x → 4.0.
@@ -390,6 +391,13 @@ I backup delle versioni precedenti si importano ancora (stato mancante → `atti
 - Nella 4.19 anche: `.nascondibile > :first-child` è `inline-block` (e `display: block` per `.numero-grande`): da `<span>`
   in riga aveva larghezza 0, quindi `adattaLarghezza` non rimpiccioliva i numeri lunghi e lo "schiacciarsi" non si vedeva.
 - Idea per dopo: avviso con notifica quando si supera il budget (servirebbe il budget online).
+- **Budget delle spese (versione 4.22)**, SEPARATO (scelta del proprietario: quello degli abbonamenti resta solo per
+  loro). Impostazione `budgetSpese`, campo `#campo-budget-spese` ("Spese al mese", Impostazioni → Budget, sotto
+  "Abbonamenti al mese"). Riga `#budget-spese` nella card del mese della scheda Spese (`disegnaBudgetSpese`): confronta
+  quanto hai speso DAVVERO nel mese guardato. Mese passato: "Sono avanzati X" invece di "Ti restano"; l'invito
+  "Imposta un budget per le spese" solo nel mese in corso. Capsula "Aggiunta · X oltre il budget" (`avvisoBudgetSpese`).
+  Entrambe le righe le disegna `disegnaRigaBudget(parti, speso, limite, testi)`; nel CSS le classi `.budget-titolo` e
+  `.budget-dettaglio` (non più gli id) danno i colori.
 
 ## Notifiche dei rinnovi (versione 4.18)
 - Web Push: funzionano solo con l'app **aggiunta alla schermata Home** (iOS 16.4+) e con un **account** (il server legge

@@ -17,7 +17,7 @@ quanto spendi al mese e all'anno, e quale rinnovo sta per arrivare.
 - Spesa al mese per metodo di pagamento (Visa, PayPal…): tocchi una carta e vedi i suoi abbonamenti
 - Grafico delle spese dei prossimi 12 mesi, con il dettaglio dei pagamenti di ogni mese
 - Notifiche dei rinnovi sul telefono (giorni prima e il giorno stesso), anche ad app chiusa
-- Budget mensile: barra che si riempie (blu, arancione vicino al limite, rossa se lo superi) e avviso quando lo sfori
+- Budget mensile per gli abbonamenti e, a parte, per le spese: barra che si riempie (blu, arancione vicino al limite, rossa se lo superi) e avviso quando lo sfori
 - Spese di tutti i giorni: scheda "Spese" con il totale del mese, la lista divisa per giorno e le categorie a barre o a torta animata, sincronizzate online
 - Promemoria dei rinnovi nel Calendario dell'iPhone (file .ics con avvisi)
 - Abbonamenti in pausa o disdetti: restano nella lista ma non contano nei totali
