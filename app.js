@@ -39,7 +39,11 @@ let guidaAperta = false; // la guida "Come disdire" nel modulo è aperta?
 let meseScelto = 0;       // colonna scelta nel grafico: 0 = questo mese, 11 = tra 11 mesi
 let mesiCalcolati = [];   // i 12 mesi del grafico, con i loro pagamenti
 let elementoPrimaDelFoglio = null; // dove tornare con il focus dopo aver chiuso
-let schedaAttiva = 'abbonamenti';  // la scheda mostrata: 'abbonamenti', 'statistiche' o 'impostazioni'
+let schedaAttiva = 'abbonamenti';  // la scheda mostrata: 'abbonamenti', 'spese', 'statistiche' o 'impostazioni'
+let spese = [];              // le spese di tutti i giorni (versione 4.20), caricate da Archivio
+let meseSpese = null;        // il mese guardato nella scheda Spese: { anno, mese } (mese 0 = gennaio)
+let idSpesaInModifica = null; // id della spesa aperta nel foglio (null = nuova)
+let idSpesaDaAnimare = null;  // la riga della spesa appena salvata, che compare con dissolvenza
 const scorrimentoSchede = {};      // per ogni scheda, fin dove l'avevi fatta scorrere
 
 
@@ -69,6 +73,28 @@ const el = {
   budgetRiempimento: $('budget-riempimento'),
   budgetDettaglio: $('budget-dettaglio'),
   campoBudget: $('campo-budget'),
+  // Scheda Spese e foglio della spesa (versione 4.20)
+  speseMese: $('spese-mese'),
+  speseEtichetta: $('spese-etichetta'),
+  speseTotale: $('spese-totale'),
+  speseConteggio: $('spese-conteggio'),
+  speseGiorni: $('spese-giorni'),
+  speseVuote: $('spese-vuote'),
+  btnMesePrima: $('btn-mese-prima'),
+  btnMeseDopo: $('btn-mese-dopo'),
+  foglioSpesa: $('foglio-spesa'),
+  moduloSpesa: $('modulo-spesa'),
+  spesaTitolo: $('spesa-titolo'),
+  btnAnnullaSpesa: $('btn-annulla-spesa'),
+  campoSpesaImporto: $('campo-spesa-importo'),
+  campoSpesaDescrizione: $('campo-spesa-descrizione'),
+  campoSpesaCategoria: $('campo-spesa-categoria'),
+  campoSpesaData: $('campo-spesa-data'),
+  campoSpesaNote: $('campo-spesa-note'),
+  descrizioniSpese: $('descrizioni-spese'),
+  erroreSpesa: $('errore-spesa'),
+  bloccoEliminaSpesa: $('blocco-elimina-spesa'),
+  btnEliminaSpesa: $('btn-elimina-spesa'),
   prossimo: $('prossimo'),
   bloccoOrdina: $('blocco-ordina'),
   campoOrdine: $('campo-ordine'),
@@ -1782,10 +1808,17 @@ async function importaBackup() {
   try {
     const testo = await file.text();
     const lista = Archivio.leggiBackup(testo);
-    const quanti = lista.length === 1 ? '1 abbonamento' : `${lista.length} abbonamenti`;
+    const speseBackup = Archivio.leggiSpeseDelBackup(testo); // null = backup senza spese (versioni prima della 4.20)
+    let quanti = lista.length === 1 ? '1 abbonamento' : `${lista.length} abbonamenti`;
+    if (speseBackup) quanti += speseBackup.length === 1 ? ' e 1 spesa' : ` e ${speseBackup.length} spese`;
     if (!confirm(`Il backup contiene ${quanti}. Vuoi sostituire i dati attuali?`)) return;
 
     await Archivio.sostituisciTutti(lista);
+    if (speseBackup) {
+      await Archivio.sostituisciTutteLeSpese(speseBackup);
+      spese = await Archivio.tutteLeSpese();
+      disegnaSpese();
+    }
     abbonamenti = await Archivio.tutti();
     primoDisegno = true; // facciamo ricomparire tutte le righe
     disegna();
@@ -1793,6 +1826,232 @@ async function importaBackup() {
   } catch (e) {
     alert(`Importazione non riuscita: ${e.message}`);
   }
+}
+
+
+/* =====================================================================
+   SPESE DI TUTTI I GIORNI (versione 4.20)
+   La scheda "Spese": scegli un mese con le frecce, in alto vedi quanto hai
+   speso, sotto le spese divise per giorno (dal più recente). Il "+" in alto
+   apre il foglio "Nuova spesa"; toccando una spesa la modifichi.
+   ===================================================================== */
+const formatoMeseAnno = new Intl.DateTimeFormat('it-IT', { month: 'long', year: 'numeric' }); // "novembre 2026"
+const formatoGiornoSpesa = new Intl.DateTimeFormat('it-IT', { weekday: 'long', day: 'numeric', month: 'long' }); // "giovedì 19 novembre"
+
+// La prima lettera maiuscola: "novembre 2026" → "Novembre 2026"
+function maiuscola(testo) {
+  return testo.charAt(0).toUpperCase() + testo.slice(1);
+}
+
+// Il mese di oggi, nel formato di meseSpese
+function meseDiOggi() {
+  const oggi = oggiAMezzanotte();
+  return { anno: oggi.getFullYear(), mese: oggi.getMonth() };
+}
+
+// Le spese di un mese (la data è un testo "2026-11-20": basta guardare l'inizio)
+function speseDelMese({ anno, mese }) {
+  const inizio = `${anno}-${String(mese + 1).padStart(2, '0')}-`;
+  return spese.filter((sp) => sp.data.startsWith(inizio));
+}
+
+// Il titolo di un giorno: "Oggi", "Ieri", oppure "giovedì 19 novembre"
+function titoloGiorno(testoData) {
+  const data = dataDaTesto(testoData);
+  const giorni = giorniTra(data, oggiAMezzanotte()); // quanti giorni fa
+  if (giorni === 0) return 'Oggi';
+  if (giorni === 1) return 'Ieri';
+  return maiuscola(formatoGiornoSpesa.format(data));
+}
+
+function disegnaSpese() {
+  if (!meseSpese) meseSpese = meseDiOggi();
+  const delMese = speseDelMese(meseSpese);
+  const nomeMese = NOMI_MESI[meseSpese.mese];
+  const questoMese = meseSpese.anno === meseDiOggi().anno && meseSpese.mese === meseDiOggi().mese;
+
+  // In alto: il mese, il totale e quante spese
+  el.speseMese.textContent = maiuscola(formatoMeseAnno.format(new Date(meseSpese.anno, meseSpese.mese, 1)));
+  el.btnMeseDopo.disabled = questoMese; // niente mesi futuri: le spese si segnano quando le fai
+  el.speseEtichetta.textContent = `Speso a ${nomeMese}`;
+  const totale = delMese.reduce((somma, sp) => somma + sp.importo, 0);
+  if (schedaAttiva === 'spese') adattaLarghezza(el.speseTotale, formatoEuro.format(totale));
+  Animazioni.conta(el.speseTotale, totale, (v) => formatoEuro.format(v));
+  el.speseConteggio.textContent = delMese.length === 0 ? 'Nessuna spesa'
+    : delMese.length === 1 ? '1 spesa' : `${delMese.length} spese`;
+
+  // La lista: un gruppo per giorno, dal più recente; dentro il giorno, l'ultima aggiunta in alto
+  el.speseGiorni.replaceChildren();
+  const perGiorno = new Map();
+  for (const sp of [...delMese].reverse()) {
+    if (!perGiorno.has(sp.data)) perGiorno.set(sp.data, []);
+    perGiorno.get(sp.data).push(sp);
+  }
+  const giorniOrdinati = [...perGiorno.keys()].sort().reverse();
+  for (const giorno of giorniOrdinati) {
+    const delGiorno = perGiorno.get(giorno);
+    const sommaGiorno = delGiorno.reduce((somma, sp) => somma + sp.importo, 0);
+    // Titoletto: "Oggi" a sinistra, il totale del giorno a destra
+    const titolo = crea('h3', 'titolo-gruppo titolo-giorno');
+    titolo.append(crea('span', '', titoloGiorno(giorno)), crea('span', 'somma-giorno', formatoEuro.format(sommaGiorno)));
+    const lista = crea('ul', 'lista card');
+    for (const sp of delGiorno) lista.append(creaRigaSpesa(sp));
+    el.speseGiorni.append(titolo, lista);
+  }
+  idSpesaDaAnimare = null;
+
+  // Mese vuoto: due parole per spiegare cosa fare
+  el.speseVuote.hidden = delMese.length > 0;
+  el.speseVuote.textContent = questoMese
+    ? `Nessuna spesa a ${nomeMese}. Tocca + in alto per segnare la prima.`
+    : `Nessuna spesa segnata a ${nomeMese}.`;
+}
+
+// La riga di una spesa: pianetino con l'emoji della categoria, descrizione, categoria e importo
+function creaRigaSpesa(sp) {
+  const categoria = trovaCategoriaSpesa(sp.categoria);
+  const riga = crea('li', sp.id === idSpesaDaAnimare ? 'compari' : '');
+  const pulsante = crea('button', 'riga riga-spesa');
+  pulsante.type = 'button';
+  pulsante.dataset.id = sp.id;
+
+  // Il colore del pianetino dipende dalla categoria (sempre nella tinta blu/azzurrina)
+  const pianetino = crea('span', `pianetino pianetino-spesa ${Benvenuto.tinta(categoria.id)}`, categoria.emoji);
+  pianetino.setAttribute('aria-hidden', 'true');
+
+  const testi = crea('span', 'abb-testi');
+  const dettaglio = sp.note ? `${categoria.nome} · ${sp.note}` : categoria.nome;
+  testi.append(crea('span', 'abb-nome', sp.descrizione), crea('span', 'abb-dettaglio', dettaglio));
+
+  pulsante.append(pianetino, testi, crea('span', 'spesa-importo', formatoEuro.format(sp.importo)), el.tplFreccia.content.cloneNode(true));
+  riga.append(pulsante);
+  return riga;
+}
+
+// Frecce del mese: delta = -1 (indietro) oppure +1 (avanti)
+function cambiaMeseSpese(delta) {
+  const data = new Date(meseSpese.anno, meseSpese.mese + delta, 1); // JavaScript sistema da solo il cambio d'anno
+  meseSpese = { anno: data.getFullYear(), mese: data.getMonth() };
+  disegnaSpese();
+}
+
+// Il menu "Categoria" del foglio della spesa, da CATEGORIE_SPESE
+function preparaMenuCategorieSpese() {
+  for (const cat of CATEGORIE_SPESE) {
+    const opzione = crea('option', '', `${cat.emoji} ${cat.nome}`);
+    opzione.value = cat.id;
+    el.campoSpesaCategoria.append(opzione);
+  }
+}
+
+// Suggerimenti per la descrizione: quelle già usate, dalla più recente (al massimo 30)
+function preparaSuggerimentiSpese() {
+  el.descrizioniSpese.replaceChildren();
+  const viste = new Set();
+  for (const sp of [...spese].sort((a, b) => b.data.localeCompare(a.data))) {
+    const chiave = semplifica(sp.descrizione);
+    if (viste.has(chiave)) continue;
+    viste.add(chiave);
+    const opzione = crea('option');
+    opzione.value = sp.descrizione;
+    el.descrizioniSpese.append(opzione);
+    if (viste.size >= 30) break;
+  }
+}
+
+// Apre il foglio: "spesa" = quella da modificare, oppure niente per una nuova
+function apriFoglioSpesa(spesa) {
+  idSpesaInModifica = spesa ? spesa.id : null;
+  el.spesaTitolo.textContent = spesa ? 'Modifica spesa' : 'Nuova spesa';
+  el.campoSpesaImporto.value = spesa ? String(spesa.importo).replace('.', ',') : '';
+  el.campoSpesaDescrizione.value = spesa ? spesa.descrizione : '';
+  el.campoSpesaCategoria.value = spesa ? spesa.categoria : 'alimentari';
+  // Nuova spesa: oggi, oppure il primo giorno del mese che stai guardando (se è un mese passato)
+  const questoMese = meseSpese.anno === meseDiOggi().anno && meseSpese.mese === meseDiOggi().mese;
+  el.campoSpesaData.value = spesa ? spesa.data
+    : questoMese ? testoDaData(oggiAMezzanotte()) : testoDaData(new Date(meseSpese.anno, meseSpese.mese, 1));
+  el.campoSpesaData.max = testoDaData(oggiAMezzanotte());
+  el.campoSpesaNote.value = spesa ? spesa.note : '';
+  el.erroreSpesa.textContent = '';
+  el.bloccoEliminaSpesa.hidden = !spesa;
+  preparaSuggerimentiSpese();
+  mostraFoglio(el.foglioSpesa);
+}
+
+// Scegliendo una descrizione già usata, mettiamo la stessa categoria dell'ultima volta
+function categoriaDallaDescrizione() {
+  if (idSpesaInModifica) return; // in modifica non cambiamo niente da soli
+  const chiave = semplifica(el.campoSpesaDescrizione.value.trim());
+  if (!chiave) return;
+  const uguale = [...spese].sort((a, b) => b.data.localeCompare(a.data))
+    .find((sp) => semplifica(sp.descrizione) === chiave);
+  if (uguale) el.campoSpesaCategoria.value = uguale.categoria;
+}
+
+function leggiModuloSpesa() {
+  const importo = Number(el.campoSpesaImporto.value.replace(/[€\s]/g, '').replace(',', '.'));
+  const descrizione = el.campoSpesaDescrizione.value.trim();
+  const data = el.campoSpesaData.value;
+  if (!Number.isFinite(importo) || importo <= 0) {
+    return { errore: 'Scrivi un importo valido, per esempio 12,50.', campo: el.campoSpesaImporto };
+  }
+  if (!descrizione) return { errore: 'Scrivi cosa hai comprato.', campo: el.campoSpesaDescrizione };
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(data)) return { errore: 'Scegli il giorno della spesa.', campo: el.campoSpesaData };
+  return {
+    dati: {
+      importo,
+      descrizione,
+      data,
+      categoria: el.campoSpesaCategoria.value,
+      note: el.campoSpesaNote.value.trim(),
+    },
+  };
+}
+
+async function salvaSpesa(evento) {
+  evento.preventDefault();
+  const { dati, errore, campo } = leggiModuloSpesa();
+  if (errore) {
+    el.erroreSpesa.textContent = errore;
+    campo.focus();
+    return;
+  }
+  try {
+    const eraNuova = !idSpesaInModifica;
+    const salvata = eraNuova
+      ? await Archivio.aggiungiSpesa(dati)
+      : await Archivio.aggiornaSpesa(idSpesaInModifica, dati);
+    idSpesaDaAnimare = salvata.id;
+    spese = await Archivio.tutteLeSpese();
+    // Mostriamo il mese della spesa appena salvata (se l'hai messa in un altro mese)
+    const data = dataDaTesto(salvata.data);
+    meseSpese = { anno: data.getFullYear(), mese: data.getMonth() };
+    nascondiFoglio();
+    disegnaSpese();
+    Animazioni.avviso(eraNuova ? 'Spesa aggiunta' : 'Modifiche salvate');
+  } catch (e) {
+    el.erroreSpesa.textContent = `Non sono riuscito a salvare: ${e.message}`;
+  }
+}
+
+// Elimina dal foglio: niente domanda di conferma, ma per 5 secondi c'è "Annulla"
+async function eliminaSpesaDalFoglio() {
+  const spesa = spese.find((sp) => sp.id === idSpesaInModifica);
+  if (!spesa) return;
+  await Archivio.eliminaSpesa(spesa.id);
+  spese = await Archivio.tutteLeSpese();
+  nascondiFoglio();
+  disegnaSpese();
+  Animazioni.avviso('Spesa eliminata', {
+    azione: 'Annulla',
+    suAzione: async () => {
+      await Archivio.ripristinaSpesa(spesa);
+      idSpesaDaAnimare = spesa.id;
+      spese = await Archivio.tutteLeSpese();
+      disegnaSpese();
+      Animazioni.avviso('Annullato');
+    },
+  });
 }
 
 
@@ -2084,7 +2343,19 @@ async function inviaAccount(evento) {
    COLLEGARE I PULSANTI ALLE FUNZIONI
    ===================================================================== */
 
-el.btnAggiungi.addEventListener('click', () => apriFoglio());
+// Il "+" in alto: nella scheda Spese aggiunge una spesa, altrimenti un abbonamento
+el.btnAggiungi.addEventListener('click', () => (schedaAttiva === 'spese' ? apriFoglioSpesa() : apriFoglio()));
+// Scheda Spese: frecce del mese, tocco su una spesa, foglio della spesa
+el.btnMesePrima.addEventListener('click', () => cambiaMeseSpese(-1));
+el.btnMeseDopo.addEventListener('click', () => cambiaMeseSpese(1));
+el.speseGiorni.addEventListener('click', (e) => {
+  const pulsante = e.target.closest('.riga-spesa');
+  if (pulsante) apriFoglioSpesa(spese.find((sp) => sp.id === pulsante.dataset.id));
+});
+el.moduloSpesa.addEventListener('submit', salvaSpesa);
+el.btnAnnullaSpesa.addEventListener('click', nascondiFoglio);
+el.btnEliminaSpesa.addEventListener('click', eliminaSpesaDalFoglio);
+el.campoSpesaDescrizione.addEventListener('change', categoriaDallaDescrizione);
 el.btnAnnulla.addEventListener('click', chiudiFoglio);
 el.velo.addEventListener('click', nascondiFoglio); // toccare fuori dal foglio lo chiude
 el.modulo.addEventListener('submit', salva);
@@ -2342,7 +2613,9 @@ el.moduloPassword.addEventListener('input', () => { el.errorePassword.textConten
 window.addEventListener('archivio-stato', disegnaAccount);
 window.addEventListener('archivio-aggiornato', async () => {
   abbonamenti = await Archivio.tutti();
+  spese = await Archivio.tutteLeSpese();
   disegna();
+  disegnaSpese();
 });
 // Torna internet: inviamo subito le modifiche rimaste in attesa
 window.addEventListener('online', () => Archivio.sincronizza());
@@ -2356,6 +2629,7 @@ window.addEventListener('online', () => Archivio.sincronizza());
    ===================================================================== */
 const TITOLI_SCHEDE = {
   abbonamenti: 'Abbonamenti',
+  spese: 'Spese',
   statistiche: 'Statistiche',
   impostazioni: 'Impostazioni',
 };
@@ -2396,6 +2670,7 @@ function mostraScheda(nome) {
 
   // Mentre una scheda è nascosta non si può misurare niente:
   // tornando sugli abbonamenti rimettiamo a posto i totali e la goccia dei filtri
+  if (nome === 'spese') disegnaSpese(); // ora si può misurare il totale (numeri lunghi)
   if (nome === 'abbonamenti') {
     disegnaTotali();
     Animazioni.posizionaIndicatore(el.filtri, el.filtri.querySelector('[aria-pressed="true"] .pillola'));
@@ -2438,6 +2713,7 @@ function preparaMenuFrequenze() {
 async function avvia() {
   preparaMenuCategorie();
   preparaMenuFrequenze();
+  preparaMenuCategorieSpese();
   preparaTrattini();
   // Gli importi nascosti con l'occhio restano nascosti anche all'apertura (anche nell'orbita)
   applicaImportiNascosti(await Archivio.leggiImpostazione('nascondiImporti', false), false);
@@ -2459,6 +2735,9 @@ async function avvia() {
     alert('Non riesco a leggere i dati salvati. Controlla che il browser permetta di salvare i dati dei siti.');
     abbonamenti = [];
   }
+  spese = await Archivio.tutteLeSpese(); // le spese di tutti i giorni (versione 4.20)
+  meseSpese = meseDiOggi();
+  disegnaSpese();
   // Il nome con cui salutarti e se hai già visto il benvenuto
   nomeUtente = await Archivio.leggiImpostazione('nome', '');
   const benvenutoVisto = await Archivio.leggiImpostazione('benvenutoVisto', false);
@@ -2553,6 +2832,7 @@ function entraNellApp() {
   Animazioni.trascinaPerChiudere(el.foglio, nascondiFoglio);
   Animazioni.trascinaPerChiudere(el.foglioAccount, nascondiFoglio);
   Animazioni.trascinaPerChiudere(el.foglioPassword, nascondiFoglio);
+  Animazioni.trascinaPerChiudere(el.foglioSpesa, nascondiFoglio);
   // Righe della lista: scorrendo a sinistra compaiono "Pausa" ed "Elimina"
   Animazioni.scorriRighe(el.gruppi, {
     larghezzaAzioni: 156, // due pulsanti da 78px

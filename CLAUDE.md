@@ -11,7 +11,8 @@ pensata per l'iPhone e installabile nella schermata Home.
 - **Idee "fondamentali" scelte il 20/11/2026**: tutte fatte (1 e 3 nella 4.10, 2 nella 4.11, 4 nella 4.12,
   5 nella 4.13, 6 nella 4.15).
 - Altre idee già proposte: abbonamenti condivisi (quota), valute diverse, riepilogo annuale.
-- **Budget mensile**: fatto nella 4.19 (primo pezzo della parte Risparmio; poi spese e obiettivi).
+- **Budget mensile**: fatto nella 4.19. **Spese**: parte 1 nella 4.20 (scheda, lista, sincronizzazione).
+  Prossimo: parte 2 = spese nel budget + grafico per categoria; poi obiettivi di risparmio.
 - Progetto più grande (pagina Notion "App di organizzazione e risparmio"): Risparmio (spese, budget, obiettivi),
   Organizzazione (cose da fare, appuntamenti, note, liste), Sezione per lei, e più avanti l'App Store.
 
@@ -32,8 +33,8 @@ Il proprietario del progetto **sta imparando a programmare**:
   (generate da `icon.svg`, con sfondo quadrato: gli angoli li arrotonda iOS).
 
 ## Numero di versione (da aggiornare a OGNI rilascio)
-- Versione attuale: **4.19**. In `index.html` i file hanno il numero di versione (`style.css?v=4.19`, `app.js?v=4.19`…)
-  e c'è la scritta "Abbonamenti · versione 4.19" in fondo alla pagina.
+- Versione attuale: **4.20**. In `index.html` i file hanno il numero di versione (`style.css?v=4.20`, `app.js?v=4.20`…)
+  e c'è la scritta "Abbonamenti · versione 4.20" in fondo alla pagina.
 - A ogni modifica di CSS, JavaScript o manifest **aumenta il numero in tutti i punti di `index.html`**
   (cerca la versione attuale), così l'iPhone scarica i file nuovi invece di usare la copia in memoria.
   Piccole modifiche: 3.0 → 3.1; una nuova versione grande dell'app: 3.x → 4.0.
@@ -119,7 +120,7 @@ Il proprietario del progetto **sta imparando a programmare**:
 - **Prove automatiche**: con `abbonamenti:impostazioni` = `{"benvenutoVisto": true}` prima di aprire la pagina si salta
   il benvenuto completo, ma l'orbita automatica dura ~2,5 s: aspettare ~3 s (o toccare `#benvenuto`) prima di provare.
 
-## Barra delle schede in basso (versione 4.2)
+## Barra delle schede in basso (versione 4.2; dalla 4.20 quattro schede, c'è anche **Spese**)
 - Tre schede (`.scheda` con `data-scheda` dentro a `<main>`): **Abbonamenti** (totali, prossimo rinnovo, lista),
   **Statistiche** (spesa per categoria, grafico; messaggio `#statistiche-vuote` se non c'è niente da mostrare),
   **Impostazioni** (Profilo, Sincronizzazione, Promemoria, Backup, versione). Si vede solo quella scelta (`hidden`).
@@ -176,7 +177,7 @@ Il proprietario del progetto **sta imparando a programmare**:
 | `index.html` | Struttura della pagina, foglio del modulo, meta tag per iPhone |
 | `style.css` | Tutto l'aspetto: variabili colore, liste, foglio, etichette, animazioni |
 | `frequenze.js` | Le frequenze (`FREQUENZE`) e i calcoli che ne dipendono: volte all'anno, mesi in cui si paga, giorni della settimana |
-| `categorie.js` | Elenco fisso delle categorie (`CATEGORIE`), unico punto dove modificarle |
+| `categorie.js` | Elenco fisso delle categorie degli abbonamenti (`CATEGORIE`) e delle spese (`CATEGORIE_SPESE`) |
 | `calendario.js` | Crea il file .ics dei promemoria (`creaFileCalendario`); impostazioni `GIORNI_PREAVVISO` e `ORA_AVVISO` |
 | `vetro.css` | Stile "Liquid Glass": vetro, sfondo vivo, molle e animazioni CSS (riveste `style.css`) |
 | `animazioni.js` | `Animazioni`: numeri che contano, goccia dei filtri, barra compatta, foglio da trascinare, capsula di avviso |
@@ -188,6 +189,7 @@ Il proprietario del progetto **sta imparando a programmare**:
 | `servizi.js` | Come disdire i servizi più diffusi (`SERVIZI`: alias, link ufficiale, passi, nota) e `guidaDisdetta(nome, pagamento)` |
 | `supabase.js` | `Supabase`: collegamento con il database online (account, sessione, richieste con `fetch`). Lo usa solo `storage.js` |
 | `storage.js` | `Archivio`: lettura/scrittura dati, dati iniziali, controllo e backup, impostazioni, account e sincronizzazione online |
+| `supabase/spese.sql` | Tabella delle spese (versione 4.20). Da eseguire una volta nel SQL Editor |
 | `supabase/notifiche.sql` | Tabelle e orologio (pg_cron) delle notifiche. Da eseguire una volta nel SQL Editor |
 | `supabase/functions/invia-avvisi/index.ts` | Edge Function che ogni ora manda le notifiche dei rinnovi (Web Push) |
 | `supabase/schema.sql` | Com'è fatto il database online (tabella, regole di protezione, permessi). Già eseguito: è documentazione |
@@ -208,7 +210,7 @@ Il proprietario del progetto **sta imparando a programmare**:
   link: "https://…" | "", pagamento: "Visa •••• 1234" | "", note: "…" | "" }  // online: null se vuoti
 ```
 Chiave nel localStorage: `abbonamenti:v1` (invariata: i dati della versione 1 restano compatibili).
-Backup: file JSON `{ app, versione: 5, esportatoIl, abbonamenti: [...] }`.
+Backup: file JSON `{ app, versione: 6, esportatoIl, abbonamenti: [...], spese: [...] }`.
 I backup delle versioni precedenti si importano ancora (stato mancante → `attivo`, categoria mancante → `altro`).
 
 ## Più frequenze (versione 4.6)
@@ -337,6 +339,25 @@ I backup delle versioni precedenti si importano ancora (stato mancante → `atti
 - `storage.js` avvisa `app.js` con gli eventi `archivio-stato` (stato: `in-corso`, `sincronizzato`, `offline`,
   `errore`, `disconnesso`) e `archivio-aggiornato` (sono arrivati dati nuovi: ridisegnare).
 - Uscendo dall'account i dati restano sul dispositivo, ma non si sincronizzano più.
+
+## Spese di tutti i giorni (versione 4.20, parte 1)
+- Scheda **Spese** (`#scheda-spese`, seconda nella barra, che ora ha 4 colonne). In alto la card `.totali-spese`: mese
+  scelto con le frecce (`#btn-mese-prima/dopo`, niente mesi futuri), "Speso a novembre" (numero nascondibile con l'occhio)
+  e quante spese. Sotto, un gruppo per giorno dal più recente ("Oggi", "Ieri", "Giovedì 12 novembre", con il totale del
+  giorno), righe `.riga-spesa`: pianetino con l'emoji della categoria, descrizione, categoria (· note), importo blu.
+- Il "+" in alto apre il foglio giusto (`schedaAttiva === 'spese'` → `apriFoglioSpesa()`). Foglio `#foglio-spesa`:
+  Importo, Descrizione (suggerimenti dalle descrizioni usate, `#descrizioni-spese`; scegliendone una già usata si mette
+  la sua categoria), Categoria, Giorno (oggi, o il 1° del mese che stai guardando; max oggi), Note. Elimina senza
+  conferma ma con "Annulla" nella capsula (`Archivio.ripristinaSpesa`). Dopo il salvataggio si va al mese della spesa.
+- Categorie delle spese: `CATEGORIE_SPESE` in `categorie.js` (id fissi, come per gli abbonamenti).
+- Dati: `{ id, descrizione (≤40), importo, data "2026-11-20", categoria, note (≤200) }`, chiave `abbonamenti:spese`,
+  funzioni `Archivio.tutteLeSpese/aggiungiSpesa/aggiornaSpesa/eliminaSpesa/ripristinaSpesa`. Niente dati di esempio.
+- Online: tabella `spese` (`supabase/spese.sql`, da eseguire una volta), coda separata `abbonamenti:sincronizzazione-spese`,
+  `sincronizzaSpese()` dentro `sincronizza()`. La prima volta manda tutte le spese del dispositivo (id unici: niente
+  doppioni). Se la tabella non c'è ancora, gli abbonamenti si sincronizzano lo stesso e le spese restano in coda.
+- Backup versione 6: `{ …, abbonamenti, spese }`. Un backup vecchio (senza `spese`) non tocca le spese attuali.
+- Prove automatiche: finto Supabase con `context.route` (GET/POST upsert/PATCH in memoria) e sessione finta in
+  `abbonamenti:sessione` (`{ access_token, refresh_token, scadeIl, email, idUtente }`).
 
 ## Budget mensile (versione 4.19)
 - Impostazione locale `budget` (euro, `null` = nessuno; solo sul dispositivo, come il nome). Si sceglie in

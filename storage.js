@@ -25,6 +25,18 @@
      pagamento: "",          // come lo paghi, es. "Visa •••• 1234" (MAI il numero intero della carta)
      note: ""                // appunti liberi
    }
+
+   Com'è fatta una spesa (versione 4.20):
+   {
+     id: "k3x9...",
+     descrizione: "Spesa al supermercato",
+     importo: 42.5,          // in euro
+     data: "2026-11-20",     // il giorno della spesa
+     categoria: "alimentari",// id di CATEGORIE_SPESE (categorie.js)
+     note: ""
+   }
+   Le spese stanno in un cassetto a parte ("abbonamenti:spese") e si
+   sincronizzano online nella tabella "spese" (supabase/spese.sql).
    ===================================================================== */
 
 const Archivio = (function () {
@@ -214,10 +226,12 @@ const Archivio = (function () {
       app: 'Abbonamenti',
       // versione 2 = categorie, versione 3 = stato (attivo/pausa/disdetto).
       // I backup delle versioni precedenti si importano lo stesso.
-      // versione 4 = fine della prova gratuita (fineProva), versione 5 = link, pagamento e note
-      versione: 5,
+      // versione 4 = fine della prova gratuita (fineProva), versione 5 = link, pagamento e note,
+      // versione 6 = anche le spese
+      versione: 6,
       esportatoIl: new Date().toISOString(),
       abbonamenti: await tutti(),
+      spese: await tutteLeSpese(),
     };
     // null, 2 = testo "a capo e rientrato", leggibile anche a occhio
     return JSON.stringify(backup, null, 2);
@@ -262,6 +276,114 @@ const Archivio = (function () {
     const nuoviId = new Set(lista.map((a) => a.id));
     segnaDaEliminare(prima.filter((a) => !nuoviId.has(a.id)).map((a) => a.id));
     segnaDaInviare([...nuoviId]);
+  }
+
+  /* ===================================================================
+     SPESE (versione 4.20): le spese di tutti i giorni (supermercato, benzina…).
+     Stesse regole degli abbonamenti: si salvano subito sul dispositivo e,
+     con un account, vanno online nella tabella "spese".
+     =================================================================== */
+  const CHIAVE_SPESE = 'abbonamenti:spese';
+
+  // Controlla e "ripulisce" una spesa (dal modulo, dal disco, da internet o da un backup).
+  // Restituisce la spesa pulita, oppure null se i dati non vanno bene.
+  function normalizzaSpesa(grezza) {
+    if (!grezza || typeof grezza !== 'object') return null;
+    const descrizione = String(grezza.descrizione ?? '').trim().slice(0, 40);
+    const importo = Math.round(Number(grezza.importo) * 100) / 100;
+    const data = dataValida(grezza.data) ? grezza.data : null;
+    const categoria = categoriaSpesaEsiste(grezza.categoria) ? grezza.categoria : 'altro';
+    const note = String(grezza.note ?? '').trim().slice(0, 200);
+    if (!descrizione || !(importo > 0) || !data) return null;
+    return {
+      id: typeof grezza.id === 'string' && grezza.id ? grezza.id : nuovoId(),
+      descrizione,
+      importo,
+      data,
+      categoria,
+      note,
+    };
+  }
+
+  function leggiSpeseDalDisco() {
+    try {
+      const dati = JSON.parse(localStorage.getItem(CHIAVE_SPESE));
+      return Array.isArray(dati) ? dati.map(normalizzaSpesa).filter(Boolean) : [];
+    } catch (e) {
+      return [];
+    }
+  }
+
+  function scriviSpeseSulDisco(lista) {
+    localStorage.setItem(CHIAVE_SPESE, JSON.stringify(lista));
+  }
+
+  // Tutte le spese (all'inizio nessuna: niente dati di esempio)
+  async function tutteLeSpese() {
+    return leggiSpeseDalDisco();
+  }
+
+  async function aggiungiSpesa(dati) {
+    const lista = leggiSpeseDalDisco();
+    const nuova = normalizzaSpesa({ ...dati, id: nuovoId() });
+    if (!nuova) throw new Error('I dati della spesa non sono validi.');
+    lista.push(nuova);
+    scriviSpeseSulDisco(lista);
+    segnaSpeseDaInviare([nuova.id]);
+    return nuova;
+  }
+
+  async function aggiornaSpesa(id, dati) {
+    const lista = leggiSpeseDalDisco();
+    const posizione = lista.findIndex((sp) => sp.id === id);
+    if (posizione === -1) throw new Error('Spesa non trovata.');
+    const aggiornata = normalizzaSpesa({ ...dati, id });
+    if (!aggiornata) throw new Error('I dati della spesa non sono validi.');
+    lista[posizione] = aggiornata;
+    scriviSpeseSulDisco(lista);
+    segnaSpeseDaInviare([id]);
+    return aggiornata;
+  }
+
+  async function eliminaSpesa(id) {
+    scriviSpeseSulDisco(leggiSpeseDalDisco().filter((sp) => sp.id !== id));
+    segnaSpeseDaEliminare([id]);
+  }
+
+  // "Annulla" dopo Elimina: la spesa torna con lo stesso id
+  async function ripristinaSpesa(spesa) {
+    const lista = leggiSpeseDalDisco();
+    const recuperata = normalizzaSpesa(spesa);
+    if (!recuperata) throw new Error('I dati della spesa non sono validi.');
+    if (!lista.some((sp) => sp.id === recuperata.id)) lista.push(recuperata);
+    scriviSpeseSulDisco(lista);
+    segnaSpeseDaInviare([recuperata.id]);
+    return recuperata;
+  }
+
+  // Le spese contenute in un file di backup: una lista, oppure null se il backup
+  // è di una versione senza spese (in quel caso le spese attuali non si toccano)
+  function leggiSpeseDelBackup(testo) {
+    let dati;
+    try {
+      dati = JSON.parse(testo);
+    } catch (e) {
+      return null;
+    }
+    if (!dati || !Array.isArray(dati.spese)) return null;
+    const lista = dati.spese.map(normalizzaSpesa);
+    if (lista.some((sp) => sp === null)) {
+      throw new Error('Alcune spese nel file hanno dati mancanti o sbagliati.');
+    }
+    return lista;
+  }
+
+  async function sostituisciTutteLeSpese(lista) {
+    const prima = leggiSpeseDalDisco();
+    scriviSpeseSulDisco(lista);
+    const nuoviId = new Set(lista.map((sp) => sp.id));
+    segnaSpeseDaEliminare(prima.filter((sp) => !nuoviId.has(sp.id)).map((sp) => sp.id));
+    segnaSpeseDaInviare([...nuoviId]);
   }
 
   // ---------- Impostazioni dell'app (es. l'ordine scelto per la lista) ----------
@@ -342,6 +464,40 @@ const Archivio = (function () {
     sincro.daInviare = sincro.daInviare.filter((id) => !ids.includes(id));
     sincro.daEliminare = [...new Set([...sincro.daEliminare, ...ids])];
     salvaSincro(sincro);
+    programmaSincronizzazione();
+  }
+
+  // ---------- La coda delle SPESE: stesso funzionamento, cassetto separato ----------
+  const CHIAVE_SINCRO_SPESE = 'abbonamenti:sincronizzazione-spese';
+
+  function leggiSincroSpese() {
+    const vuoto = { daInviare: [], daEliminare: [], ultimoServer: null, unito: false };
+    try {
+      return { ...vuoto, ...JSON.parse(localStorage.getItem(CHIAVE_SINCRO_SPESE)) };
+    } catch (e) {
+      return vuoto;
+    }
+  }
+
+  function salvaSincroSpese(sincro) {
+    localStorage.setItem(CHIAVE_SINCRO_SPESE, JSON.stringify(sincro));
+  }
+
+  function segnaSpeseDaInviare(ids) {
+    if (!Supabase.utente() || ids.length === 0) return;
+    const sincro = leggiSincroSpese();
+    sincro.daInviare = [...new Set([...sincro.daInviare, ...ids])];
+    sincro.daEliminare = sincro.daEliminare.filter((id) => !ids.includes(id));
+    salvaSincroSpese(sincro);
+    programmaSincronizzazione();
+  }
+
+  function segnaSpeseDaEliminare(ids) {
+    if (!Supabase.utente() || ids.length === 0) return;
+    const sincro = leggiSincroSpese();
+    sincro.daInviare = sincro.daInviare.filter((id) => !ids.includes(id));
+    sincro.daEliminare = [...new Set([...sincro.daEliminare, ...ids])];
+    salvaSincroSpese(sincro);
     programmaSincronizzazione();
   }
 
@@ -498,6 +654,99 @@ const Archivio = (function () {
     return cambiato;
   }
 
+  // ---------- Sincronizzazione delle SPESE ----------
+  // Più semplice di quella degli abbonamenti: non ci sono dati di esempio e ogni
+  // spesa ha un id unico, quindi la prima volta basta mandare online tutte quelle
+  // del dispositivo (quelle con lo stesso id si aggiornano, niente doppioni).
+  const COLONNE_SPESE = 'id,descrizione,importo,data,categoria,note,eliminato,aggiornato_il';
+
+  function spesaVersoServer(spesa) {
+    return {
+      id: spesa.id,
+      descrizione: spesa.descrizione,
+      importo: spesa.importo,
+      data: spesa.data,
+      categoria: spesa.categoria,
+      note: spesa.note || null,
+      eliminato: false,
+    };
+  }
+
+  // Restituisce true se sul dispositivo è cambiato qualcosa
+  async function sincronizzaSpese() {
+    let sincro = leggiSincroSpese();
+    if (!sincro.unito) {
+      sincro = { ...sincro, daInviare: leggiSpeseDalDisco().map((sp) => sp.id), ultimoServer: null, unito: true };
+      salvaSincroSpese(sincro);
+    }
+
+    // 1. INVIA la coda
+    const lista = leggiSpeseDalDisco();
+    const daInviare = lista.filter((sp) => sincro.daInviare.includes(sp.id));
+    const daEliminare = [...sincro.daEliminare];
+    if (daInviare.length > 0) {
+      await Supabase.database('spese?on_conflict=user_id,id', {
+        metodo: 'POST',
+        prefer: 'resolution=merge-duplicates,return=minimal',
+        corpo: daInviare.map(spesaVersoServer),
+      });
+    }
+    if (daEliminare.length > 0) {
+      const elenco = encodeURIComponent(`(${daEliminare.map((id) => `"${id}"`).join(',')})`);
+      await Supabase.database(`spese?id=in.${elenco}`, {
+        metodo: 'PATCH',
+        prefer: 'return=minimal',
+        corpo: { eliminato: true },
+      });
+    }
+    // Togliamo dalla coda quello che è partito e non è cambiato nel frattempo
+    const comeInviate = new Map(daInviare.map((sp) => [sp.id, JSON.stringify(sp)]));
+    const listaOra = leggiSpeseDalDisco();
+    const dopo = leggiSincroSpese();
+    dopo.daInviare = dopo.daInviare.filter((id) => {
+      if (!comeInviate.has(id)) return true;
+      const attuale = listaOra.find((sp) => sp.id === id);
+      return Boolean(attuale) && JSON.stringify(attuale) !== comeInviate.get(id);
+    });
+    dopo.daEliminare = dopo.daEliminare.filter((id) => !daEliminare.includes(id));
+    salvaSincroSpese(dopo);
+
+    // 2. SCARICA le novità
+    let percorso = `spese?select=${COLONNE_SPESE}&order=aggiornato_il.asc`;
+    if (dopo.ultimoServer) percorso += `&aggiornato_il=gt.${encodeURIComponent(dopo.ultimoServer)}`;
+    const righe = await Supabase.database(percorso);
+    if (righe.length === 0) return false;
+
+    const spese = leggiSpeseDalDisco();
+    const inAttesa = new Set(leggiSincroSpese().daInviare); // le nostre modifiche non ancora inviate vincono
+    let cambiato = false;
+    for (const riga of righe) {
+      if (inAttesa.has(riga.id)) continue;
+      const posizione = spese.findIndex((sp) => sp.id === riga.id);
+      if (riga.eliminato) {
+        if (posizione !== -1) {
+          spese.splice(posizione, 1);
+          cambiato = true;
+        }
+        continue;
+      }
+      const spesa = normalizzaSpesa(riga);
+      if (!spesa) continue;
+      if (posizione === -1) {
+        spese.push(spesa);
+        cambiato = true;
+      } else if (JSON.stringify(spese[posizione]) !== JSON.stringify(spesa)) {
+        spese[posizione] = spesa;
+        cambiato = true;
+      }
+    }
+    if (cambiato) scriviSpeseSulDisco(spese);
+    const finale = leggiSincroSpese();
+    finale.ultimoServer = righe[righe.length - 1].aggiornato_il;
+    salvaSincroSpese(finale);
+    return cambiato;
+  }
+
   // La sincronizzazione completa. Se è già in corso, ne facciamo un'altra subito dopo.
   let sincroInCorso = null;
   let ancoraUnaVolta = false;
@@ -519,6 +768,15 @@ const Archivio = (function () {
         if (!leggiSincro().unito) cambiato = await unisciLaPrimaVolta();
         await inviaModifiche();
         cambiato = (await scaricaModifiche()) || cambiato;
+
+        // Le spese. Se la tabella "spese" online non c'è ancora (supabase/spese.sql non eseguito),
+        // gli abbonamenti si sincronizzano lo stesso e le spese restano in coda per la prossima volta.
+        try {
+          cambiato = (await sincronizzaSpese()) || cambiato;
+        } catch (e) {
+          if (e.tipo === 'rete' || e.tipo === 'sessione') throw e;
+          console.warn('Spese non sincronizzate:', e.message);
+        }
 
         const sincro = leggiSincro();
         sincro.ultimaRiuscita = new Date().toISOString();
@@ -551,12 +809,14 @@ const Archivio = (function () {
   async function accedi(email, password) {
     const utente = await Supabase.entra(email, password);
     salvaSincro({ ...leggiSincro(), unito: false, ultimoServer: null, daInviare: [], daEliminare: [] });
+    salvaSincroSpese({ unito: false, ultimoServer: null, daInviare: [], daEliminare: [] });
     return utente;
   }
 
   async function creaAccount(email, password) {
     const utente = await Supabase.creaAccount(email, password);
     salvaSincro({ ...leggiSincro(), unito: false, ultimoServer: null, daInviare: [], daEliminare: [] });
+    salvaSincroSpese({ unito: false, ultimoServer: null, daInviare: [], daEliminare: [] });
     return utente;
   }
 
@@ -610,7 +870,7 @@ const Archivio = (function () {
   // Serve solo come ultima spiaggia dalla schermata di blocco, se non si riesce più a sbloccare.
   async function cancellaTutto() {
     await Supabase.esci();
-    for (const chiave of [CHIAVE, CHIAVE_IMPOSTAZIONI, CHIAVE_SINCRO]) {
+    for (const chiave of [CHIAVE, CHIAVE_IMPOSTAZIONI, CHIAVE_SINCRO, CHIAVE_SPESE, CHIAVE_SINCRO_SPESE]) {
       try {
         localStorage.removeItem(chiave);
       } catch (e) {
@@ -645,6 +905,7 @@ const Archivio = (function () {
     await Supabase.esci();
     try {
       localStorage.removeItem(CHIAVE_SINCRO);
+      localStorage.removeItem(CHIAVE_SINCRO_SPESE);
     } catch (e) {
       /* niente da fare */
     }
@@ -654,10 +915,12 @@ const Archivio = (function () {
   // Lo stato attuale e l'ora dell'ultima sincronizzazione riuscita
   function statoSincronizzazione() {
     const sincro = leggiSincro();
+    const sincroSpese = leggiSincroSpese();
     return {
       ...statoAttuale,
       ultimaRiuscita: sincro.ultimaRiuscita,
-      inAttesa: sincro.daInviare.length + sincro.daEliminare.length,
+      inAttesa: sincro.daInviare.length + sincro.daEliminare.length
+        + sincroSpese.daInviare.length + sincroSpese.daEliminare.length,
     };
   }
 
@@ -669,5 +932,7 @@ const Archivio = (function () {
     recuperaPassword, leggiRitornoDaEmail, impostaNuovaPassword, verificaPassword, cancellaTutto,
     chiavePubblicaNotifiche, salvaIscrizioneNotifiche, eliminaIscrizioneNotifiche, provaNotifica,
     controllaLink,
+    tutteLeSpese, aggiungiSpesa, aggiornaSpesa, eliminaSpesa, ripristinaSpesa,
+    leggiSpeseDelBackup, sostituisciTutteLeSpese,
   };
 })();
