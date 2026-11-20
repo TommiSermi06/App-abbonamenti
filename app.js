@@ -75,6 +75,12 @@ const el = {
   budgetRiempimento: $('budget-riempimento'),
   budgetDettaglio: $('budget-dettaglio'),
   campoBudget: $('campo-budget'),
+  campoBudgetSpese: $('campo-budget-spese'),
+  budgetSpese: $('budget-spese'),
+  budgetSpeseTitolo: $('budget-spese-titolo'),
+  budgetSpeseImporto: $('budget-spese-importo'),
+  budgetSpeseRiempimento: $('budget-spese-riempimento'),
+  budgetSpeseDettaglio: $('budget-spese-dettaglio'),
   // Scheda Spese e foglio della spesa (versione 4.20)
   speseMese: $('spese-mese'),
   speseEtichetta: $('spese-etichetta'),
@@ -510,6 +516,7 @@ function applicaImportiNascosti(nascosti, animato = true) {
   if (appPronta) {
     disegnaDaPagare(); // aggiorna la frase letta da VoiceOver
     disegnaBudget(totaleAlMese(paganti())); // col budget nascosto mostriamo la percentuale
+    disegnaSpese(); // anche il budget delle spese
   }
 }
 
@@ -822,6 +829,7 @@ async function mandaNotificaDiProva() {
 // a seconda del mese. Impostazione "budget": un numero in euro, oppure null = nessun budget.
 // Resta solo su questo dispositivo, come il nome.
 let budget = null;
+let budgetSpese = null; // versione 4.22: il limite a parte per le spese di tutti i giorni (null = nessuno)
 
 const SOGLIA_QUASI = 0.9; // dal 90% la barra diventa arancione
 
@@ -831,48 +839,86 @@ function leggiImporto(testo) {
 }
 
 // Come scriviamo il budget nel campo: "60,00 €" (vuoto se non c'è)
-function testoBudget() {
-  return budget === null ? '' : formatoEuro.format(budget);
+function testoBudget(valore = budget) {
+  return valore === null ? '' : formatoEuro.format(valore);
 }
 
-function disegnaBudget(alMese) {
-  // Senza budget: la riga invita a sceglierlo, ma solo se c'è qualcosa da controllare
-  if (budget === null) {
-    el.budget.hidden = attivi().length === 0;
-    el.budget.className = 'budget vuoto';
-    el.budgetTitolo.textContent = 'Imposta un budget mensile';
-    el.budgetImporto.textContent = '';
-    el.budgetDettaglio.textContent = 'Scegli quanto spendere al massimo ogni mese';
-    el.budget.setAttribute('aria-label', 'Imposta un budget mensile per gli abbonamenti');
+// Disegna una riga di budget (serve sia agli abbonamenti sia alle spese, versione 4.22).
+// parti = gli elementi della riga; speso e limite in euro (limite null = nessun budget);
+// testi = le parole che cambiano tra abbonamenti e spese.
+function disegnaRigaBudget(parti, speso, limite, testi) {
+  // Senza budget: la riga invita a sceglierlo (se c'è qualcosa da controllare)
+  if (limite === null) {
+    parti.riga.hidden = !testi.mostraInvito;
+    parti.riga.className = 'budget vuoto';
+    parti.titolo.textContent = testi.invito;
+    parti.importo.textContent = '';
+    parti.dettaglio.textContent = 'Scegli quanto spendere al massimo ogni mese';
+    parti.riga.setAttribute('aria-label', testi.invitoVoiceOver);
     return;
   }
 
-  el.budget.hidden = false;
-  const quota = alMese / budget; // 0,7 = hai usato il 70%
+  parti.riga.hidden = false;
+  const quota = speso / limite; // 0,7 = hai usato il 70%
   const percentuale = Math.round(quota * 100);
   // Livello: normale (blu), quasi (arancione, dal 90%), oltre (rosso, oltre il 100%)
-  const livello = alMese > budget + 0.004 ? 'oltre' : quota >= SOGLIA_QUASI ? 'quasi' : 'normale';
-  el.budget.className = `budget ${livello}`;
-  el.budgetTitolo.textContent = 'Budget mensile';
-  el.budgetImporto.textContent = `${formatoEuro.format(alMese)} di ${formatoEuro.format(budget)}`;
+  const livello = speso > limite + 0.004 ? 'oltre' : quota >= SOGLIA_QUASI ? 'quasi' : 'normale';
+  parti.riga.className = `budget ${livello}`;
+  parti.titolo.textContent = testi.titolo;
+  parti.importo.textContent = `${formatoEuro.format(speso)} di ${formatoEuro.format(limite)}`;
 
   // La barra si riempie fino alla percentuale (al massimo piena)
-  el.budgetRiempimento.style.width = `${Math.min(100, quota * 100)}%`;
+  parti.riempimento.style.width = `${Math.min(100, quota * 100)}%`;
 
   // La frase sotto: con l'occhio chiuso niente euro, solo la percentuale
-  const differenza = formatoEuro.format(Math.abs(budget - alMese));
+  const differenza = formatoEuro.format(Math.abs(limite - speso));
   if (importiNascosti) {
-    el.budgetDettaglio.textContent = `Hai usato il ${percentuale}% del budget`;
+    parti.dettaglio.textContent = `Hai usato il ${percentuale}% del budget`;
   } else if (livello === 'oltre') {
-    el.budgetDettaglio.textContent = `Hai superato il budget di ${differenza} al mese`;
+    parti.dettaglio.textContent = `Hai superato il budget di ${differenza} ${testi.periodo}`;
+  } else if (testi.passato) {
+    parti.dettaglio.textContent = `Sono avanzati ${differenza} (${percentuale}% usato)`; // un mese già finito
   } else if (livello === 'quasi') {
-    el.budgetDettaglio.textContent = `Attenzione: ti restano solo ${differenza} al mese`;
+    parti.dettaglio.textContent = `Attenzione: ti restano solo ${differenza} ${testi.periodo}`;
   } else {
-    el.budgetDettaglio.textContent = `Ti restano ${differenza} al mese (${percentuale}% usato)`;
+    parti.dettaglio.textContent = `Ti restano ${differenza} ${testi.periodo} (${percentuale}% usato)`;
   }
-  const importo = importiNascosti ? 'importi nascosti' : el.budgetImporto.textContent;
-  el.budget.setAttribute('aria-label',
-    `Budget mensile: ${importo}. ${el.budgetDettaglio.textContent}. Tocca per cambiarlo.`);
+  const importo = importiNascosti ? 'importi nascosti' : parti.importo.textContent;
+  parti.riga.setAttribute('aria-label',
+    `${testi.titolo}: ${importo}. ${parti.dettaglio.textContent}. Tocca per cambiarlo.`);
+}
+
+// Il budget degli ABBONAMENTI: si confronta con il totale "Al mese" (la media)
+function disegnaBudget(alMese) {
+  disegnaRigaBudget(
+    { riga: el.budget, titolo: el.budgetTitolo, importo: el.budgetImporto, riempimento: el.budgetRiempimento, dettaglio: el.budgetDettaglio },
+    alMese,
+    budget,
+    {
+      titolo: 'Budget mensile',
+      periodo: 'al mese',
+      invito: 'Imposta un budget mensile',
+      invitoVoiceOver: 'Imposta un budget mensile per gli abbonamenti',
+      mostraInvito: attivi().length > 0,
+    },
+  );
+}
+
+// Il budget delle SPESE (versione 4.22): quanto hai speso davvero nel mese che stai guardando
+function disegnaBudgetSpese(speso, questoMese) {
+  disegnaRigaBudget(
+    { riga: el.budgetSpese, titolo: el.budgetSpeseTitolo, importo: el.budgetSpeseImporto, riempimento: el.budgetSpeseRiempimento, dettaglio: el.budgetSpeseDettaglio },
+    speso,
+    budgetSpese,
+    {
+      titolo: 'Budget spese',
+      periodo: `per ${NOMI_MESI[meseSpese.mese]}`,
+      invito: 'Imposta un budget per le spese',
+      invitoVoiceOver: 'Imposta un budget mensile per le spese',
+      mostraInvito: questoMese, // l'invito solo nel mese in corso
+      passato: !questoMese,
+    },
+  );
 }
 
 // Tocco sulla riga del budget: andiamo in Impostazioni con il campo pronto per scrivere
@@ -899,6 +945,41 @@ async function cambiaBudget() {
   await Archivio.salvaImpostazione('budget', budget);
   disegnaTotali();
   Animazioni.avviso(budget === null ? 'Budget tolto' : `Budget: ${formatoEuro.format(budget)} al mese`);
+}
+
+// Tocco sulla riga del budget delle spese: andiamo al suo campo
+function apriBudgetSpese() {
+  mostraScheda('impostazioni');
+  el.campoBudgetSpese.focus();
+  el.campoBudgetSpese.select();
+}
+
+// Il campo del budget delle spese: stesse regole di quello degli abbonamenti
+async function cambiaBudgetSpese() {
+  const testo = el.campoBudgetSpese.value.trim();
+  const valore = leggiImporto(testo);
+  if (testo === '' || valore === 0) {
+    budgetSpese = null;
+  } else if (!Number.isFinite(valore) || valore < 0 || valore > 100000) {
+    el.campoBudgetSpese.value = testoBudget(budgetSpese);
+    Animazioni.avviso('Scrivi un importo valido, per esempio 300');
+    return;
+  } else {
+    budgetSpese = Math.round(valore * 100) / 100;
+  }
+  el.campoBudgetSpese.value = testoBudget(budgetSpese);
+  await Archivio.salvaImpostazione('budgetSpese', budgetSpese);
+  disegnaSpese();
+  Animazioni.avviso(budgetSpese === null ? 'Budget spese tolto' : `Budget spese: ${formatoEuro.format(budgetSpese)} al mese`);
+}
+
+// Dopo aver salvato una spesa: se il suo mese adesso sfora il budget delle spese (e prima no),
+// lo diciamo nella capsula. "prima" = quanto avevi speso in quel mese prima di salvare.
+function avvisoBudgetSpese(prima, mese) {
+  if (budgetSpese === null) return '';
+  const dopo = speseDelMese(mese).reduce((somma, sp) => somma + sp.importo, 0);
+  if (prima > budgetSpese + 0.004 || dopo <= budgetSpese + 0.004) return '';
+  return importiNascosti ? ' · oltre il budget' : ` · ${formatoEuro.format(dopo - budgetSpese)} oltre il budget`;
 }
 
 // Dopo aver aggiunto, modificato o riattivato un abbonamento: se adesso sfori il budget
@@ -1891,6 +1972,7 @@ function disegnaSpese() {
   Animazioni.conta(el.speseTotale, totale, (v) => formatoEuro.format(v));
   el.speseConteggio.textContent = delMese.length === 0 ? 'Nessuna spesa'
     : delMese.length === 1 ? '1 spesa' : `${delMese.length} spese`;
+  disegnaBudgetSpese(totale, questoMese);
 
   // Per categoria: barre o torta (e quale categoria è scelta)
   const righe = categorieDelleSpese(delMese);
@@ -2267,6 +2349,9 @@ async function salvaSpesa(evento) {
   }
   try {
     const eraNuova = !idSpesaInModifica;
+    // Quanto avevi già speso nel mese della spesa (per capire se con questa sfori il budget)
+    const meseDellaSpesa = { anno: Number(dati.data.slice(0, 4)), mese: Number(dati.data.slice(5, 7)) - 1 };
+    const primaNelMese = speseDelMese(meseDellaSpesa).reduce((somma, sp) => somma + sp.importo, 0);
     const salvata = eraNuova
       ? await Archivio.aggiungiSpesa(dati)
       : await Archivio.aggiornaSpesa(idSpesaInModifica, dati);
@@ -2278,7 +2363,9 @@ async function salvaSpesa(evento) {
     sceltaSpese = null; // così vedi subito la spesa salvata, qualunque sia la sua categoria
     nascondiFoglio();
     disegnaSpese();
-    Animazioni.avviso(eraNuova ? 'Spesa aggiunta' : 'Modifiche salvate');
+    const oltre = avvisoBudgetSpese(primaNelMese, meseDellaSpesa);
+    if (oltre) Animazioni.avviso((eraNuova ? 'Aggiunta' : 'Salvata') + oltre);
+    else Animazioni.avviso(eraNuova ? 'Spesa aggiunta' : 'Modifiche salvate');
   } catch (e) {
     el.erroreSpesa.textContent = `Non sono riuscito a salvare: ${e.message}`;
   }
@@ -2834,6 +2921,14 @@ el.btnOcchio.addEventListener('animationend', () => el.btnOcchio.classList.remov
 el.daPagare.addEventListener('click', apriMeseInCorso);
 // Budget: un tocco sulla riga porta al campo; il campo si salva quando hai finito
 el.budget.addEventListener('click', apriBudget);
+el.budgetSpese.addEventListener('click', apriBudgetSpese);
+el.campoBudgetSpese.addEventListener('change', cambiaBudgetSpese);
+el.campoBudgetSpese.addEventListener('focus', () => {
+  if (budgetSpese !== null) el.campoBudgetSpese.value = String(budgetSpese).replace('.', ',');
+});
+el.campoBudgetSpese.addEventListener('blur', () => {
+  if (leggiImporto(el.campoBudgetSpese.value) === budgetSpese) el.campoBudgetSpese.value = testoBudget(budgetSpese);
+});
 el.campoBudget.addEventListener('change', cambiaBudget);
 // Mentre scrivi togliamo il "€" per lasciare solo il numero
 el.campoBudget.addEventListener('focus', () => {
@@ -2983,6 +3078,10 @@ async function avvia() {
   const budgetSalvato = await Archivio.leggiImpostazione('budget', null);
   budget = Number.isFinite(budgetSalvato) && budgetSalvato > 0 ? budgetSalvato : null;
   el.campoBudget.value = testoBudget();
+  // Il budget delle spese (versione 4.22), a parte
+  const budgetSpeseSalvato = await Archivio.leggiImpostazione('budgetSpese', null);
+  budgetSpese = Number.isFinite(budgetSpeseSalvato) && budgetSpeseSalvato > 0 ? budgetSpeseSalvato : null;
+  el.campoBudgetSpese.value = testoBudget(budgetSpese);
   scriviNotaCalendario();
 
   // Recuperiamo l'ordine scelto l'ultima volta (se è uno di quelli validi)

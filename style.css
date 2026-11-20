@@ -544,15 +544,15 @@ button:active {
 /* Vicino al limite (dal 90%): arancione; oltre il limite: rosso (colori di sistema iOS) */
 .budget.quasi .budget-barra > span { background: var(--arancione); }
 .budget.oltre .budget-barra > span { background: var(--rosso); }
-.budget.quasi #budget-dettaglio { color: var(--arancione); }
-.budget.oltre #budget-dettaglio,
+.budget.quasi .budget-dettaglio { color: var(--arancione); }
+.budget.oltre .budget-dettaglio,
 .budget.oltre .budget-importo { color: var(--rosso); }
 
 /* Senza budget: niente importo né barra, solo l'invito (titolo blu come un link) */
 .budget.vuoto .budget-barra,
 .budget.vuoto .nascondibile { display: none; }
 .budget.vuoto .freccia { margin-left: auto; }
-.budget.vuoto #budget-titolo { color: var(--blu); font-weight: 400; font-size: 17px; }
+.budget.vuoto .budget-titolo { color: var(--blu); font-weight: 400; font-size: 17px; }
 
 @media (prefers-reduced-motion: reduce) {
   .budget-barra > span { transition: none; }
@@ -1827,6 +1827,9 @@ body:has(.app input:focus) .barra-schede {
   font-weight: 600;
   color: var(--testo);
 }
+
+/* Il budget delle spese sta sotto il totale centrato: lui resta allineato a sinistra */
+.totali-spese .budget { text-align: left; }
 
 /* Le frecce: pulsanti rotondi da 44px (la misura minima per un dito) */
 .btn-mese {
