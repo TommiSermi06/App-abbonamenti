@@ -2016,6 +2016,13 @@ el.perPagamento.addEventListener('click', (e) => {
 el.campoBlocco.addEventListener('change', cambiaBlocco);
 el.btnCambiaPin.addEventListener('click', cambiaPin);
 
+// Niente zoom pizzicando con due dita (scelta del proprietario): "gesturestart" e "gesturechange"
+// sono gli eventi di Safari per il pizzico; fermandoli la pagina non si ingrandisce.
+// (Il doppio tocco lo ferma il CSS: touch-action su html in style.css.)
+for (const evento of ['gesturestart', 'gesturechange']) {
+  document.addEventListener(evento, (e) => e.preventDefault(), { passive: false });
+}
+
 // L'occhio dei totali: nasconde o mostra gli importi
 el.btnOcchio.addEventListener('click', cambiaImportiNascosti);
 el.btnOcchio.addEventListener('animationend', () => el.btnOcchio.classList.remove('sbatte'));
